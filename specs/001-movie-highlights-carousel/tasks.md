@@ -53,42 +53,42 @@ spec: US1 (P1) → US3 (P1) → US2 (P2).
 
 ### Projeto Django e banco
 
-- [ ] T009 Criar o projeto Django em `backend/config/` com `settings/base.py` e `settings/dev.py`, lendo variáveis via django-environ
-- [ ] T010 Configurar o PostgreSQL em `backend/config/settings/base.py` apontando para a porta **5438**, e `CORS_ALLOWED_ORIGINS` incluindo `http://localhost:5000`
-- [ ] T011 Configurar DRF em `backend/config/settings/base.py` com `DEFAULT_AUTHENTICATION_CLASSES` vazio por padrão e permissão padrão `AllowAny` apenas para as rotas públicas declaradas
-- [ ] T012 Criar os apps `catalog` e `screening` em `backend/apps/` e registrá-los em `INSTALLED_APPS`
+- [X] T009 Criar o projeto Django em `backend/config/` com `settings/base.py` e `settings/dev.py`, lendo variáveis via django-environ
+- [X] T010 Configurar o PostgreSQL em `backend/config/settings/base.py` apontando para a porta **5438**, e `CORS_ALLOWED_ORIGINS` incluindo `http://localhost:5000`
+- [X] T011 Configurar DRF em `backend/config/settings/base.py` com `DEFAULT_AUTHENTICATION_CLASSES` vazio por padrão e permissão padrão `AllowAny` apenas para as rotas públicas declaradas
+- [X] T012 Criar os apps `catalog` e `screening` em `backend/apps/` e registrá-los em `INSTALLED_APPS`
 
 ### Modelos
 
-- [ ] T013 [P] Criar os modelos `Genre` e `Movie` em `backend/apps/catalog/models.py` conforme `data-model.md`, incluindo `tmdb_id` único, `slug` único, `certification_br` nulável e as propriedades derivadas `backdrop_url`, `poster_url` e `synopsis_short`
-- [ ] T014 [P] Criar o modelo `Trailer` em `backend/apps/catalog/models.py` com `UNIQUE(movie, provider, external_key)` e a constraint condicional de um único `is_primary=True` por filme
-- [ ] T015 [P] Criar os modelos `Room` e `Screening` em `backend/apps/screening/models.py` com `UNIQUE(room, starts_at)`, índice composto `(status, starts_at)` e `on_delete=PROTECT` no filme
-- [ ] T016 Gerar e aplicar as migrações `catalog.0001` e `screening.0001` em `backend/apps/*/migrations/`
+- [X] T013 [P] Criar os modelos `Genre` e `Movie` em `backend/apps/catalog/models.py` conforme `data-model.md`, incluindo `tmdb_id` único, `slug` único, `certification_br` nulável e as propriedades derivadas `backdrop_url`, `poster_url` e `synopsis_short`
+- [X] T014 [P] Criar o modelo `Trailer` em `backend/apps/catalog/models.py` com `UNIQUE(movie, provider, external_key)` e a constraint condicional de um único `is_primary=True` por filme
+- [X] T015 [P] Criar os modelos `Room` e `Screening` em `backend/apps/screening/models.py` com `UNIQUE(room, starts_at)`, índice composto `(status, starts_at)` e `on_delete=PROTECT` no filme
+- [X] T016 Gerar e aplicar as migrações `catalog.0001` e `screening.0001` em `backend/apps/*/migrations/`
 
 ### Integração com o TMDb (Princípio VII)
 
-- [ ] T017 Implementar o cliente TMDb em `backend/apps/catalog/services/tmdb_client.py` com timeout explícito de 10s, chave lida do ambiente e `append_to_response=videos,release_dates` na chamada de detalhe
-- [ ] T018 Implementar o mapeamento TMDb → modelos em `backend/apps/catalog/services/tmdb_sync.py`, incluindo a extração da classificação `iso_3166_1="BR"` com preferência por `type=3` (R3) e a escolha do trailer primário na ordem oficial-pt → oficial-en → trailer → teaser (R4)
-- [ ] T019 Implementar o comando `backend/apps/catalog/management/commands/sync_tmdb.py` com a flag `--limit`, idempotente por `tmdb_id`
-- [ ] T020 [P] Escrever os testes de mapeamento em `backend/tests/test_tmdb_sync.py`: classificação BR ausente vira `null`, filme sem vídeo do YouTube fica sem trailer primário, e uma segunda execução não duplica registros
+- [X] T017 Implementar o cliente TMDb em `backend/apps/catalog/services/tmdb_client.py` com timeout explícito de 10s, chave lida do ambiente e `append_to_response=videos,release_dates` na chamada de detalhe
+- [X] T018 Implementar o mapeamento TMDb → modelos em `backend/apps/catalog/services/tmdb_sync.py`, incluindo a extração da classificação `iso_3166_1="BR"` com preferência por `type=3` (R3) e a escolha do trailer primário na ordem oficial-pt → oficial-en → trailer → teaser (R4)
+- [X] T019 Implementar o comando `backend/apps/catalog/management/commands/sync_tmdb.py` com a flag `--limit`, idempotente por `tmdb_id`
+- [X] T020 [P] Escrever os testes de mapeamento em `backend/tests/test_tmdb_sync.py`: classificação BR ausente vira `null`, filme sem vídeo do YouTube fica sem trailer primário, e uma segunda execução não duplica registros
 
 ### Endpoint público de highlights
 
-- [ ] T021 Implementar a regra de elegibilidade em `backend/apps/catalog/selectors.py`: filmes ativos com sessão `published` e `starts_at > agora`, anotados com `next_screening_at`, ordenados ascendente com desempate por título, limitados a 5 (R6/FR-002)
-- [ ] T022 Implementar o serializer público em `backend/apps/catalog/serializers.py` seguindo exatamente `contracts/highlights-api.md`, expondo `trailer` como objeto nulável e `has_available_seats` como booleano derivado
-- [ ] T023 Implementar `HighlightsView` em `backend/apps/catalog/views.py` como somente leitura e pública, com cache de 60s, e registrar a rota `GET /api/v1/highlights/` em `backend/apps/catalog/urls.py` e `backend/config/urls.py`
-- [ ] T024 [P] Escrever os testes de elegibilidade em `backend/tests/test_selectors.py`: sessão passada e sessão em rascunho são excluídas, ordenação pela sessão mais próxima, corte em 5, e catálogo vazio retorna lista vazia
-- [ ] T025 [P] Escrever o teste do gate do Princípio IV em `backend/tests/test_highlights_api.py`: a requisição sem autenticação retorna 200 **e** a resposta não contém `status`, preço de custo, capacidade da sala, contagem de assentos vendidos nem identificação de usuário
+- [X] T021 Implementar a regra de elegibilidade em `backend/apps/catalog/selectors.py`: filmes ativos com sessão `published` e `starts_at > agora`, anotados com `next_screening_at`, ordenados ascendente com desempate por título, limitados a 5 (R6/FR-002)
+- [X] T022 Implementar o serializer público em `backend/apps/catalog/serializers.py` seguindo exatamente `contracts/highlights-api.md`, expondo `trailer` como objeto nulável e `has_available_seats` como booleano derivado
+- [X] T023 Implementar `HighlightsView` em `backend/apps/catalog/views.py` como somente leitura e pública, com cache de 60s, e registrar a rota `GET /api/v1/highlights/` em `backend/apps/catalog/urls.py` e `backend/config/urls.py`
+- [X] T024 [P] Escrever os testes de elegibilidade em `backend/tests/test_selectors.py`: sessão passada e sessão em rascunho são excluídas, ordenação pela sessão mais próxima, corte em 5, e catálogo vazio retorna lista vazia
+- [X] T025 [P] Escrever o teste do gate do Princípio IV em `backend/tests/test_highlights_api.py`: a requisição sem autenticação retorna 200 **e** a resposta não contém `status`, preço de custo, capacidade da sala, contagem de assentos vendidos nem identificação de usuário
 
 ### Seed do desafio
 
-- [ ] T026 Implementar `backend/apps/catalog/management/commands/seed_demo.py` criando 1 organizador, 2 clientes, 1 usuário de portaria, 2 salas e ao menos 5 filmes com sessões publicadas e futuras, de forma idempotente, imprimindo as credenciais ao final
+- [X] T026 Implementar `backend/apps/catalog/management/commands/seed_demo.py` criando 1 organizador, 2 clientes, 1 usuário de portaria, 2 salas e ao menos 5 filmes com sessões publicadas e futuras, de forma idempotente, imprimindo as credenciais ao final
 
 ### Fundação do front-end
 
-- [ ] T027 Criar `frontend/styles/tokens.css` com os tokens de cor, tipografia e espaçamento — fonte única exigida pelo Princípio V — e importá-lo em `frontend/app/layout.tsx`
-- [ ] T028 [P] Criar `frontend/lib/types.ts` com os tipos derivados de `contracts/highlights-api.md` e `frontend/lib/api.ts` com o fetch server-side de `/api/v1/highlights/`, tratando timeout e resposta não-200
-- [ ] T029 Configurar `frontend/next.config.ts` com `remotePatterns` para `image.tmdb.org`
+- [X] T027 Criar `frontend/styles/tokens.css` com os tokens de cor, tipografia e espaçamento — fonte única exigida pelo Princípio V — e importá-lo em `frontend/app/layout.tsx`
+- [X] T028 [P] Criar `frontend/lib/types.ts` com os tipos derivados de `contracts/highlights-api.md` e `frontend/lib/api.ts` com o fetch server-side de `/api/v1/highlights/`, tratando timeout e resposta não-200
+- [X] T029 Configurar `frontend/next.config.ts` com `remotePatterns` para `image.tmdb.org`
 
 **Checkpoint**: API de highlights respondendo com dados semeados; front-end pronto para consumir
 

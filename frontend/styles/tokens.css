@@ -1,0 +1,151 @@
+/* Fonte única de cor, tipografia e espaçamento.
+ *
+ * Princípio V da constitution: nenhum valor de cor ou espaçamento pode ser
+ * ad-hoc dentro de um componente. Se um valor não existe aqui, ele é
+ * definido aqui antes de ser usado.
+ *
+ * A paleta é escura por padrão — sala de cinema. O contraste do texto sobre
+ * a arte do filme é garantido por sobreposição, não por sorte com a imagem.
+ */
+
+:root {
+  /* --- Superfícies --- */
+  --cor-fundo: #0a0a0f;
+  --cor-superficie: #14141c;
+  --cor-superficie-elevada: #1e1e29;
+  --cor-borda: #2a2a38;
+  --cor-borda-forte: #3d3d50;
+
+  /* --- Texto --- */
+  --cor-texto: #f4f4f7;
+  --cor-texto-suave: #a8a8bd;
+  --cor-texto-fraco: #6e6e85;
+
+  /* --- Marca --- */
+  --cor-destaque: #ff5c39;
+  --cor-destaque-forte: #ff7a5c;
+  --cor-destaque-fraca: rgba(255, 92, 57, 0.14);
+
+  /* --- Estados --- */
+  --cor-sucesso: #3ecf8e;
+  --cor-alerta: #f5b544;
+  --cor-erro: #ff6b6b;
+
+  /* Véu sobre a arte do filme: é o que garante o contraste do texto
+   * independentemente da imagem de fundo (FR-027). */
+  --veu-painel: linear-gradient(
+    to right,
+    rgba(10, 10, 15, 0.96) 0%,
+    rgba(10, 10, 15, 0.82) 42%,
+    rgba(10, 10, 15, 0.35) 72%,
+    rgba(10, 10, 15, 0.15) 100%
+  );
+  --veu-painel-base: linear-gradient(to top, rgba(10, 10, 15, 0.95) 0%, transparent 55%);
+
+  /* --- Tipografia --- */
+  --fonte-base:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+
+  --texto-xs: 0.75rem;
+  --texto-sm: 0.875rem;
+  --texto-md: 1rem;
+  --texto-lg: 1.25rem;
+  --texto-xl: 1.75rem;
+  --texto-2xl: 2.5rem;
+  --texto-3xl: clamp(2rem, 5vw, 3.75rem);
+
+  --peso-normal: 400;
+  --peso-medio: 500;
+  --peso-forte: 700;
+
+  --altura-linha-apertada: 1.15;
+  --altura-linha-base: 1.6;
+
+  /* --- Espaçamento --- */
+  --esp-1: 0.25rem;
+  --esp-2: 0.5rem;
+  --esp-3: 0.75rem;
+  --esp-4: 1rem;
+  --esp-5: 1.5rem;
+  --esp-6: 2rem;
+  --esp-7: 3rem;
+  --esp-8: 4rem;
+
+  /* --- Formas --- */
+  --raio-sm: 6px;
+  --raio-md: 10px;
+  --raio-lg: 16px;
+  --raio-pilula: 999px;
+
+  /* --- Elevação --- */
+  --sombra-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --sombra-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
+
+  /* --- Movimento --- */
+  --transicao-rapida: 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transicao-painel: 520ms cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* --- Medidas do carrossel --- */
+  --altura-painel: clamp(30rem, 78vh, 44rem);
+  --largura-conteudo: 1200px;
+}
+
+/* Quem pediu menos movimento não recebe movimento (FR-011). O JS também
+ * desliga a rotação automática; aqui zeramos o que é puramente visual. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transicao-rapida: 1ms;
+    --transicao-painel: 1ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --- Reset enxuto --- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-family: var(--fonte-base);
+  font-size: var(--texto-md);
+  line-height: var(--altura-linha-base);
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* Foco visível em tudo que é operável — SC-005 exige percorrer o carrossel
+ * inteiro só com o teclado. */
+:focus-visible {
+  outline: 3px solid var(--cor-destaque-forte);
+  outline-offset: 3px;
+  border-radius: var(--raio-sm);
+}
