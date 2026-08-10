@@ -34,14 +34,14 @@ spec: US1 (P1) → US3 (P1) → US2 (P2).
 
 **Purpose**: Esqueleto do repositório e ambiente reproduzível nas portas fixadas
 
-- [ ] T001 Criar a estrutura de diretórios `backend/` e `frontend/` conforme a seção Project Structure de `specs/001-movie-highlights-carousel/plan.md`
-- [ ] T002 [P] Inicializar o projeto Python em `backend/pyproject.toml` com Django 5.x, djangorestframework, psycopg[binary], django-environ, httpx, django-cors-headers, pytest, pytest-django
-- [ ] T003 [P] Inicializar o projeto Next.js 15 (App Router, TypeScript) em `frontend/package.json`, com o script `dev` fixando a porta 5000 (`next dev -p 5000`)
-- [ ] T004 Criar `docker-compose.yml` na raiz com os serviços `db` (postgres:16, porta host **5438** mapeada para 5432), `backend` (porta 8000) e `frontend` (porta **5000**)
-- [ ] T005 Criar `.env.example` na raiz com `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT=5438`, `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `TMDB_API_KEY`, `NEXT_PUBLIC_SITE_PORT=5000`, `API_BASE_URL` — todos sem valor real
-- [ ] T006 Criar `.gitignore` na raiz cobrindo `.env`, `__pycache__/`, `node_modules/`, `.next/`, `*.sqlite3` e artefatos de teste
-- [ ] T007 [P] Configurar lint e formatação do back-end (`ruff`) em `backend/pyproject.toml`
-- [ ] T008 [P] Configurar lint e formatação do front-end (ESLint + Prettier) em `frontend/eslint.config.mjs`
+- [X] T001 Criar a estrutura de diretórios `backend/` e `frontend/` conforme a seção Project Structure de `specs/001-movie-highlights-carousel/plan.md`
+- [X] T002 [P] Inicializar o projeto Python em `backend/pyproject.toml` com Django 5.x, djangorestframework, psycopg[binary], django-environ, httpx, django-cors-headers, pytest, pytest-django
+- [X] T003 [P] Inicializar o projeto Next.js 15 (App Router, TypeScript) em `frontend/package.json`, com o script `dev` fixando a porta 5000 (`next dev -p 5000`)
+- [X] T004 Criar `docker-compose.yml` na raiz com os serviços `db` (postgres:16, porta host **5438** mapeada para 5432), `backend` (porta 8000) e `frontend` (porta **5000**)
+- [X] T005 Criar `.env.example` na raiz com `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT=5438`, `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `TMDB_API_KEY`, `NEXT_PUBLIC_SITE_PORT=5000`, `API_BASE_URL` — todos sem valor real
+- [X] T006 Criar `.gitignore` na raiz cobrindo `.env`, `__pycache__/`, `node_modules/`, `.next/`, `*.sqlite3` e artefatos de teste
+- [X] T007 [P] Configurar lint e formatação do back-end (`ruff`) em `backend/pyproject.toml`
+- [X] T008 [P] Configurar lint e formatação do front-end (ESLint + Prettier) em `frontend/eslint.config.mjs`
 
 ---
 
