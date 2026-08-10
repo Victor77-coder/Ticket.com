@@ -1,0 +1,182 @@
+/* Todos os valores vêm de tokens.css — Princípio V. */
+
+.pagina {
+  max-width: var(--largura-conteudo);
+  margin: 0 auto;
+  padding: var(--esp-6) var(--esp-5) var(--esp-8);
+}
+
+.voltar {
+  display: inline-block;
+  margin-bottom: var(--esp-6);
+  color: var(--cor-texto-suave);
+  text-decoration: none;
+  font-size: var(--texto-sm);
+}
+
+.voltar:hover {
+  color: var(--cor-texto);
+}
+
+.filme {
+  display: grid;
+  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  gap: var(--esp-7);
+  align-items: start;
+}
+
+.cartaz {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-lg);
+}
+
+.cartazImagem {
+  width: 100%;
+  height: auto;
+}
+
+.cartazFallback {
+  aspect-ratio: 2 / 3;
+  background: linear-gradient(145deg, var(--cor-superficie-elevada), var(--cor-fundo));
+}
+
+.informacoes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--texto-2xl);
+  font-weight: var(--peso-forte);
+  line-height: var(--altura-linha-apertada);
+  letter-spacing: -0.02em;
+}
+
+.metadados {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.classificacao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  padding: var(--esp-1) var(--esp-2);
+  border: 2px solid var(--cor-borda-forte);
+  border-radius: var(--raio-sm);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-forte);
+  color: var(--cor-texto);
+}
+
+.sinopse {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--cor-texto-suave);
+}
+
+.subtitulo {
+  margin: var(--esp-4) 0 var(--esp-3);
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-forte);
+}
+
+.sessoes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sessao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  padding: var(--esp-4);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
+}
+
+.sessaoHorario {
+  display: block;
+  font-weight: var(--peso-medio);
+  text-transform: capitalize;
+}
+
+.sessaoSala {
+  display: block;
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-fraco);
+}
+
+.sessaoDireita {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-4);
+}
+
+.sessaoPreco {
+  font-weight: var(--peso-medio);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Disponível e esgotada se distinguem por texto, não apenas por cor. */
+.sessaoStatus {
+  font-size: var(--texto-sm);
+  color: var(--cor-sucesso);
+}
+
+.sessaoEsgotada {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-fraco);
+}
+
+.vazio {
+  margin: 0;
+  padding: var(--esp-5);
+  border: 1px dashed var(--cor-borda-forte);
+  border-radius: var(--raio-md);
+  color: var(--cor-texto-suave);
+}
+
+.erro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  max-width: 52ch;
+}
+
+.erro h1 {
+  margin: 0;
+  font-size: var(--texto-xl);
+}
+
+.erro p {
+  margin: 0;
+  color: var(--cor-texto-suave);
+}
+
+@media (max-width: 760px) {
+  .filme {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--esp-5);
+  }
+
+  .cartaz {
+    max-width: 14rem;
+  }
+}
