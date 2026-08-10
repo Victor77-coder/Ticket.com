@@ -26,7 +26,7 @@ spec: US1 (P1) → US3 (P1) → US2 (P2).
 
 - **Back-end**: `backend/` — Django + DRF
 - **Front-end**: `frontend/` — Next.js App Router
-- Portas: banco **5438**, interface web **5000**, API **8000**
+- Portas: banco **5438**, interface web **5003**, API **8000**
 
 ---
 
@@ -36,9 +36,9 @@ spec: US1 (P1) → US3 (P1) → US2 (P2).
 
 - [X] T001 Criar a estrutura de diretórios `backend/` e `frontend/` conforme a seção Project Structure de `specs/001-movie-highlights-carousel/plan.md`
 - [X] T002 [P] Inicializar o projeto Python em `backend/pyproject.toml` com Django 5.x, djangorestframework, psycopg[binary], django-environ, httpx, django-cors-headers, pytest, pytest-django
-- [X] T003 [P] Inicializar o projeto Next.js 15 (App Router, TypeScript) em `frontend/package.json`, com o script `dev` fixando a porta 5000 (`next dev -p 5000`)
-- [X] T004 Criar `docker-compose.yml` na raiz com os serviços `db` (postgres:16, porta host **5438** mapeada para 5432), `backend` (porta 8000) e `frontend` (porta **5000**)
-- [X] T005 Criar `.env.example` na raiz com `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT=5438`, `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `TMDB_API_KEY`, `NEXT_PUBLIC_SITE_PORT=5000`, `API_BASE_URL` — todos sem valor real
+- [X] T003 [P] Inicializar o projeto Next.js 15 (App Router, TypeScript) em `frontend/package.json`, com o script `dev` fixando a porta 5003 (`next dev -p 5003`)
+- [X] T004 Criar `docker-compose.yml` na raiz com os serviços `db` (postgres:16, porta host **5438** mapeada para 5432), `backend` (porta 8000) e `frontend` (porta **5003**)
+- [X] T005 Criar `.env.example` na raiz com `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT=5438`, `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `TMDB_API_KEY`, `NEXT_PUBLIC_SITE_PORT=5003`, `API_BASE_URL` — todos sem valor real
 - [X] T006 Criar `.gitignore` na raiz cobrindo `.env`, `__pycache__/`, `node_modules/`, `.next/`, `*.sqlite3` e artefatos de teste
 - [X] T007 [P] Configurar lint e formatação do back-end (`ruff`) em `backend/pyproject.toml`
 - [X] T008 [P] Configurar lint e formatação do front-end (ESLint + Prettier) em `frontend/eslint.config.mjs`
@@ -54,7 +54,7 @@ spec: US1 (P1) → US3 (P1) → US2 (P2).
 ### Projeto Django e banco
 
 - [X] T009 Criar o projeto Django em `backend/config/` com `settings/base.py` e `settings/dev.py`, lendo variáveis via django-environ
-- [X] T010 Configurar o PostgreSQL em `backend/config/settings/base.py` apontando para a porta **5438**, e `CORS_ALLOWED_ORIGINS` incluindo `http://localhost:5000`
+- [X] T010 Configurar o PostgreSQL em `backend/config/settings/base.py` apontando para a porta **5438**, e `CORS_ALLOWED_ORIGINS` incluindo `http://localhost:5003`
 - [X] T011 Configurar DRF em `backend/config/settings/base.py` com `DEFAULT_AUTHENTICATION_CLASSES` vazio por padrão e permissão padrão `AllowAny` apenas para as rotas públicas declaradas
 - [X] T012 Criar os apps `catalog` e `screening` em `backend/apps/` e registrá-los em `INSTALLED_APPS`
 
@@ -98,7 +98,7 @@ spec: US1 (P1) → US3 (P1) → US2 (P2).
 
 **Goal**: A home exibe um carrossel navegável com os 5 filmes em destaque e todos os seus estados
 
-**Independent Test**: Abrir `http://localhost:5000` sem autenticação e confirmar que os 5 filmes
+**Independent Test**: Abrir `http://localhost:5003` sem autenticação e confirmar que os 5 filmes
 aparecem com arte, título, classificação, duração, gênero e sinopse; que avançar, retroceder,
 saltar por indicador e o ciclo funcionam; e que a rotação automática pausa ao passar o ponteiro
 
@@ -183,7 +183,7 @@ do painel; fechar e confirmar o retorno à arte; trocar de painel e confirmar qu
 
 **Purpose**: Fechar as obrigações da constitution e validar o fluxo inteiro
 
-- [ ] T063 Criar o `README.md` na raiz com passo a passo de setup, as portas 5438/5000/8000, as credenciais do seed, a configuração do TMDb e uma seção honesta de limitações conhecidas (Princípio VI)
+- [ ] T063 Criar o `README.md` na raiz com passo a passo de setup, as portas 5438/5003/8000, as credenciais do seed, a configuração do TMDb e uma seção honesta de limitações conhecidas (Princípio VI)
 - [ ] T064 [P] Criar a seção de uso de IA no `README.md` declarando ferramentas, em que partes do projeto foram usadas e o que foi feito sem IA (Princípio VI)
 - [ ] T065 [P] Escrever o teste ponta a ponta em `frontend/tests/e2e/highlights.spec.ts` cobrindo home → abrir trailer → fechar → "Ver ingressos" → sessões listadas (Princípio I)
 - [ ] T066 [P] Escrever o teste de resiliência em `backend/tests/test_highlights_api.py` provando que o endpoint responde normalmente sem `TMDB_API_KEY` configurada (Princípio VII, SC-006)

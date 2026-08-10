@@ -10,7 +10,7 @@ Entregar o carrossel de 5 filmes em destaque da home, com trailer reproduzido de
 painel e botão que conduz à página do filme. Como esta é a primeira feature do repositório, o
 plano também levanta a fundação mínima que ela exige: projeto Django + PostgreSQL na porta 5438,
 importador do catálogo TMDb, modelos de Filme/Sessão, um endpoint público de leitura, e o app
-Next.js servido na porta 5000.
+Next.js servido na porta 5003.
 
 A abordagem central é **desacoplar o TMDb do caminho de leitura**: um comando de sincronização
 traz filmes, gêneros, classificação indicativa e a chave do trailer para o PostgreSQL; a home lê
@@ -34,7 +34,7 @@ carrossel
 **Testing**: `pytest` + `pytest-django` (back-end) · Vitest + Testing Library (componentes) ·
 Playwright para o percurso ponta a ponta do carrossel
 
-**Target Platform**: Aplicação web. Front-end em `http://localhost:5000`, API Django em
+**Target Platform**: Aplicação web. Front-end em `http://localhost:5003`, API Django em
 `http://localhost:8000`, ambos em Docker Compose junto do banco.
 
 **Project Type**: Web application (front-end + back-end separados)
@@ -42,7 +42,7 @@ Playwright para o percurso ponta a ponta do carrossel
 **Performance Goals**: Primeiro painel legível em ≤ 2 s (SC-002) · trailer iniciando em ≤ 3 s
 (SC-003) · endpoint de highlights respondendo em ≤ 150 ms com dados locais
 
-**Constraints**: Porta do banco fixada em **5438** e porta da interface web fixada em **5000**
+**Constraints**: Porta do banco fixada em **5438** e porta da interface web fixada em **5003**
 (exigência do usuário) · nenhuma chave TMDb pode chegar ao navegador · carrossel funcional sem
 o TMDb no ar · layout utilizável de 360 px a 1920 px · sem rolagem horizontal indesejada
 
@@ -92,7 +92,7 @@ specs/001-movie-highlights-carousel/
 backend/
 ├── config/
 │   ├── settings/
-│   │   ├── base.py           # DB em 5438, CORS para :5000, TMDB_API_KEY do ambiente
+│   │   ├── base.py           # DB em 5438, CORS para :5003, TMDB_API_KEY do ambiente
 │   │   └── dev.py
 │   ├── urls.py
 │   └── asgi.py
@@ -139,7 +139,7 @@ frontend/
 │   └── e2e/highlights.spec.ts    # percurso home → trailer → ver ingressos
 └── next.config.ts                # remotePatterns para image.tmdb.org
 
-docker-compose.yml                # db:5438 · backend:8000 · frontend:5000
+docker-compose.yml                # db:5438 · backend:8000 · frontend:5003
 .env.example                      # sem segredo real
 README.md                         # setup, credenciais de seed, uso de IA, limitações
 ```

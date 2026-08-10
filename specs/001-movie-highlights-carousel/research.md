@@ -183,16 +183,16 @@ recarregamentos durante a avaliação.
 | Serviço | Porta no host | Observação |
 |---|---|---|
 | PostgreSQL | **5438** | mapeado de 5432 no contêiner; evita colidir com um Postgres local em 5432 |
-| Interface web (Next.js) | **5000** | `next dev -p 5000` — é o endereço que o avaliador abre |
+| Interface web (Next.js) | **5003** | `next dev -p 5003` — é o endereço que o avaliador abre |
 | API (Django) | 8000 | não foi especificada pelo usuário; padrão do Django mantido |
 
-**Rationale**: 5438 e 5000 foram determinadas pelo usuário. A porta do Django não foi
+**Rationale**: 5438 e 5003 foram determinadas pelo usuário. A porta do Django não foi
 mencionada; manter 8000 evita inventar convenção. `CORS_ALLOWED_ORIGINS` inclui
-`http://localhost:5000`, embora o fetch principal seja server-side (R5) e não passe por CORS —
+`http://localhost:5003`, embora o fetch principal seja server-side (R5) e não passe por CORS —
 a liberação existe para chamadas de cliente em features futuras.
 
-**Nota sobre uma inferência**: "a porta do localhost deve ser 5000" foi lida como a interface
-web. Se a intenção era o Django em 5000, a troca é de duas linhas (`docker-compose.yml` e
+**Nota sobre uma inferência**: "a porta do localhost deve ser 5003" foi lida como a interface
+web. Se a intenção era o Django em 5003, a troca é de duas linhas (`docker-compose.yml` e
 `.env.example`) e não afeta nenhuma decisão deste documento.
 
 ---

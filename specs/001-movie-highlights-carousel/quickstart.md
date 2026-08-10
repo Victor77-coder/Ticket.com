@@ -11,7 +11,7 @@ do projeto, exigido pelo Princípio VI da constitution.
 
 | Serviço | Endereço | Origem |
 |---|---|---|
-| Interface web (Next.js) | `http://localhost:5000` | fixada pelo usuário |
+| Interface web (Next.js) | `http://localhost:5003` | fixada pelo usuário |
 | API (Django) | `http://localhost:8000` | padrão do Django |
 | PostgreSQL | `localhost:5438` | fixada pelo usuário |
 
@@ -46,7 +46,7 @@ DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
 
 TMDB_API_KEY=<sua chave do TMDb>
 
-NEXT_PUBLIC_SITE_PORT=5000
+NEXT_PUBLIC_SITE_PORT=5003
 API_BASE_URL=http://backend:8000
 ```
 
@@ -61,7 +61,7 @@ nomes, com valores vazios.
 docker compose up -d --build
 ```
 
-Sobe três contêineres: `db` (5438), `backend` (8000) e `frontend` (5000).
+Sobe três contêineres: `db` (5438), `backend` (8000) e `frontend` (5003).
 
 ---
 
@@ -105,7 +105,7 @@ As credenciais são impressas ao final do comando e devem ser copiadas para o `R
 
 ## 6. Verificar
 
-Abrir <http://localhost:5000>. O esperado:
+Abrir <http://localhost:5003>. O esperado:
 
 1. O carrossel exibe o primeiro filme com arte, título, classificação, duração, gênero e sinopse
    curta.
@@ -144,7 +144,7 @@ Vale a pena conferir, porque é um requisito da constitution:
 docker compose exec backend env TMDB_API_KEY= python manage.py check
 ```
 
-Recarregar <http://localhost:5000>: o carrossel continua completo, com todos os dados e imagens.
+Recarregar <http://localhost:5003>: o carrossel continua completo, com todos os dados e imagens.
 Só a reprodução do trailer depende de rede externa no navegador.
 
 ---

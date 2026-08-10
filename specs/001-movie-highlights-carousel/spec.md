@@ -8,6 +8,11 @@
 
 **Input**: User description: "crie o carrossel com os highlights de cada filme disponivel na api externa ( são 5 ) com o botão de "ver ingressos" e "trailer" ( ao apertar neste botão, o trailer deve abrir dentro do proprio highlight ), a porta do banco de dados a ser utilizada deve ser 5438 e a porta do localhost deve ser a 5000."
 
+> **Emenda de 2026-08-10**: a porta da interface web passou de 5000 para **5003**. O macOS
+> mantém o AirPlay Receiver escutando na 5000 por padrão, e o serviço `ControlCenter` intercepta
+> as requisições antes do Docker, respondendo 403. Decisão do usuário após o conflito ser
+> diagnosticado.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Descobrir os filmes em cartaz na entrada do site (Priority: P1)
@@ -266,6 +271,6 @@ projeto, não apenas para esta feature. Devem ser refletidas na configuração, 
 e nas instruções do README.
 
 - **Banco de dados**: porta **5438**.
-- **Aplicação acessada pelo navegador (`localhost`)**: porta **5000**. Assume-se que se refere à
+- **Aplicação acessada pelo navegador (`localhost`)**: porta **5003**. Assume-se que se refere à
   interface web que o visitante e o avaliador abrem no navegador. O serviço de back-end
   permanece em sua porta própria, a ser fixada no plano.

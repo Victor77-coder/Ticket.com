@@ -58,9 +58,12 @@ spec. Ambas podem ser revertidas em `/speckit-clarify` se a leitura estiver erra
    Motivo: o projeto tem dois serviços; "localhost" em uso corrente designa o endereço que se
    visita.
 
+   *Emenda de 2026-08-10*: a porta passou de 5000 para **5003** — o macOS ocupa a 5000 com o
+   AirPlay Receiver, que responde 403 antes de o Docker ser alcançado.
+
 ### Requisito registrado fora dos Functional Requirements
 
-As portas **5438** (banco) e **5000** (interface web) são configuração de ambiente, não
+As portas **5438** (banco) e **5003** (interface web) são configuração de ambiente, não
 comportamento de produto — por isso ficaram na subseção **Restrições de Ambiente** de
 Assumptions em vez dos FRs, preservando o critério "sem detalhes de implementação". São
 constraints de projeto inteiro, não desta feature: devem entrar em `.env.example` e no README.
