@@ -114,7 +114,7 @@ REST_FRAMEWORK = {
 # existe para chamadas feitas do navegador em features futuras.
 CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS",
-    default=["http://localhost:5000", "http://127.0.0.1:5000"],
+    default=["http://localhost:5003", "http://127.0.0.1:5003"],
 )
 
 # --- TMDb ---
@@ -126,4 +126,4 @@ TMDB_LANGUAGE = "pt-BR"
 TMDB_REGION = "BR"
 TMDB_TIMEOUT_SECONDS = 10.0
 
-SITE_URL = env("SITE_URL", default="http://localhost:5000")
+SITE_URL = env("SITE_URL", default="http://localhost:5003")

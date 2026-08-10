@@ -6,7 +6,10 @@ import { fetchMovie } from "@/lib/api";
 import type { Screening } from "@/lib/types";
 import styles from "./filme.module.css";
 
-export const dynamic = "force-dynamic";
+// Sem "force-dynamic" de propósito: ele faz o Next começar a transmitir a
+// resposta antes de a página decidir, e aí notFound() não consegue mais
+// trocar o status para 404. O cache: "no-store" do fetch já garante
+// renderização dinâmica.
 
 function formatarHorario(iso: string) {
   return new Intl.DateTimeFormat("pt-BR", {

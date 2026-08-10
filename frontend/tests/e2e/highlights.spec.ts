@@ -25,7 +25,7 @@ test("descobre um filme, assiste ao trailer e chega às sessões", async ({ page
 
     const video = page.locator("iframe[title^='Trailer de']");
     await expect(video).toBeVisible();
-    expect(page.url()).toContain("localhost:5000");
+    expect(page.url()).toContain("localhost:5003");
 
     await page.getByRole("button", { name: "Fechar trailer" }).click();
     await expect(video).toHaveCount(0);
