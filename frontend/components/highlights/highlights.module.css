@@ -1,0 +1,427 @@
+/* Todos os valores vêm de tokens.css — Princípio V. */
+
+.regiao {
+  position: relative;
+  width: 100%;
+  height: var(--altura-painel);
+  overflow: hidden;
+  background: var(--cor-superficie);
+  isolation: isolate;
+}
+
+/* A trilha desloca por translateX; o índice modular fecha o ciclo (R1). */
+.trilha {
+  display: flex;
+  height: 100%;
+  will-change: transform;
+  transition: transform var(--transicao-painel);
+}
+
+.trilhaSemAnimacao {
+  transition: none;
+}
+
+.painel {
+  position: relative;
+  flex: 0 0 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.arte {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 22%;
+}
+
+/* Sem arte ou com falha de carregamento: fundo com textura própria em vez de
+ * retângulo cinza (FR-034 / fallback do painel). */
+.arteFallback {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 78% 28%, rgba(255, 92, 57, 0.22), transparent 58%),
+    linear-gradient(145deg, var(--cor-superficie-elevada), var(--cor-fundo));
+}
+
+.veu {
+  position: absolute;
+  inset: 0;
+  background: var(--veu-painel);
+}
+
+.veuBase {
+  position: absolute;
+  inset: 0;
+  background: var(--veu-painel-base);
+}
+
+.conteudo {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--esp-4);
+  height: 100%;
+  max-width: var(--largura-conteudo);
+  margin: 0 auto;
+  padding: var(--esp-7) var(--esp-5) calc(var(--esp-8) + var(--esp-5));
+}
+
+.metadados {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2) var(--esp-3);
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.classificacao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  padding: var(--esp-1) var(--esp-2);
+  border: 2px solid var(--cor-borda-forte);
+  border-radius: var(--raio-sm);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-forte);
+  color: var(--cor-texto);
+}
+
+.separador {
+  color: var(--cor-texto-fraco);
+}
+
+.titulo {
+  margin: 0;
+  max-width: 18ch;
+  font-size: var(--texto-3xl);
+  font-weight: var(--peso-forte);
+  line-height: var(--altura-linha-apertada);
+  letter-spacing: -0.02em;
+}
+
+.sinopse {
+  margin: 0;
+  max-width: 46ch;
+  font-size: var(--texto-md);
+  color: var(--cor-texto-suave);
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-3);
+  margin-top: var(--esp-2);
+}
+
+.botaoPrimario,
+.botaoSecundario,
+.botaoEsgotado {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-3) var(--esp-5);
+  border-radius: var(--raio-pilula);
+  font-size: var(--texto-md);
+  font-weight: var(--peso-medio);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--transicao-rapida),
+    border-color var(--transicao-rapida),
+    transform var(--transicao-rapida);
+}
+
+.botaoPrimario {
+  background: var(--cor-destaque);
+  border: 2px solid var(--cor-destaque);
+  color: #150703;
+}
+
+.botaoPrimario:hover {
+  background: var(--cor-destaque-forte);
+  border-color: var(--cor-destaque-forte);
+}
+
+.botaoSecundario {
+  background: transparent;
+  border: 2px solid var(--cor-borda-forte);
+  color: var(--cor-texto);
+}
+
+.botaoSecundario:hover {
+  border-color: var(--cor-texto-suave);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Esgotado se distingue por texto e por borda, não só por cor (Princípio V). */
+.botaoEsgotado {
+  background: transparent;
+  border: 2px dashed var(--cor-borda-forte);
+  color: var(--cor-texto-fraco);
+  cursor: not-allowed;
+}
+
+.botaoPrimario:active,
+.botaoSecundario:active {
+  transform: translateY(1px);
+}
+
+/* --- Controles --- */
+
+.controles {
+  position: absolute;
+  z-index: 2;
+  bottom: var(--esp-5);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--esp-4);
+  width: 100%;
+  max-width: var(--largura-conteudo);
+  padding: 0 var(--esp-5);
+}
+
+.seta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-pilula);
+  background: rgba(20, 20, 28, 0.72);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition:
+    background-color var(--transicao-rapida),
+    border-color var(--transicao-rapida);
+}
+
+.seta:hover {
+  background: var(--cor-superficie-elevada);
+  border-color: var(--cor-texto-suave);
+}
+
+.indicadores {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+/* Indicadores são botões reais, com área de toque adequada; a barra estreita
+ * é apenas a parte visível. */
+.indicador {
+  display: flex;
+  align-items: center;
+  padding: var(--esp-2) 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.indicador::before {
+  content: "";
+  display: block;
+  width: 1.75rem;
+  height: 3px;
+  border-radius: var(--raio-pilula);
+  background: var(--cor-borda-forte);
+  transition:
+    background-color var(--transicao-rapida),
+    width var(--transicao-rapida);
+}
+
+.indicador:hover::before {
+  background: var(--cor-texto-fraco);
+}
+
+.indicadorAtivo::before {
+  width: 3rem;
+  background: var(--cor-destaque);
+}
+
+.contador {
+  margin-left: auto;
+  font-size: var(--texto-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-texto-suave);
+}
+
+/* --- Estados --- */
+
+.esqueleto {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--esp-4);
+  width: 100%;
+  height: var(--altura-painel);
+  max-width: var(--largura-conteudo);
+  margin: 0 auto;
+  padding: var(--esp-7) var(--esp-5) calc(var(--esp-8) + var(--esp-5));
+  background: var(--cor-superficie);
+}
+
+.esqueletoBarra {
+  border-radius: var(--raio-sm);
+  background: linear-gradient(
+    90deg,
+    var(--cor-superficie-elevada) 25%,
+    var(--cor-borda) 50%,
+    var(--cor-superficie-elevada) 75%
+  );
+  background-size: 200% 100%;
+  animation: brilho 1.6s ease-in-out infinite;
+}
+
+@keyframes brilho {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.aviso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-3);
+  height: var(--altura-painel);
+  padding: var(--esp-6);
+  text-align: center;
+  background: var(--cor-superficie);
+}
+
+.avisoTitulo {
+  margin: 0;
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-forte);
+}
+
+.avisoTexto {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--cor-texto-suave);
+}
+
+/* --- Trailer --- */
+
+.trailer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: #000;
+}
+
+.trailerVideo {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.trailerFechar {
+  position: absolute;
+  top: var(--esp-4);
+  right: var(--esp-4);
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-4);
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-pilula);
+  background: rgba(10, 10, 15, 0.85);
+  color: var(--cor-texto);
+  cursor: pointer;
+}
+
+.trailerFechar:hover {
+  background: var(--cor-superficie-elevada);
+}
+
+.trailerErro {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-3);
+  padding: var(--esp-6);
+  text-align: center;
+  background: var(--cor-fundo);
+}
+
+/* --- Responsivo --- */
+
+@media (max-width: 900px) {
+  .conteudo {
+    padding: var(--esp-6) var(--esp-4) calc(var(--esp-8) + var(--esp-4));
+  }
+
+  .veu {
+    background: linear-gradient(
+      to top,
+      rgba(10, 10, 15, 0.97) 0%,
+      rgba(10, 10, 15, 0.75) 45%,
+      rgba(10, 10, 15, 0.3) 100%
+    );
+  }
+
+  .titulo {
+    max-width: 100%;
+  }
+
+  .controles {
+    padding: 0 var(--esp-4);
+    gap: var(--esp-3);
+  }
+}
+
+@media (max-width: 560px) {
+  .sinopse {
+    display: none;
+  }
+
+  .acoes {
+    width: 100%;
+  }
+
+  .botaoPrimario,
+  .botaoSecundario,
+  .botaoEsgotado {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  /* Em tela estreita as setas ocupam espaço que o polegar já resolve por
+   * deslize; ficam os indicadores, que também navegam. */
+  .seta {
+    display: none;
+  }
+}
+
+.apenasLeitorDeTela {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
