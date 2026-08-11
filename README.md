@@ -121,17 +121,16 @@ Todas com a senha **`desafio2026`**:
 | Cliente | `cliente2` |
 | Portaria | `portaria` |
 
-> Estas contas existem no banco desde a primeira feature, porque o modelo de usuário e os três
-> papéis precisavam ser fixados antes da primeira migração. **A tela de login ainda não existe** —
-> ver Limitações conhecidas.
+Entre pelo ícone de pessoa no canto direito do cabeçalho. Depois de entrar, o mesmo ponto passa a
+identificar você e oferece a saída.
 
 ---
 
 ## Testes
 
 ```bash
-docker compose exec backend pytest          # 63 testes
-docker compose exec frontend npm run test   # 56 testes
+docker compose exec backend pytest          # 92 testes
+docker compose exec frontend npm run test   # 80 testes
 ```
 
 Ponta a ponta (ver a ressalva em Limitações conhecidas):
@@ -156,6 +155,10 @@ com trailer reproduzido dentro do próprio painel e botão que leva à página d
 com a identidade **ticket.com**, que leva à home, e busca de filmes por título com sugestões
 ancoradas ao campo. A busca ignora acento e caixa, encontra por trecho do título e é operável só
 pelo teclado.
+
+**Autenticação** (`specs/003-user-authentication/`) — entrada, saída e sessão para os três papéis.
+O ponto de conta no cabeçalho convida a entrar quando não há sessão e identifica o usuário quando
+há. Depois de entrar, o visitante volta para a página de onde partiu.
 
 ---
 
@@ -186,15 +189,34 @@ primeiros não bastam: uma resposta já decodificada pode chegar depois de uma m
 passaria a mostrar o resultado de um termo já apagado. A guarda por sequência é o que fecha essa
 janela.
 
+**O cookie de sessão é emitido pelo Next, não repassado do Django.** Repassar o `Set-Cookie` de
+origem faria o `Domain` e o `Path` dependerem de como o Django enxerga o host, divergindo entre
+desenvolvimento e deploy. Emitindo aqui, o navegador enxerga uma origem só — e aí o `SameSite=Lax`
+vira defesa real contra requisição forjada, em vez de exigir propagar o par
+`csrftoken`/`X-CSRFToken` através do proxy, que é onde esse arranjo costuma quebrar em silêncio.
+A sessão continua sendo do Django: hash de senha, invalidação no logout e prazo de validade são
+dele.
+
+**As três recusas de entrada produzem a mesma frase.** Usuário inexistente, senha errada e conta
+inativa respondem "Usuário ou senha incorretos.". Não foi preciso unificar nada à mão: o
+`authenticate()` do Django devolve `None` nos três casos, e os caminhos convergem sozinhos. É mais
+seguro assim — a versão manual é exatamente onde esse requisito vaza depois, quando alguém
+acrescenta um `if not user` com texto diferente e a enumeração de contas volta.
+
 ---
 
 ## Limitações conhecidas
 
-**Não há autenticação.** O modelo de usuário e os três papéis existem no banco, mas não há tela de
-login, logout nem sessão. Por isso o ícone de conta **não** aparece no cabeçalho: o componente
-está escrito e testado (`frontend/components/header/AccountButton.tsx`), mas montá-lo hoje
-significaria entregar um link para uma rota que não existe. A decisão está registrada em
-`specs/002-site-header-navigation/plan.md`, em Complexity Tracking.
+**As áreas por papel não existem.** Os três papéis autenticam e o cabeçalho identifica cada um,
+mas organizador e portaria voltam para a mesma página de qualquer visitante — não há painel de
+organizador nem tela de validação. Eles chegam com as features que lhes dão conteúdo real; criar
+landings vazias agora contrariaria o Princípio V, que proíbe "em breve" na entrega.
+
+**Não há criação de conta nem recuperação de senha.** As quatro contas do seed são as únicas. O
+desafio não pede auto-cadastro e exclui recuperação de senha explicitamente.
+
+**O limite de tentativas vive em cache local.** Reiniciar o back-end zera os bloqueios. Aceitável
+no escopo de avaliação; num deploy real o cache seria compartilhado entre instâncias.
 
 **Não há seletor de localidade**, embora tenha sido pedido. O domínio não representa cidade nem
 cinema — uma sala existe sem lugar associado —, então o seletor não teria o que filtrar. Ele volta
