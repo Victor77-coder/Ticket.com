@@ -76,7 +76,7 @@
   height: var(--assento-tamanho);
   padding: 0;
   background: none;
-  border: 2px solid var(--cor-assento-livre);
+  border: var(--assento-borda) solid var(--cor-assento-livre);
   /* Cantos arredondados só embaixo: é a silhueta de uma poltrona vista de
    * cima, e é o que dá orientação ao mapa sem precisar de legenda. */
   border-radius: var(--raio-sm) var(--raio-sm) var(--raio-md) var(--raio-md);
@@ -161,7 +161,7 @@
   content: "";
   position: absolute;
   inset: 22%;
-  border: 2px solid var(--cor-texto-suave);
+  border: var(--assento-borda) solid var(--cor-texto-suave);
   border-radius: var(--raio-pilula);
   /* Círculo com um corte embaixo — silhueta reconhecível de assento
    * reservado, sem depender de glifo de acessibilidade que nem toda fonte
@@ -194,7 +194,7 @@
   width: var(--esp-4);
   height: var(--esp-4);
   flex-shrink: 0;
-  border: 2px solid var(--cor-assento-livre);
+  border: var(--assento-borda) solid var(--cor-assento-livre);
   border-radius: var(--raio-sm) var(--raio-sm) var(--raio-md) var(--raio-md);
 }
 
@@ -211,7 +211,7 @@
   padding: var(--esp-4) var(--esp-5);
   background: var(--cor-fundo-flutuante);
   border-top: 1px solid var(--cor-borda);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--desfoque-resumo-assentos));
 }
 
 .resumoLugares {

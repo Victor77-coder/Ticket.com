@@ -203,12 +203,15 @@
   --assento-tamanho: clamp(1.375rem, 3.4vw, 2rem);
   --assento-espaco: var(--esp-1);
   --assento-corredor: var(--esp-4);
+  --assento-borda: 0.125rem; /* 2px — o contorno que lê como poltrona */
   --cor-assento-livre: var(--cor-borda-forte);
   --cor-assento-tomado: var(--cor-borda);
   --cor-assento-marca: var(--cor-texto-fraco);
   /* A tela da sala: um arco claro no topo do mapa, que é o que faz o
    * desenho ler como sala em vez de grade de caixas. */
   --altura-tela-sala: var(--esp-2);
+  /* Véu do resumo sticky — o mapa continua legível por baixo. */
+  --desfoque-resumo-assentos: 0.75rem;
 }
 
 /* Quem pediu menos movimento não recebe movimento (FR-011). O JS também
