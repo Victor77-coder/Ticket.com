@@ -5,7 +5,7 @@ indicativa brasileira (R3) e do trailer a exibir (R4). É onde os testes de
 `tests/test_tmdb_sync.py` batem.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone as dt_timezone
 
 from django.utils import timezone
 
@@ -171,4 +171,4 @@ def _parse_datetime(value):
         parsed = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ")
     except (ValueError, TypeError):
         return None
-    return timezone.make_aware(parsed, timezone.utc)
+    return timezone.make_aware(parsed, dt_timezone.utc)
