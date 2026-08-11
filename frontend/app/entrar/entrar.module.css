@@ -1,0 +1,136 @@
+/* Todos os valores vêm de tokens.css — Princípio V. */
+
+.pagina {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 70vh;
+  padding: var(--esp-8) var(--esp-5);
+}
+
+.cartao {
+  width: 100%;
+  max-width: 26rem;
+  padding: var(--esp-6);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-md);
+}
+
+.titulo {
+  margin: 0 0 var(--esp-2);
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-forte);
+  letter-spacing: -0.01em;
+}
+
+.subtitulo {
+  margin: 0 0 var(--esp-6);
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+}
+
+.campos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.rotulo {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  color: var(--cor-texto-suave);
+}
+
+.entrada {
+  padding: var(--esp-3) var(--esp-4);
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-md);
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-size: var(--texto-md);
+  transition: border-color var(--transicao-rapida);
+}
+
+.entrada:hover {
+  border-color: var(--cor-texto-fraco);
+}
+
+.entrada:focus {
+  outline: none;
+  border-color: var(--cor-destaque);
+}
+
+/* Campo com erro se distingue por borda E por mensagem, nunca só por cor. */
+.entradaComErro {
+  border-color: var(--cor-erro);
+}
+
+.erroCampo {
+  font-size: var(--texto-sm);
+  color: var(--cor-erro);
+}
+
+.erroGeral {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-5);
+  padding: var(--esp-3) var(--esp-4);
+  border: 1px solid var(--cor-erro);
+  border-left-width: 4px;
+  border-radius: var(--raio-md);
+  background: rgba(255, 107, 107, 0.08);
+  color: var(--cor-texto);
+  font-size: var(--texto-sm);
+}
+
+.enviar {
+  margin-top: var(--esp-2);
+  padding: var(--esp-3) var(--esp-5);
+  border: 2px solid var(--cor-destaque);
+  border-radius: var(--raio-pilula);
+  background: var(--cor-destaque);
+  color: #150703;
+  font-size: var(--texto-md);
+  font-weight: var(--peso-medio);
+  cursor: pointer;
+  transition: background-color var(--transicao-rapida);
+}
+
+.enviar:hover:not(:disabled) {
+  background: var(--cor-destaque-forte);
+  border-color: var(--cor-destaque-forte);
+}
+
+.enviar:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.ajuda {
+  margin: var(--esp-6) 0 0;
+  padding-top: var(--esp-4);
+  border-top: 1px solid var(--cor-borda);
+  color: var(--cor-texto-fraco);
+  font-size: var(--texto-sm);
+}
+
+.voltar {
+  display: inline-block;
+  margin-bottom: var(--esp-5);
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+  text-decoration: none;
+}
+
+.voltar:hover {
+  color: var(--cor-texto);
+}
