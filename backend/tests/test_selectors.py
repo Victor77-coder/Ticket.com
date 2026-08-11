@@ -77,12 +77,22 @@ def test_sessao_passada_nao_puxa_filme_para_o_topo(make_movie, make_screening):
 
 
 @pytest.mark.django_db
-def test_limita_em_cinco_destaques(make_movie, make_screening):
+def test_limita_em_tres_destaques(make_movie, make_screening):
+    """O limite caiu de 5 para 3 na feature 005."""
     for i in range(8):
         movie = make_movie(f"Filme {i}")
         make_screening(movie, hours_from_now=i + 1)
 
-    assert len(get_highlighted_movies()) == 5
+    assert len(get_highlighted_movies()) == 3
+
+
+@pytest.mark.django_db
+def test_limite_e_teto_nao_piso(make_movie, make_screening):
+    """Com menos filmes do que o limite, devolve os que existem."""
+    for i in range(2):
+        make_screening(make_movie(f"Filme {i}"), hours_from_now=i + 1)
+
+    assert len(get_highlighted_movies()) == 2
 
 
 @pytest.mark.django_db

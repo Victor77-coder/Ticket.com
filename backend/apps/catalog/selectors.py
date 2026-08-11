@@ -9,7 +9,10 @@ from django.utils import timezone
 from apps.catalog.models import Movie, Trailer
 from apps.screening.models import Screening
 
-HIGHLIGHTS_LIMIT = 5
+# Três desde a feature 005; eram cinco na entrega original da 001. O limite é
+# só do carrossel — a trilha Em cartaz usa a mesma regra de elegibilidade sem
+# teto, então não é afetada.
+HIGHLIGHTS_LIMIT = 3
 
 # Limite da trilha Em alta, definido pelo usuário no pedido da feature (FR-003).
 TRENDING_LIMIT = 9

@@ -129,9 +129,21 @@ def test_ordena_e_limita_como_o_contrato_promete(client, make_movie, make_screen
 
     payload = client.get(reverse("catalog:highlights")).json()
 
-    assert payload["count"] == 5
+    # Três desde a feature 005.
+    assert payload["count"] == 3
     horarios = [item["next_screening_at"] for item in payload["results"]]
     assert horarios == sorted(horarios)
+
+
+@pytest.mark.django_db
+def test_carrossel_devolve_menos_que_o_limite_quando_ha_menos(
+    client, make_movie, make_screening
+):
+    """O limite é teto, não piso (cenário 4 da US1)."""
+    for i in range(2):
+        make_screening(make_movie(f"Filme {i}"), hours_from_now=i + 1)
+
+    assert client.get(reverse("catalog:highlights")).json()["count"] == 2
 
 
 @pytest.mark.django_db
