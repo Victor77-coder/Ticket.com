@@ -4,6 +4,14 @@
 
 **Input**: Feature specification from `/specs/004-home-movie-rows/spec.md`
 
+> **Emenda de 2026-08-11 — Em alta exige sessão planejada.** A feature já estava implementada
+> (55/55) quando a regra mudou: um filme classificado como em alta pelo catálogo externo só entra
+> na trilha se tiver ao menos uma sessão publicada e futura na plataforma.
+>
+> O impacto no plano é pequeno e localizado — **um seletor, sem migração e sem mudança de
+> contrato**. As decisões R1 a R10 seguem válidas; R3 e R5 ganham complemento. Ver R11 em
+> [research.md](./research.md) e a seção correspondente em [data-model.md](./data-model.md).
+
 ## Summary
 
 Preencher a home com três trilhas horizontais de cartazes — **Em cartaz**, **Em alta** e **Em
@@ -49,7 +57,7 @@ Avaliado contra a Constitution v1.0.0.
 
 | Princípio | Status | Como este plano satisfaz |
 |---|---|---|
-| **I. Fluxo Completo Antes de Profundidade** | ✅ PASS | Trilha vazia é omitida por inteiro (FR-006), não vira título sem conteúdo. Filme sem sessão tem página completa com data de estreia e explicação (FR-024 a FR-027) — nenhum card leva a beco sem saída. Carregando, vazio e erro entregues juntos. |
+| **I. Fluxo Completo Antes de Profundidade** | ✅ PASS | Trilha vazia é omitida por inteiro (FR-006), não vira título sem conteúdo. Filme sem sessão tem página completa com data de estreia e explicação (FR-024 a FR-027) — nenhum card leva a beco sem saída. Carregando, vazio e erro entregues juntos. **Reforçado pela emenda**: Em alta deixa de ser caminho até filme sem nada à venda (FR-003a). |
 | **II. Integridade da Reserva** | ➖ N/A | Feature de leitura. Nenhuma escrita de assento. |
 | **III. Ingresso Inforjável** | ➖ N/A | Nenhum ingresso emitido ou validado. |
 | **IV. Papéis e Autorização no Servidor** | ✅ PASS | Tudo público e somente leitura. O mesmo gate das features anteriores se aplica ao endpoint novo: nenhuma sessão em rascunho, custo, capacidade ou identificação de usuário na resposta. |
@@ -155,6 +163,9 @@ Reavaliado: **nenhuma violação nova**. Três pontos a vigiar na implementaçã
   já vale para highlights e busca.
 - A trilha Em cartaz precisa continuar honrando SC-003: todo filme listado tem sessão comprável.
   Se o seletor for relaxado por conveniência, a trilha vira promessa quebrada.
+- **O limite de 9 em Em alta precisa ser aplicado depois do filtro de sessão** (FR-003b). Cortar
+  antes produziria uma trilha com menos de 9 filmes mesmo havendo elegíveis suficientes — erro
+  silencioso, porque a trilha continuaria parecendo correta.
 - `overflow-x` na trilha exige `min-width: 0` no contêiner pai dentro de grid ou flex, senão o
   transbordo vaza para a página e quebra SC-005. É a armadilha clássica desse padrão.
 

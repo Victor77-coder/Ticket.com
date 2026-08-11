@@ -54,6 +54,44 @@ for r in json.load(sys.stdin)['rows']:
 
 ## 3. Verificações que valem a pena
 
+### Em alta só traz filme com sessão (FR-003a, SC-003a)
+
+```bash
+docker compose exec backend python manage.py shell -c "
+import json, urllib.request
+from apps.catalog.models import Movie
+from apps.screening.models import Screening
+from django.utils import timezone
+
+d = json.loads(urllib.request.urlopen('http://localhost:8000/api/v1/home/').read())
+alta = next((r for r in d['rows'] if r['key'] == 'em-alta'), {'movies': []})
+
+agora = timezone.now()
+sem_sessao = [
+    m['title'] for m in alta['movies']
+    if not Screening.objects.filter(
+        movie__slug=m['slug'], status='published', starts_at__gt=agora
+    ).exists()
+]
+print('filmes em Em alta sem sessão:', sem_sessao or 'nenhum — OK')
+"
+```
+
+**Esperado**: nenhum. Um filme em alta sem sessão publicada e futura não pode estar na trilha.
+
+Para ver o filtro agindo, conferir quantos ficaram de fora:
+
+```bash
+docker compose exec backend python manage.py shell -c "
+from apps.catalog.models import Movie
+from django.utils import timezone
+agora = timezone.now()
+alta = Movie.objects.filter(is_active=True, is_trending=True)
+com = alta.filter(screenings__status='published', screenings__starts_at__gt=agora).distinct()
+print(f'em alta: {alta.count()} | com sessão: {com.count()} | filtrados: {alta.count() - com.count()}')
+"
+```
+
 ### Nenhuma trilha vazia é exibida (FR-006, SC-008)
 
 ```bash
@@ -134,6 +172,15 @@ armadilha em R1 do `research.md`.
 
 **Em alta nunca esvazia** — a sincronização precisa zerar `is_trending` em todos os filmes antes
 de remarcar. Sem isso, quem entrou uma vez fica para sempre.
+
+**Em alta veio com menos de 9 filmes mesmo havendo mais em alta** — comportamento correto desde a
+emenda de 2026-08-11: a trilha só exibe filmes com sessão publicada e futura. Rodar a verificação
+acima mostra quantos foram filtrados. Para aumentar a trilha, é preciso mais filmes com sessão
+marcada, não mais filmes em alta.
+
+**Em alta e Em cartaz mostram quase os mesmos filmes** — esperado. Com o mesmo critério de
+sessão, Em alta é subconjunto de Em cartaz. A decisão e o número estão em Assumptions do
+`spec.md`.
 
 **O carrossel mostra filme estranho** — o `seed_demo` passou a preferir filmes em cartaz com arte
 e duração acima de 60 minutos. Se ainda aparecer um curta ou um show, o catálogo importado tem

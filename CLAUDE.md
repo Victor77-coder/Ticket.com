@@ -15,5 +15,9 @@ Features anteriores, já implementadas:
 - `specs/002-site-header-navigation/` — cabeçalho global e busca por título (44/44)
 - `specs/003-user-authentication/` — entrada, saída e sessão para os três papéis (52/52)
 
+A feature 004 está implementada (55/55), mas recebeu uma **emenda em 2026-08-11** que o código
+ainda não aplica: a trilha Em alta passou a exigir sessão planejada (FR-003a). Ver R11 no
+`research.md` e a seção de emenda no `checklists/requirements.md`.
+
 Project constitution (governa todas as features): `.specify/memory/constitution.md`
 <!-- SPECKIT END -->

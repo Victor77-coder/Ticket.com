@@ -29,6 +29,10 @@ tabela pequena; índice composto não traria ganho e o PostgreSQL combina os doi
 
 ---
 
+> **Emenda de 2026-08-11**: a consulta da trilha Em alta ganhou a exigência de sessão planejada.
+> **Nenhum campo novo, nenhuma migração** — a condição já existe no modelo, vinda de `Screening`.
+> Ver R11 em [research.md](./research.md).
+
 ## Regras de expiração (R3)
 
 Esta é a parte sutil do modelo — o que mantém as trilhas honestas ao longo do tempo.
@@ -77,11 +81,26 @@ garante que as duas superfícies façam a mesma promessa (R5, SC-003).
 
 ```
 filmes ativos com is_trending = True
+  E com ao menos uma sessão publicada e futura        ← emenda de 2026-08-11
 ordenados por release_date decrescente, desempate por título
-limitados a 9
+limitados a 9                                         ← DEPOIS do filtro
 ```
 
+Duas coisas importam aqui:
+
+**A condição de sessão é a mesma de Em cartaz**, não uma parecida. Usar o predicado idêntico é o
+que impede as duas trilhas de divergirem — um filme não pode ser comprável para uma e não para a
+outra (R11).
+
+**O limite de 9 é aplicado depois do filtro** (FR-003b). Cortar os 9 primeiros em alta e só então
+filtrar por sessão devolveria menos de 9 mesmo havendo elegíveis suficientes, e o erro seria
+silencioso: a trilha continuaria parecendo correta.
+
 O limite de 9 vem do pedido do usuário (FR-003).
+
+**Consequência estrutural**: com o mesmo critério de sessão, Em alta é **subconjunto** de Em
+cartaz. Nenhuma consulta precisa saber disso, mas quem lê a home vê as duas faixas com conteúdo
+sobreposto — registrado em Assumptions do spec.
 
 ### Em breve
 

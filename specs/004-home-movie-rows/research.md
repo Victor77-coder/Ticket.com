@@ -212,3 +212,48 @@ A trilha Em cartaz herda os mesmos filmes do seed, então o problema apareceria 
 
 **Rationale**: concentra no que R1 identificou como armadilha, no que R3 identificou como sutil, e
 no gate que a constitution obriga. Nada de teste por cobertura.
+
+---
+
+## R11. Em alta exige sessão planejada (emenda de 2026-08-11)
+
+**Decision**: `get_trending_movies` passa a compor dois predicados — `is_trending=True` **e** a
+mesma condição de sessão que `get_sellable_movies` usa: ao menos uma sessão `published` com
+`starts_at > agora`. O limite de 9 é aplicado **depois** da composição.
+
+**Rationale**:
+
+- FR-003a. Num site de ingressos, uma faixa chamada "Em alta" que leva a filme sem nada à venda é
+  atrito sem contrapartida — a mesma lógica que já sustentava a trilha Em cartaz.
+- Usar **exatamente** o mesmo predicado de Em cartaz, e não um parecido, é o que impede as duas
+  trilhas de divergirem com o tempo. Um filme não pode ser comprável para uma trilha e não para a
+  outra.
+- O limite depois do filtro (FR-003b) é o detalhe que se perde numa implementação apressada:
+  cortar os 9 primeiros em alta e depois filtrar por sessão devolveria menos de 9 mesmo havendo
+  elegíveis suficientes. O erro seria silencioso — a trilha continuaria parecendo certa.
+
+**Interpretação de "sessão planejada"**: publicada e futura. A alternativa — incluir rascunho —
+foi descartada porque a página do filme só lista sessões publicadas: um filme com apenas
+rascunhos entraria na trilha e levaria de volta ao "não possui sessões programadas" que a emenda
+existe para evitar. Verificado na base atual: nenhum filme tem sessão só em rascunho, então as
+duas leituras produziriam hoje o mesmo resultado.
+
+**Alternatives considered**:
+
+- **Ordenar Em alta pelos que têm sessão, sem excluir os demais** — preservaria o tamanho da
+  trilha e o caráter de descoberta, empurrando os sem sessão para o fim. Descartada pelo usuário:
+  não resolve o problema, só o adia para o segundo scroll.
+- **Exigir sessão publicada sem exigir futura** — incluiria filmes cujas sessões já passaram, que
+  é pior: o card promete compra e a página não tem nada.
+- **Marcar visualmente em vez de filtrar** — um selo "sem sessão" no card manteria a descoberta e
+  seria honesto, mas o usuário optou por filtrar.
+
+**Consequência assumida, medida antes de aplicar**: Em alta vira **subconjunto** de Em cartaz —
+todo filme de Em alta também aparece lá. Com o catálogo atual, a trilha cai de 9 para 3 filmes,
+os três já visíveis na faixa imediatamente acima. A trilha deixa de ser descoberta de catálogo e
+passa a ser "o que está bombando entre o que dá para comprar". Registrado em Assumptions do spec
+para que a decisão possa ser revista com o número na mão.
+
+**Sem impacto em**: modelo de dados (nenhum campo novo, nenhuma migração), contrato do endpoint
+(a forma da resposta não muda), front-end (a trilha continua chegando pronta), e as trilhas Em
+cartaz e Em breve.

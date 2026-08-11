@@ -65,6 +65,20 @@ explicativo de FR-007.
 `rows` vem sempre nesta ordem quando presente: **em-cartaz**, **em-alta**, **em-breve** (FR-001).
 A ordem é do servidor — o cliente não reordena.
 
+### Composição de cada trilha
+
+| `key` | Contém | Exige sessão? |
+|---|---|---|
+| `em-cartaz` | filmes com sessão publicada e futura | **sim** — é a definição da trilha |
+| `em-alta` | filmes em alta no catálogo externo **que tenham sessão publicada e futura** | **sim** — emenda de 2026-08-11 (FR-003a) |
+| `em-breve` | filmes com estreia futura no catálogo externo | **não** — o propósito é antecipar o que ainda não está à venda |
+
+**A forma da resposta não muda com a emenda.** Um filme em alta sem sessão simplesmente não vem
+em `em-alta` — o cliente não distingue "filtrado" de "não classificado", e não precisa.
+
+Consequência: `em-alta` é subconjunto de `em-cartaz`. O contrato não expressa isso e não deve —
+o cliente renderiza o que veio, trilha por trilha.
+
 ### Campos do cartão
 
 | Campo | Tipo | Nulo? | Notas |
