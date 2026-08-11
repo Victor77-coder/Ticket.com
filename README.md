@@ -104,6 +104,9 @@ O comando é idempotente.
 docker compose exec backend python manage.py seed_demo
 ```
 
+Coloca **12 filmes à venda** e informa quais ficaram no carrossel e quais entraram só na trilha —
+a vitrine é conferível sem abrir o navegador.
+
 ### 6. Abrir
 
 <http://localhost:5003>
@@ -129,7 +132,7 @@ identificar você e oferece a saída.
 ## Testes
 
 ```bash
-docker compose exec backend pytest          # 115 testes
+docker compose exec backend pytest          # 136 testes
 docker compose exec frontend npm run test   # 95 testes
 ```
 

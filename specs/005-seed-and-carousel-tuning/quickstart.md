@@ -140,6 +140,18 @@ determinístico. Deve ordenar por `-release_date, pk` e imprimir qual escolheu.
 catálogo tem longas com arte suficientes; com catálogo pequeno o seed cai para critérios mais
 frouxos, mas não inventa filmes.
 
-**Em alta continua quase idêntica a Em cartaz** — esperado enquanto poucos filmes em alta tiverem
-sessão. Com 12 à venda a sobreposição diminui, mas não desaparece: aquela trilha exige sessão
-desde a emenda da feature 004, e isso é por decisão registrada.
+**Em alta continua sendo subconjunto de Em cartaz** — esperado, e por decisão registrada: aquela
+trilha exige sessão planejada desde a emenda da feature 004.
+
+O que mudou com o seed maior, medido em 2026-08-11:
+
+| | Antes (5 à venda) | Depois (12 à venda) |
+|---|---|---|
+| Em cartaz | 5 | **12** |
+| Em alta | 3 | **8** |
+| Em breve | 7 | 7 |
+| Exclusivos de Em alta | 0 | 0 |
+
+A trilha Em alta **mais que dobrou** e deixou de ser visualmente redundante — o problema
+levantado ao fim da feature 004. Ela continua sem filmes exclusivos, o que é consequência direta
+de exigir sessão, não defeito.
