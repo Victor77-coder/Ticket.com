@@ -7,7 +7,12 @@ externa — é o Princípio VII da constitution virando esquema de banco.
 
 from django.conf import settings
 from django.db import models
-from django.utils.text import Truncator, slugify
+from django.utils.text import slugify
+
+
+# Teto do resumo exibido no painel de destaques. O painel tem medida de
+# leitura de ~46 caracteres por linha; 180 cabe em quatro linhas sem estourar.
+SYNOPSIS_SHORT_CHARS = 180
 
 
 class Genre(models.Model):
@@ -104,8 +109,27 @@ class Movie(models.Model):
 
     @property
     def synopsis_short(self):
-        """Sinopse cortada na fronteira de palavra, para caber no painel."""
-        return Truncator(self.synopsis).chars(180, truncate="…")
+        """Sinopse cortada na fronteira de palavra, para caber no painel.
+
+        `Truncator.chars()` corta no caractere exato e produz coisas como
+        "com seres míticos, c…" — foi o que a checagem visual de 2026-08-11
+        encontrou no painel de destaques. `Truncator.words()` corta certo, mas
+        conta palavras, então o comprimento varia demais entre sinopses.
+
+        Corta no limite e recua até o último espaço: respeita o teto de
+        caracteres **e** a fronteira de palavra.
+        """
+        texto = (self.synopsis or "").strip()
+        if len(texto) <= SYNOPSIS_SHORT_CHARS:
+            return texto
+
+        cortado = texto[:SYNOPSIS_SHORT_CHARS]
+        espaco = cortado.rfind(" ")
+        if espaco > 0:
+            cortado = cortado[:espaco]
+
+        # Pontuação pendurada antes da reticência lê como erro de digitação.
+        return cortado.rstrip(" ,;:.–-") + "…"
 
     @property
     def primary_trailer(self):

@@ -378,3 +378,58 @@ def test_a_regra_nao_vaza_para_em_breve(client, make_movie):
 
     assert trilhas["em-breve"]["count"] == 1
     assert "em-alta" not in trilhas
+
+
+# --- Corte da sinopse (correção de 2026-08-11) ----------------------------
+# A checagem visual da feature 006 encontrou "com seres míticos, c…" no painel
+# de destaques: o corte por caractere partia a palavra ao meio.
+
+
+@pytest.mark.django_db
+def test_sinopse_curta_nao_e_cortada(make_movie):
+    filme = make_movie("Curta", synopsis="Um filme curto.")
+
+    assert filme.synopsis_short == "Um filme curto."
+
+
+@pytest.mark.django_db
+def test_sinopse_longa_corta_na_fronteira_de_palavra(make_movie):
+    """Nenhuma palavra pode ficar partida antes da reticência."""
+    filme = make_movie(
+        "Longa",
+        synopsis=(
+            "Acompanhe a saga de Odisseu, o lendário rei de Ítaca, em sua longa e "
+            "perigosa jornada de retorno ao lar após a Guerra de Troia. O relato "
+            "narra seus confrontos com seres míticos, criaturas e deuses."
+        ),
+    )
+
+    resumo = filme.synopsis_short
+    assert resumo.endswith("…")
+
+    # A última palavra antes da reticência precisa existir inteira na sinopse
+    # original. A comparação ignora pontuação porque o corte a remove de
+    # propósito — "míticos…" vem de "míticos," no texto original.
+    ultima = resumo[:-1].split()[-1].strip(",;:.")
+    palavras = {p.strip(",;:.") for p in filme.synopsis.split()}
+    assert ultima in palavras, f"{ultima!r} não é palavra inteira do original"
+
+
+@pytest.mark.django_db
+def test_sinopse_respeita_o_teto_de_caracteres(make_movie):
+    filme = make_movie("Teto", synopsis="palavra " * 100)
+
+    assert len(filme.synopsis_short) <= 181  # 180 + a reticência
+
+
+@pytest.mark.django_db
+def test_sinopse_nao_deixa_pontuacao_pendurada(make_movie):
+    """"…texto," antes da reticência lê como erro de digitação."""
+    filme = make_movie("Pontuação", synopsis="palavra, " * 40)
+
+    assert not filme.synopsis_short[:-1].rstrip().endswith((",", ";", ":", "-"))
+
+
+@pytest.mark.django_db
+def test_sinopse_vazia_nao_quebra(make_movie):
+    assert make_movie("Sem Sinopse", synopsis="").synopsis_short == ""
