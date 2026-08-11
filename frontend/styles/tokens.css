@@ -86,9 +86,25 @@
   --transicao-rapida: 160ms cubic-bezier(0.4, 0, 0.2, 1);
   --transicao-painel: 520ms cubic-bezier(0.22, 0.61, 0.36, 1);
 
-  /* --- Medidas do carrossel --- */
-  --altura-painel: clamp(30rem, 78vh, 44rem);
+  /* --- Medidas do carrossel ---
+   * O cabeçalho é sticky e ocupa espaço no fluxo, então a primeira dobra
+   * encolheu. O desconto vive aqui, num lugar só, em vez de espalhado pelos
+   * componentes (R7). */
+  --altura-painel: clamp(30rem, calc(78vh - var(--altura-cabecalho)), 44rem);
   --largura-conteudo: 1200px;
+
+  /* --- Medidas do cabeçalho ---
+   * A altura é token porque duas coisas dependem dela: o próprio cabeçalho e
+   * a primeira dobra do carrossel, que precisa descontá-la (R7). Definir em
+   * dois lugares seria garantir que um dia divergem. */
+  --altura-cabecalho: 4.25rem;
+  --z-cabecalho: 100;
+
+  /* Painel de sugestões da busca. A altura do item é token porque o teste de
+   * teclado e o CSS precisam concordar sobre quanto rolar. */
+  --largura-max-sugestoes: 30rem;
+  --altura-item-sugestao: 4rem;
+  --altura-max-sugestoes: calc(var(--altura-item-sugestao) * 6 + var(--esp-4));
 }
 
 /* Quem pediu menos movimento não recebe movimento (FR-011). O JS também
