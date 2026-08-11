@@ -117,8 +117,8 @@ está testando a garantia e não o código.
 
 ### Testes da User Story 2 — a prova do Princípio II
 
-- [ ] T033 [US2] Criar `backend/tests/test_reservation_concurrency.py` com duas threads reais, **conexões de banco separadas**, `django_db(transaction=True)` e barreira sincronizando o ponto crítico: exatamente uma reserva vence, a outra recebe recusa (por bloqueio **ou** por constraint, tanto faz), e o banco fica com **uma** ocupação (R4, SC-002)
-- [ ] T034 [US2] Acrescentar em `backend/tests/test_reservation_concurrency.py` a asserção direta de que não existe par `(screening, seat)` duplicado após a corrida — a prova que não depende do código de resposta (SC-003)
+- [X] T033 [US2] Criar `backend/tests/test_reservation_concurrency.py` com duas threads reais, **conexões de banco separadas**, `django_db(transaction=True)` e barreira sincronizando o ponto crítico: exatamente uma reserva vence, a outra recebe recusa (por bloqueio **ou** por constraint, tanto faz), e o banco fica com **uma** ocupação (R4, SC-002)
+- [X] T034 [US2] Acrescentar em `backend/tests/test_reservation_concurrency.py` a asserção direta de que não existe par `(screening, seat)` duplicado após a corrida — a prova que não depende do código de resposta (SC-003)
 - [ ] T035 [P] [US2] Cobrir em `backend/tests/test_reservation_api.py` que uma seleção com qualquer lugar já tomado **não reserva nenhum** e nomeia o culpado no `409` (FR-018, FR-019, SC-009)
 - [ ] T036 [P] [US2] Cobrir em `backend/tests/test_reservation_api.py` as recusas de `400`: seleção vazia, acima de 6 lugares, assento de outra sala, assento de acessibilidade (FR-009, FR-013, FR-014)
 - [ ] T037 [P] [US2] Cobrir em `backend/tests/test_reservation_api.py` que dois envios com a mesma `chave_idempotencia` produzem `201` e depois `200`, **com o mesmo `id`** — uma reserva só (FR-023)
@@ -126,9 +126,9 @@ está testando a garantia e não o código.
 
 ### Implementação da User Story 2
 
-- [ ] T039 [US2] Criar `backend/apps/screening/services/reservas.py` com `criar_reserva(cliente, sessao, assentos, chave)` dentro de `transaction.atomic`, na ordem exata de data-model.md: valida a sessão → **bloqueia** as ocupações com `select_for_update` → apaga as vencidas / recusa as vivas → cria a reserva → cria as ocupações (FR-017, R2)
-- [ ] T040 [US2] Traduzir `IntegrityError` da inserção em recusa de negócio dentro de `backend/apps/screening/services/reservas.py`, com comentário registrando que é **resultado esperado**, não falha de sistema (R3)
-- [ ] T041 [US2] Resolver a idempotência em `backend/apps/screening/services/reservas.py` pela violação de `UNIQUE(idempotency_key)`, devolvendo a reserva existente — nunca por consulta prévia, que é o padrão que a concorrência quebra (R9)
+- [X] T039 [US2] Criar `backend/apps/screening/services/reservas.py` com `criar_reserva(cliente, sessao, assentos, chave)` dentro de `transaction.atomic`, na ordem exata de data-model.md: valida a sessão → **bloqueia** as ocupações com `select_for_update` → apaga as vencidas / recusa as vivas → cria a reserva → cria as ocupações (FR-017, R2)
+- [X] T040 [US2] Traduzir `IntegrityError` da inserção em recusa de negócio dentro de `backend/apps/screening/services/reservas.py`, com comentário registrando que é **resultado esperado**, não falha de sistema (R3)
+- [X] T041 [US2] Resolver a idempotência em `backend/apps/screening/services/reservas.py` pela violação de `UNIQUE(idempotency_key)`, devolvendo a reserva existente — nunca por consulta prévia, que é o padrão que a concorrência quebra (R9)
 - [ ] T042 [US2] Acrescentar o serializer de entrada e o de reserva criada em `backend/apps/screening/serializers.py`, com `expira_em` como instante absoluto (contrato, FR-020)
 - [ ] T043 [US2] Acrescentar `ReservationCreateView` em `backend/apps/screening/views.py`, mapeando as recusas para `400`, `404` e `409` com as frases do contrato (FR-030)
 - [ ] T044 [US2] Registrar `reservas/` em `backend/apps/screening/urls.py` e **conferir que o servidor sobe**
@@ -197,7 +197,7 @@ consegue reservar os mesmos lugares
 
 **Purpose**: Provar que a garantia é real, que nada da 001–006 quebrou, e registrar a limitação
 
-- [ ] T065 **Provar que o teste de concorrência testa**: comentar a `UniqueConstraint` em `backend/apps/screening/models.py`, gerar e aplicar a migração, rodar `backend/tests/test_reservation_concurrency.py` e **confirmar que FALHA**. Desfazer alteração e migração em seguida, e registrar o resultado em `specs/007-seat-selection/quickstart.md` (R4, R12)
+- [X] T065 **Provar que o teste de concorrência testa**: comentar a `UniqueConstraint` em `backend/apps/screening/models.py`, gerar e aplicar a migração, rodar `backend/tests/test_reservation_concurrency.py` e **confirmar que FALHA**. Desfazer alteração e migração em seguida, e registrar o resultado em `specs/007-seat-selection/quickstart.md` (R4, R12)
 - [ ] T066 [P] Varrer `frontend/components/seats/seats.module.css` e `frontend/app/sessoes/[id]/sessao.module.css` com os comandos de `specs/006-visual-identity/contracts/token-contract.md` e confirmar **zero** valores de cor, espaçamento, tipografia, raio ou duração fora dos tokens (FR-035)
 - [ ] T067 [P] Conferir o mapa em escala de cinza (emulação de acromatopsia) e registrar o resultado em `specs/007-seat-selection/quickstart.md` — os quatro estados continuam distinguíveis (SC-007)
 - [ ] T068 [P] Criar `frontend/tests/e2e/reserva.spec.ts` cobrindo o percurso filme → sessão → mapa → seleção → reserva confirmada (Princípio I)

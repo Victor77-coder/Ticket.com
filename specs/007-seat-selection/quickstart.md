@@ -255,6 +255,36 @@ garantia.
 
 Desfazer a alteração e a migração depois.
 
+### Resultado medido — 2026-08-11
+
+Executado durante a implementação, com a constraint comentada e a migração de remoção aplicada:
+
+```
+6 failed, 2 passed in 2.58s
+```
+
+| Teste | Sem a constraint |
+|---|---|
+| `duas_reservas_simultaneas_do_mesmo_lugar_uma_so_vence` | **FALHOU** — as duas venceram |
+| `a_corrida_nao_deixa_duplicata_no_banco` | **FALHOU** — duas ocupações do mesmo lugar |
+| `corrida_sobre_lugar_com_reserva_vencida` | **FALHOU** |
+| `corrida_com_selecao_sobreposta_nao_reserva_pela_metade` | **FALHOU** |
+| `insercao_direta_de_duplicata_e_recusada_pelo_banco` | **FALHOU** — o banco aceitou |
+| `a_constraint_existe_no_banco_com_este_nome` | **FALHOU** |
+| `lugares_diferentes_nao_se_atrapalham` | passou (não depende da constraint) |
+| `mesma_chave_em_duas_threads_cria_uma_reserva_so` | passou (depende da outra constraint) |
+
+**O achado que merece registro**: `corrida_sobre_lugar_com_reserva_vencida` também falhou — e é
+o teste que exercita o caminho do **bloqueio**, não o da constraint. Isso mostra que nem o
+`SELECT FOR UPDATE` basta sozinho: a segunda transação trava a linha vencida, mas quando a
+primeira a apaga e comita, o que a segunda tinha travado deixou de existir e ela segue para
+inserir. Sob *read committed*, a constraint é o árbitro final **também** no caminho do bloqueio.
+
+É exatamente o que R3 previu, agora com medida em vez de argumento.
+
+Migração de remoção desfeita e apagada em seguida; `showmigrations` de volta a `0002`, e a
+constraint conferida no banco.
+
 ---
 
 ## Problemas comuns
