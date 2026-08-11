@@ -43,8 +43,13 @@ export default async function HomePage() {
 
       {/* A ordem é do servidor; o cliente renderiza o que veio. Trilha vazia
        * nem chega aqui — o back-end a omite (FR-006). */}
-      {temTrilhas &&
-        rows.data.rows.map((trilha) => <MovieRow key={trilha.key} trilha={trilha} />)}
+      {temTrilhas && (
+        <div className={trilhas.trilhas}>
+          {rows.data.rows.map((trilha) => (
+            <MovieRow key={trilha.key} trilha={trilha} />
+          ))}
+        </div>
+      )}
     </main>
   );
 }

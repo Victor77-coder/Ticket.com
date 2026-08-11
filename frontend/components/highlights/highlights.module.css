@@ -43,7 +43,7 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 78% 28%, rgba(255, 92, 57, 0.22), transparent 58%),
+    radial-gradient(circle at 78% 28%, var(--cor-destaque-vestigio), transparent 58%),
     linear-gradient(145deg, var(--cor-superficie-elevada), var(--cor-fundo));
 }
 
@@ -98,13 +98,22 @@
   color: var(--cor-texto-fraco);
 }
 
+/* Tratamento de display: o eixo de largura do Archivo é o que dá presença de
+ * cartaz. Sem `font-variation-settings` o título sai na largura padrão e a
+ * distinção display/texto desaparece (R1, FR-008). */
 .titulo {
   margin: 0;
-  max-width: 18ch;
-  font-size: var(--texto-3xl);
-  font-weight: var(--peso-forte);
+  max-width: 16ch;
+  font-size: var(--texto-display);
+  font-weight: var(--peso-display);
+  font-variation-settings:
+    "wght" var(--peso-display),
+    "wdth" var(--largura-display);
   line-height: var(--altura-linha-apertada);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--espacamento-display);
+  /* Equilibra as linhas em vez de deixar uma palavra órfã na última — importa
+   * mais quando o título é longo e quebra em três linhas. */
+  text-wrap: balance;
 }
 
 .sinopse {
@@ -142,7 +151,7 @@
 .botaoPrimario {
   background: var(--cor-destaque);
   border: 2px solid var(--cor-destaque);
-  color: #150703;
+  color: var(--cor-sobre-destaque);
 }
 
 .botaoPrimario:hover {
@@ -158,7 +167,7 @@
 
 .botaoSecundario:hover {
   border-color: var(--cor-texto-suave);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--cor-realce-sutil);
 }
 
 /* Esgotado se distingue por texto e por borda, não só por cor (Princípio V). */
@@ -198,7 +207,7 @@
   height: 2.75rem;
   border: 1px solid var(--cor-borda-forte);
   border-radius: var(--raio-pilula);
-  background: rgba(20, 20, 28, 0.72);
+  background: var(--cor-superficie-flutuante);
   backdrop-filter: blur(6px);
   cursor: pointer;
   transition:
@@ -228,16 +237,21 @@
   cursor: pointer;
 }
 
+/* `scaleX` em vez de animar `width`: largura recalcula layout a cada quadro,
+ * transform é composto pela GPU. A origem à esquerda faz a barra crescer para
+ * a direita, como antes (R6). */
 .indicador::before {
   content: "";
   display: block;
-  width: 1.75rem;
+  width: 3rem;
   height: 3px;
+  transform: scaleX(0.583);
+  transform-origin: left center;
   border-radius: var(--raio-pilula);
   background: var(--cor-borda-forte);
   transition:
     background-color var(--transicao-rapida),
-    width var(--transicao-rapida);
+    transform var(--transicao-rapida);
 }
 
 .indicador:hover::before {
@@ -245,7 +259,7 @@
 }
 
 .indicadorAtivo::before {
-  width: 3rem;
+  transform: scaleX(1);
   background: var(--cor-destaque);
 }
 
@@ -271,24 +285,34 @@
   background: var(--cor-superficie);
 }
 
+/* Mesmo tratamento do esqueleto da trilha: o brilho atravessa por `transform`
+ * num elemento sobreposto, em vez de repintar a área a cada quadro (R6). */
 .esqueletoBarra {
+  position: relative;
+  overflow: hidden;
   border-radius: var(--raio-sm);
+  background: var(--cor-superficie-elevada);
+}
+
+.esqueletoBarra::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
     90deg,
-    var(--cor-superficie-elevada) 25%,
+    transparent 0%,
     var(--cor-borda) 50%,
-    var(--cor-superficie-elevada) 75%
+    transparent 100%
   );
-  background-size: 200% 100%;
-  animation: brilho 1.6s ease-in-out infinite;
+  animation: brilho var(--brilho-esqueleto) ease-in-out infinite;
 }
 
 @keyframes brilho {
-  0% {
-    background-position: 200% 0;
+  from {
+    transform: translateX(-100%);
   }
-  100% {
-    background-position: -200% 0;
+  to {
+    transform: translateX(100%);
   }
 }
 
@@ -322,7 +346,7 @@
   position: absolute;
   inset: 0;
   z-index: 3;
-  background: #000;
+  background: var(--cor-fundo-video);
 }
 
 .trailerVideo {
@@ -342,7 +366,7 @@
   padding: var(--esp-2) var(--esp-4);
   border: 1px solid var(--cor-borda-forte);
   border-radius: var(--raio-pilula);
-  background: rgba(10, 10, 15, 0.85);
+  background: var(--cor-fundo-flutuante);
   color: var(--cor-texto);
   cursor: pointer;
 }
@@ -373,12 +397,7 @@
   }
 
   .veu {
-    background: linear-gradient(
-      to top,
-      rgba(10, 10, 15, 0.97) 0%,
-      rgba(10, 10, 15, 0.75) 45%,
-      rgba(10, 10, 15, 0.3) 100%
-    );
+    background: var(--veu-painel-estreito);
   }
 
   .titulo {
@@ -424,4 +443,10 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueletoBarra::after {
+    animation: none;
+  }
 }

@@ -87,7 +87,7 @@
   border: 1px solid var(--cor-erro);
   border-left-width: 4px;
   border-radius: var(--raio-md);
-  background: rgba(255, 107, 107, 0.08);
+  background: var(--cor-erro-fraca);
   color: var(--cor-texto);
   font-size: var(--texto-sm);
 }
@@ -98,7 +98,7 @@
   border: 2px solid var(--cor-destaque);
   border-radius: var(--raio-pilula);
   background: var(--cor-destaque);
-  color: #150703;
+  color: var(--cor-sobre-destaque);
   font-size: var(--texto-md);
   font-weight: var(--peso-medio);
   cursor: pointer;

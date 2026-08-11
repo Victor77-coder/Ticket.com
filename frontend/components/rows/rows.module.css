@@ -1,5 +1,17 @@
 /* Todos os valores vêm de tokens.css — Princípio V. */
 
+/* Separação de dobra: o respiro entre o painel de destaques e o catálogo é
+ * maior que o respiro entre trilhas. É o que diz ao olho "aqui terminou o
+ * destaque e começou o catálogo" (R4, FR-001). */
+.trilhas {
+  padding-top: var(--ritmo-dobra);
+}
+
+/* A primeira trilha não acumula os dois ritmos. */
+.trilhas > .secao:first-child {
+  padding-top: 0;
+}
+
 .secao {
   /* min-width: 0 é o que impede o transbordo da trilha de empurrar a largura
    * da página. Sem isso o overflow-x abaixo vaza e a PÁGINA passa a rolar
@@ -7,7 +19,10 @@
   min-width: 0;
   max-width: var(--largura-conteudo);
   margin: 0 auto;
-  padding: var(--esp-7) var(--esp-5) 0;
+  /* Ritmo de seção — distinto do ritmo de dobra, que separa o carrossel da
+   * primeira trilha. Antes os dois eram o mesmo --esp-7, e é por isso que a
+   * home lia como lista uniforme (R4, FR-001). */
+  padding: var(--ritmo-secao) var(--esp-5) 0;
 }
 
 .cabecalho {
@@ -18,10 +33,15 @@
   margin-bottom: var(--esp-4);
 }
 
+/* Distinção por peso e escala, não por cor (FR-002). A largura ligeiramente
+ * acima do normal aproxima o título de seção do display sem competir com ele. */
 .titulo {
   margin: 0;
   font-size: var(--texto-lg);
   font-weight: var(--peso-forte);
+  font-variation-settings:
+    "wght" var(--peso-forte),
+    "wdth" 106;
   letter-spacing: -0.01em;
 }
 
@@ -30,25 +50,31 @@
   gap: var(--esp-2);
 }
 
+/* Sem moldura circular: o botão redondo com borda de 1px é o traço mais
+ * reconhecível de carrossel de catálogo genérico, e é o primeiro sinal que
+ * denuncia o produto na checagem de identidade (R7).
+ *
+ * A área de toque continua a mesma — o alvo perde a borda, não o tamanho. */
 .seta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 2.25rem;
   height: 2.25rem;
-  border: 1px solid var(--cor-borda-forte);
-  border-radius: var(--raio-pilula);
-  background: var(--cor-superficie);
+  border: none;
+  border-radius: var(--raio-sm);
+  background: transparent;
+  color: var(--cor-texto-suave);
   cursor: pointer;
   transition:
     background-color var(--transicao-rapida),
-    border-color var(--transicao-rapida),
+    color var(--transicao-rapida),
     opacity var(--transicao-rapida);
 }
 
 .seta:hover:not(:disabled) {
-  background: var(--cor-superficie-elevada);
-  border-color: var(--cor-texto-suave);
+  background: var(--cor-realce-sutil);
+  color: var(--cor-texto);
 }
 
 .seta:disabled {
@@ -60,7 +86,7 @@
 
 .trilha {
   display: flex;
-  gap: var(--esp-4);
+  gap: var(--esp-3);
   min-width: 0;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -79,25 +105,31 @@
 
 /* --- O cartão --- */
 
+/* Cartaz maior com respiro menor lê como parede de cartazes — a vitrine
+ * física de um cinema. Menor com respiro maior lê como grade de aplicativo,
+ * que é o oposto (R8). */
 .cartao {
   flex: 0 0 auto;
-  width: 10.5rem;
+  width: 11.5rem;
   scroll-snap-align: start;
   text-decoration: none;
   color: inherit;
 }
 
+/* Movimento 1 de 3: elevação do cartaz. Anima só `transform`, que a GPU
+ * compõe sem recalcular layout nem repintar (R6). */
 .moldura {
   position: relative;
   aspect-ratio: 2 / 3;
   overflow: hidden;
   border-radius: var(--raio-md);
   background: var(--cor-superficie-elevada);
-  transition: transform var(--transicao-rapida);
+  transition: transform var(--movimento-cartaz) var(--curva-saida);
 }
 
-.cartao:hover .moldura {
-  transform: translateY(-4px);
+.cartao:hover .moldura,
+.cartao:focus-visible .moldura {
+  transform: translateY(var(--elevacao-cartaz));
 }
 
 .cartaz {
@@ -115,7 +147,7 @@
   height: 100%;
   padding: var(--esp-4);
   background:
-    radial-gradient(circle at 70% 25%, rgba(255, 92, 57, 0.18), transparent 60%),
+    radial-gradient(circle at 70% 25%, var(--cor-destaque-vestigio), transparent 60%),
     linear-gradient(150deg, var(--cor-superficie-elevada), var(--cor-fundo));
   color: var(--cor-texto-suave);
   font-size: var(--texto-sm);
@@ -148,25 +180,37 @@
   width: 10.5rem;
 }
 
+/* O brilho atravessa por `transform` num elemento sobreposto, não por
+ * `background-position`. A versão anterior repintava a área inteira a cada
+ * quadro, em loop, justamente durante o carregamento — o momento de maior
+ * disputa por CPU (R6). */
 .esqueletoMoldura {
+  position: relative;
   aspect-ratio: 2 / 3;
+  overflow: hidden;
   border-radius: var(--raio-md);
+  background: var(--cor-superficie-elevada);
+}
+
+.esqueletoMoldura::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
     90deg,
-    var(--cor-superficie-elevada) 25%,
+    transparent 0%,
     var(--cor-borda) 50%,
-    var(--cor-superficie-elevada) 75%
+    transparent 100%
   );
-  background-size: 200% 100%;
-  animation: brilhoTrilha 1.6s ease-in-out infinite;
+  animation: brilhoTrilha var(--brilho-esqueleto) ease-in-out infinite;
 }
 
 @keyframes brilhoTrilha {
-  0% {
-    background-position: 200% 0;
+  from {
+    transform: translateX(-100%);
   }
-  100% {
-    background-position: -200% 0;
+  to {
+    transform: translateX(100%);
   }
 }
 
@@ -214,14 +258,14 @@
 
   .cartao,
   .esqueletoCartao {
-    width: 9rem;
+    width: 10rem;
   }
 }
 
 @media (max-width: 560px) {
   .cartao,
   .esqueletoCartao {
-    width: 7.5rem;
+    width: 8rem;
   }
 
   /* Em tela estreita o polegar já resolve o deslize; as setas roubariam
@@ -236,7 +280,13 @@
     scroll-behavior: auto;
   }
 
-  .cartao:hover .moldura {
+  .cartao:hover .moldura,
+  .cartao:focus-visible .moldura {
     transform: none;
+  }
+
+  /* O brilho do esqueleto também é movimento. */
+  .esqueletoMoldura::after {
+    animation: none;
   }
 }
