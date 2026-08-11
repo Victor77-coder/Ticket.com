@@ -76,7 +76,15 @@ export type SearchResponse = {
  * que mostrar, e um `throw` levaria a home inteira para a página de erro do
  * Next em vez do estado de erro do carrossel (FR-024).
  */
-export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
+export type ApiResult<T> =
+  | { ok: true; data: T }
+  /**
+   * `corpoErro` traz a resposta de erro inteira, para os casos em que ela
+   * carrega mais do que a frase — o `409` da reserva, por exemplo, nomeia
+   * quais lugares causaram a recusa. Opcional de propósito: os consumidores
+   * das features 001–003 continuam usando só `error`.
+   */
+  | { ok: false; error: string; corpoErro?: unknown };
 
 /** Papéis do sistema (Princípio IV da constitution). */
 export type Papel = "organizer" | "customer" | "gate";

@@ -13,6 +13,7 @@ import type {
   LoginResponse,
   MapaSessao,
   MovieDetail,
+  Reserva,
   SearchResponse,
   Sessao,
 } from "./types";
@@ -65,6 +66,7 @@ async function pedir<T>(
       return {
         ok: false,
         error: corpo?.detail ?? "Não foi possível completar a operação.",
+        corpoErro: corpo,
         status: response.status,
       };
     }
@@ -166,4 +168,23 @@ export function fetchHomeRows(): Promise<ApiResult<HomeRowsResponse>> {
  */
 export function fetchSeatMap(id: number): Promise<ApiResultComStatus<MapaSessao>> {
   return getJson<MapaSessao>(`/api/v1/sessoes/${id}/mapa/`);
+}
+
+/**
+ * Cria a reserva. Só o Route Handler `/api/reservar` chama isto.
+ *
+ * O cookie viaja no cabeçalho desta chamada servidor-a-servidor: ele é
+ * `httpOnly`, então script na página não o alcança, e sem o proxy ou o
+ * cookie deixaria de ser `httpOnly` — reabrindo o que a 003 fechou — ou o
+ * Django teria de aceitar CORS com credencial (R1).
+ */
+export function postReserva(
+  sessionKey: string | undefined,
+  corpo: { sessao: number; assentos: number[]; chave_idempotencia: string },
+): Promise<ApiResultComStatus<Reserva>> {
+  return postJson<Reserva>(
+    "/api/v1/reservas/",
+    corpo,
+    sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {},
+  );
 }
