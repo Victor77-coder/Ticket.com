@@ -75,3 +75,24 @@ export type SearchResponse = {
  * Next em vez do estado de erro do carrossel (FR-024).
  */
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
+
+/** Papéis do sistema (Princípio IV da constitution). */
+export type Papel = "organizer" | "customer" | "gate";
+
+/**
+ * Sessão ativa, resolvida no servidor a cada requisição.
+ *
+ * `papel` escolhe **o que apresentar**, nunca concede acesso: toda
+ * autorização continua sendo decidida no servidor (FR-022).
+ */
+export type Sessao = {
+  nome: string;
+  papel: Papel;
+};
+
+/** Resposta de `POST /api/v1/auth/login/`. */
+export type LoginResponse = {
+  session_key: string;
+  expires_at: string;
+  user: Sessao;
+};
