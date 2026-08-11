@@ -26,6 +26,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Registra o lookup `__unaccent`, usado pela busca do cabeçalho. A
+    # extensão no PostgreSQL sozinha não basta: sem este app o Django levanta
+    # FieldError, não erro de banco.
+    "django.contrib.postgres",
     "rest_framework",
     "corsheaders",
     "apps.accounts",
