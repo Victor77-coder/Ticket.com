@@ -216,3 +216,36 @@ def test_campos_ausentes_no_payload_nao_quebram():
     assert movie.certification_br is None
     assert movie.release_date is None
     assert movie.backdrop_url is None
+
+
+# --- Classificação de catálogo (feature 004) ------------------------------
+
+
+@pytest.mark.django_db
+def test_marca_em_alta_e_em_breve():
+    filme = sync_movie(_detail(), is_trending=True, is_upcoming=True)
+
+    assert filme.is_trending is True
+    assert filme.is_upcoming is True
+    assert filme.catalog_synced_at is not None
+
+
+@pytest.mark.django_db
+def test_marcacao_e_aditiva_dentro_da_mesma_execucao():
+    """Um filme presente em duas listas recebe as duas marcas.
+
+    A segunda passagem não pode apagar a marca da primeira (FR-005).
+    """
+    sync_movie(_detail(), is_trending=True)
+    filme = sync_movie(_detail(), is_upcoming=True)
+
+    assert filme.is_trending is True
+    assert filme.is_upcoming is True
+
+
+@pytest.mark.django_db
+def test_sem_marcas_o_filme_nasce_fora_das_trilhas():
+    filme = sync_movie(_detail())
+
+    assert filme.is_trending is False
+    assert filme.is_upcoming is False
