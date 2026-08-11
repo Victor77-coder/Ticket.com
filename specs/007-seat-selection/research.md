@@ -191,6 +191,31 @@ segunda tentativa bate nela e devolve a existente.
 requisição repetida por instabilidade de rede, que é o caso que produz reserva duplicada de
 verdade.
 
+### Refinamento durante a implementação (2026-08-11)
+
+**"Nunca por consulta prévia" estava rígido demais e a implementação mostrou por quê.**
+
+Na segunda tentativa com a mesma chave, os lugares **estão ocupados** — pela primeira tentativa,
+da mesma pessoa. Deixando a constraint resolver sozinha, a checagem de disponibilidade dispara
+antes e o reenvio recebe "acabou de ser reservado": o sistema acusa a pessoa de ter perdido o
+lugar para si mesma. Foi o que `test_envio_duplo_com_a_mesma_chave_cria_uma_reserva_so` pegou,
+respondendo `409` onde o contrato promete `200`.
+
+**São dois casos diferentes, e cada um tem o seu mecanismo:**
+
+| Caso | Quem resolve |
+|---|---|
+| Reenvio **sequencial** (rede instável, o usuário tentou de novo) | consulta pela chave, **antes** da checagem de disponibilidade |
+| Envio **simultâneo** (duas requisições ao mesmo tempo) | `UNIQUE(idempotency_key)` — a consulta não veria nada em nenhuma das duas |
+
+O erro do R9 original foi tratar os dois como um. A consulta prévia não **substitui** a
+constraint — ela cobre o caso que a constraint cobre mal, e vice-versa. Ambas ficam, e ambas têm
+teste: `test_envio_duplo_com_a_mesma_chave_cria_uma_reserva_so` para a primeira e
+`test_mesma_chave_em_duas_threads_cria_uma_reserva_so` para a segunda.
+
+O alerta original continua válido para **disponibilidade de assento**: ali a consulta prévia é
+mesmo inútil, e é a constraint que arbitra.
+
 ---
 
 ## R10. Autorização

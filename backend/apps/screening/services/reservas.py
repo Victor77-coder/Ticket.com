@@ -145,6 +145,26 @@ def criar_reserva(cliente, sessao, seat_ids, chave):
     if sessao.status != Screening.Status.PUBLISHED or sessao.starts_at <= timezone.now():
         raise SessaoIndisponivel()
 
+    # A idempotência é conferida ANTES da disponibilidade, e a ordem não é
+    # arbitrária: na segunda tentativa os lugares estão ocupados — pela
+    # primeira tentativa, da mesma pessoa. Conferir disponibilidade primeiro
+    # faria o reenvio bater em "acabou de ser reservado", acusando a pessoa
+    # de ter perdido o lugar para si mesma.
+    #
+    # Isto refina o R9, que dizia "nunca por consulta prévia". A consulta
+    # prévia resolve o reenvio SEQUENCIAL; ela não resolve — e não substitui
+    # — o envio SIMULTÂNEO, onde duas requisições consultam ao mesmo tempo,
+    # nenhuma encontra, e ambas criam. Esse caso continua sendo resolvido
+    # pela UNIQUE(idempotency_key) lá em `_traduzir_violacao`, e tem teste
+    # próprio com threads. Os dois mecanismos são necessários; nenhum basta.
+    existente = Reservation.objects.filter(idempotency_key=chave).first()
+    if existente is not None:
+        if existente.customer_id != cliente.pk:
+            raise SelecaoInvalida(
+                "Não foi possível registrar esta reserva. Tente de novo."
+            )
+        return existente, False
+
     assentos = _validar_selecao(sessao, seat_ids)
 
     try:

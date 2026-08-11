@@ -82,3 +82,51 @@ class SeatMapSerializer(serializers.Serializer):
                 fileiras.append({"letra": seat.row, "assentos": []})
             fileiras[-1]["assentos"].append(SeatSerializer(seat).data)
         return fileiras
+
+
+class ReservationInputSerializer(serializers.Serializer):
+    """O que a requisição de reserva pode trazer.
+
+    A chave de idempotência é obrigatória: sem ela, uma requisição repetida
+    por instabilidade de rede vira reserva duplicada, e desabilitar o botão
+    no navegador não cobre esse caso.
+    """
+
+    sessao = serializers.IntegerField()
+    assentos = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
+    chave_idempotencia = serializers.UUIDField()
+
+
+class LugarSerializer(serializers.Serializer):
+    fileira = serializers.CharField(source="row")
+    numero = serializers.IntegerField(source="number")
+
+
+class ReservationSerializer(serializers.Serializer):
+    """A reserva como o cliente dono a vê.
+
+    Não traz `idempotency_key` nem identificação do cliente: a primeira é
+    segredo do envio e a segunda não acrescenta nada a quem já sabe quem é.
+    """
+
+    id = serializers.IntegerField()
+    sessao = serializers.IntegerField(source="screening_id")
+    assentos = serializers.SerializerMethodField()
+    total = serializers.SerializerMethodField()
+    # Instante absoluto, nunca "faltam N segundos": o relógio do navegador
+    # pode estar errado, e a contagem regressiva precisa de um alvo fixo para
+    # não derivar.
+    expira_em = serializers.DateTimeField(source="expires_at")
+    situacao = serializers.SerializerMethodField()
+
+    def _assentos(self, reserva):
+        return [o.seat for o in reserva.seats.all()]
+
+    def get_assentos(self, reserva):
+        return LugarSerializer(self._assentos(reserva), many=True).data
+
+    def get_total(self, reserva):
+        return f"{reserva.screening.price * len(self._assentos(reserva)):.2f}"
+
+    def get_situacao(self, reserva):
+        return "expirada" if reserva.is_expired else "reservada"
