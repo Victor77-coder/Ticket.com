@@ -139,8 +139,8 @@ ativar movimento reduzido e confirmar que todos cessam
 **Independent Test**: Capturar a primeira dobra, recortar o cabeçalho, aplicar os critérios de
 `contracts/anti-slop-review.md`
 
-- [ ] T036 [US4] ⏸️ **REQUER O USUÁRIO** — Capturar a primeira dobra em 1440×900 com o catálogo semeado, recortar o cabeçalho inteiro e aplicar as duas listas de `specs/006-visual-identity/contracts/anti-slop-review.md`
-- [ ] T037 [US4] ⏸️ **REQUER O USUÁRIO** — Responder por escrito a pergunta final do `contracts/anti-slop-review.md` e registrar o resultado — se falhar, abrir tarefa de correção dentro do escopo visual
+- [X] T036 [US4] Capturar a primeira dobra em 1440×900 com o catálogo semeado, recortar o cabeçalho inteiro e aplicar as duas listas de `specs/006-visual-identity/contracts/anti-slop-review.md`
+- [X] T037 [US4] Responder por escrito a pergunta final do `contracts/anti-slop-review.md` e registrar o resultado — se falhar, abrir tarefa de correção dentro do escopo visual
 - [X] T038 [US4] Confirmar que a paleta permanece escura com laranja, sem roxo, creme com serifada nem brilho excessivo, conferindo `frontend/styles/tokens.css` (FR-020)
 - [X] T039 [US4] Executar a varredura por texto de preenchimento em `frontend/app` e `frontend/components` e confirmar saída vazia (SC-010, FR-021)
 
@@ -235,12 +235,19 @@ O menor recorte que cumpre o Princípio V é **US1 + US2**: ritmo e tipografia.
 
 ## Estado final — 2026-08-11
 
-**45 de 47 concluídas.** As duas pendentes são a checagem de identidade (T036, T037), que exige
-capturar a tela e julgar a imagem — não é automatizável e não pode ser feita por quem não vê o
-resultado renderizado.
+**47 de 47 concluídas.** A checagem de identidade foi executada pelo usuário em 2026-08-11, com
+as capturas versionadas em `captures/`.
 
-O roteiro está pronto em `contracts/anti-slop-review.md`: capturar a primeira dobra em 1440×900,
-recortar o cabeçalho, aplicar as duas listas e responder à pergunta final.
+**Ela reprovou** — e reprovar era resultado previsto. Passou nos quatro critérios de presença,
+inclusive o eixo `wdth`, que era o único ponto onde a teoria podia não virar prática. Reprovou em
+um item da própria lista de proibidos (botão em pílula contornada) e revelou um achado fora das
+listas (as setas do carrossel mantinham o círculo, porque a R7 falava das setas das *trilhas* e a
+implementação seguiu ao pé da letra).
+
+As duas correções entraram na feature. Um terceiro achado — sinopse cortada no meio da palavra —
+saiu como correção de defeito da 001, por mudar conteúdo e não estilo.
+
+Veredito completo em `contracts/anti-slop-review.md`.
 
 Tudo o que era verificável foi verificado:
 
