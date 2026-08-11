@@ -43,6 +43,21 @@ class Movie(models.Model):
 
     is_active = models.BooleanField(default=True, db_index=True)
     synced_at = models.DateTimeField(null=True, blank=True)
+
+    # --- Classificação de catálogo (trilhas da home) ---
+    # Booleanos em vez de tabela de coleção: a cardinalidade é fixa em três
+    # trilhas e nenhuma tem atributo próprio — sem ordem manual, sem curadoria,
+    # sem janela de vigência. Ver R2 em 004-home-movie-rows/research.md.
+    #
+    # `is_trending` é zerado em todos os filmes no início de cada sincronização
+    # e remarcado nos que voltarem: "em alta" é estado do mundo, não atributo
+    # do filme. Sem isso quem entrou uma vez ficaria em alta para sempre.
+    is_trending = models.BooleanField(default=False, db_index=True)
+    # `is_upcoming` não basta sozinho — a consulta exige também
+    # `release_date > hoje`, senão um filme já estreado fica preso na trilha
+    # até a próxima sincronização.
+    is_upcoming = models.BooleanField(default=False, db_index=True)
+    catalog_synced_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
