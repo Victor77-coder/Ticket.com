@@ -159,15 +159,22 @@
   border-color: var(--cor-destaque-forte);
 }
 
+/* Superfície com peso, não contorno vazio. A pílula de borda fina sem
+ * preenchimento é item da lista de proibidos do anti-slop-review — foi o que
+ * reprovou a checagem de 2026-08-11.
+ *
+ * O contraste com o botão primário passa a ser de matéria (escuro sólido vs.
+ * laranja sólido) em vez de presença/ausência de fundo. */
 .botaoSecundario {
-  background: transparent;
-  border: 2px solid var(--cor-borda-forte);
+  background: var(--cor-superficie-flutuante);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--cor-borda);
   color: var(--cor-texto);
 }
 
 .botaoSecundario:hover {
-  border-color: var(--cor-texto-suave);
-  background: var(--cor-realce-sutil);
+  background: var(--cor-superficie-elevada);
+  border-color: var(--cor-borda-forte);
 }
 
 /* Esgotado se distingue por texto e por borda, não só por cor (Princípio V). */
@@ -199,25 +206,30 @@
   padding: 0 var(--esp-5);
 }
 
+/* Sem moldura circular — a mesma decisão da R7, que a implementação aplicou
+ * às setas das trilhas e esqueceu aqui. As setas da PRIMEIRA DOBRA são estas,
+ * e é onde o círculo com borda mais denuncia o produto.
+ *
+ * A área de toque continua 2.75rem; o alvo perde a moldura, não o tamanho. */
 .seta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 2.75rem;
   height: 2.75rem;
-  border: 1px solid var(--cor-borda-forte);
-  border-radius: var(--raio-pilula);
-  background: var(--cor-superficie-flutuante);
-  backdrop-filter: blur(6px);
+  border: none;
+  border-radius: var(--raio-sm);
+  background: transparent;
+  color: var(--cor-texto-suave);
   cursor: pointer;
   transition:
     background-color var(--transicao-rapida),
-    border-color var(--transicao-rapida);
+    color var(--transicao-rapida);
 }
 
 .seta:hover {
-  background: var(--cor-superficie-elevada);
-  border-color: var(--cor-texto-suave);
+  background: var(--cor-realce-sutil);
+  color: var(--cor-texto);
 }
 
 .indicadores {
