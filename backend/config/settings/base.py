@@ -100,11 +100,34 @@ USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# --- Sessão ---
+# Duas semanas é o padrão do Django e cobre folgadamente o período de
+# avaliação sem virar sessão eterna.
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 14
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+
+# O cookie que o navegador guarda é emitido pelo Next, não por aqui: o
+# navegador nunca fala com o Django direto. Este cookie só trafega no salto
+# servidor-a-servidor Next → Django.
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+
+# --- Limite de tentativas de entrada ---
+# Comportamento exigido pelo FR-007. Contador no cache, chaveado por origem e
+# identificador: só pela origem, alguém numa rede compartilhada bloquearia
+# contas alheias; só pelo identificador, trocar de usuário contornaria.
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_ATTEMPT_WINDOW_SECONDS = 60 * 15
+
 # --- DRF ---
 # Princípio IV da constitution: negar por padrão. As rotas públicas declaram
 # AllowAny explicitamente na própria view, nunca por herança silenciosa.
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        # Resolve o usuário a partir do cookie de sessão que o Next repassa.
+        "rest_framework.authentication.SessionAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
