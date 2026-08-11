@@ -1,10 +1,30 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import ReservationPanel from "@/components/seats/ReservationPanel";
 import SeatSelection from "@/components/seats/SeatSelection";
 import { situacaoDoAssento } from "@/components/seats/Seat";
-import type { Assento, Fileira, MapaSessao } from "@/lib/types";
+import type { Assento, Fileira, MapaSessao, Reserva } from "@/lib/types";
+
+// O mock global de `tests/setup.tsx` só registra as rotas visitadas. Aqui a
+// navegação e a recarga são asserção — o 401 conduz à entrada e o 409 recarrega
+// o mapa —, então este arquivo substitui o mock por espiões.
+const push = vi.fn();
+const refresh = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push,
+    refresh,
+    replace: () => {},
+    prefetch: () => {},
+    back: () => {},
+    forward: () => {},
+  }),
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 let contador = 0;
 
@@ -251,5 +271,115 @@ describe("sessão esgotada", () => {
     expect(screen.getByText("Esta sessão esgotou")).toBeInTheDocument();
     expect(screen.getByText(/Escolha outro horário/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Fileira/ })).not.toBeInTheDocument();
+  });
+});
+
+// --- Autorização do visitante (FR-010, FR-026) -----------------------------
+
+describe("visitante sem sessão", () => {
+  beforeEach(() => {
+    push.mockReset();
+    refresh.mockReset();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({ detail: "Entre para reservar." }, { status: 401 }),
+      ),
+    );
+  });
+
+  it("vê o mapa e a confirmação conduz à entrada com retorno", async () => {
+    const usuario = userEvent.setup();
+    render(<SeatSelection mapa={criarMapa({ fileiras: [criarFileira("A", 2)] })} />);
+
+    expect(screen.getByLabelText("Fileira A, lugar 1, livre")).toBeInTheDocument();
+
+    await usuario.click(lugares()[0]);
+    await usuario.click(screen.getByRole("button", { name: /Confirmar lugares/ }));
+
+    expect(push).toHaveBeenCalledWith("/entrar?next=%2Fsessoes%2F1");
+  });
+});
+
+// --- Conflito e confirmação (FR-019, FR-020, FR-030) ------------------------
+
+describe("confirmação da reserva", () => {
+  beforeEach(() => {
+    push.mockReset();
+    refresh.mockReset();
+  });
+
+  it("nomeia o lugar perdido no 409 e recarrega o mapa", async () => {
+    const usuario = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json(
+          {
+            detail: "O lugar A2 foi reservado(s) por outra pessoa agora há pouco. Escolha outro.",
+            assentos_indisponiveis: [{ fileira: "A", numero: 2 }],
+          },
+          { status: 409 },
+        ),
+      ),
+    );
+
+    render(<SeatSelection mapa={criarMapa({ fileiras: [criarFileira("A", 3)] })} />);
+
+    await usuario.click(lugares()[0]);
+    await usuario.click(screen.getByRole("button", { name: /Confirmar lugares/ }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/A2/);
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it("mostra a reserva confirmada com prazo e caminho ao pagamento", async () => {
+    const usuario = userEvent.setup();
+    const reserva: Reserva = {
+      id: 77,
+      sessao: 1,
+      assentos: [{ fileira: "A", numero: 1 }],
+      total: "32.00",
+      expira_em: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      situacao: "reservada",
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json(reserva, { status: 201 })),
+    );
+
+    render(<SeatSelection mapa={criarMapa({ fileiras: [criarFileira("A", 2)] })} />);
+
+    await usuario.click(lugares()[0]);
+    await usuario.click(screen.getByRole("button", { name: /Confirmar lugares/ }));
+
+    expect(screen.getByText("Lugares reservados")).toBeInTheDocument();
+    expect(screen.getByText(/A1/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Continuar para pagamento/ })).toHaveAttribute(
+      "href",
+      "/pagamento/77",
+    );
+  });
+});
+
+describe("prazo da reserva", () => {
+  it("exibe o estado expirado com caminho para escolher de novo", () => {
+    const reserva: Reserva = {
+      id: 77,
+      sessao: 12,
+      assentos: [{ fileira: "B", numero: 4 }],
+      total: "30.00",
+      expira_em: new Date(Date.now() - 1000).toISOString(),
+      situacao: "expirada",
+    };
+
+    render(<ReservationPanel reserva={reserva} />);
+
+    expect(screen.getByText("Esta reserva expirou")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Escolher lugares de novo/ })).toHaveAttribute(
+      "href",
+      "/sessoes/12",
+    );
   });
 });
