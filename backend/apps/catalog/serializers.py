@@ -55,6 +55,28 @@ class HighlightSerializer(serializers.Serializer):
         return f"/filmes/{movie.slug}"
 
 
+class SearchResultSerializer(serializers.Serializer):
+    """Uma sugestão da busca do cabeçalho.
+
+    Projeção deliberadamente pobre: só o necessário para reconhecer o filme e
+    chegar até ele. Reaproveitar `MovieDetailSerializer` por conveniência
+    arrastaria sessões para uma resposta pública de busca.
+    """
+
+    slug = serializers.CharField()
+    title = serializers.CharField()
+    poster_url = serializers.CharField(allow_null=True)
+    year = serializers.SerializerMethodField()
+    movie_path = serializers.SerializerMethodField()
+
+    def get_year(self, movie):
+        """Só o ano, para desambiguar títulos parecidos."""
+        return movie.release_date.year if movie.release_date else None
+
+    def get_movie_path(self, movie):
+        return f"/filmes/{movie.slug}"
+
+
 class ScreeningSerializer(serializers.Serializer):
     """Sessão comprável. Sem `status`, sem custo, sem capacidade."""
 

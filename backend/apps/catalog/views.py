@@ -13,7 +13,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.catalog import selectors
-from apps.catalog.serializers import HighlightSerializer, MovieDetailSerializer
+from apps.catalog.serializers import (
+    HighlightSerializer,
+    MovieDetailSerializer,
+    SearchResultSerializer,
+)
 
 HIGHLIGHTS_CACHE_SECONDS = 60
 
@@ -33,6 +37,40 @@ class HighlightsView(APIView):
         movies = selectors.get_highlighted_movies()
         data = HighlightSerializer(movies, many=True).data
         return Response({"count": len(data), "results": data})
+
+
+class SearchView(APIView):
+    """GET /api/v1/busca/?q=<termo> — sugestões de filme para o cabeçalho.
+
+    Lê exclusivamente o banco local, como o endpoint de highlights: com o
+    TMDb fora do ar esta resposta permanece idêntica (Princípio VII, SC-009).
+
+    Sem cache: o termo muda a cada tecla e uma resposta guardada por 60s
+    serviria mais requisição obsoleta do que acerto.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        termo = selectors.normalizar_termo(request.query_params.get("q"))
+        limite = selectors.normalizar_limite(
+            request.query_params.get("limite", selectors.SEARCH_LIMIT_PADRAO)
+        )
+
+        filmes, truncado = selectors.search_movies(termo, limite)
+        data = SearchResultSerializer(filmes, many=True).data
+
+        return Response(
+            {
+                # Devolver o termo normalizado deixa o cliente confirmar a
+                # qual busca a resposta pertence.
+                "termo": termo,
+                "count": len(data),
+                "truncated": truncado,
+                "results": data,
+            }
+        )
 
 
 class MovieDetailView(APIView):
