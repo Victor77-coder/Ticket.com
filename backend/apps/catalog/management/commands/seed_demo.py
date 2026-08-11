@@ -36,6 +36,9 @@ SESSION_OFFSETS_HOURS = [4, 27, 51]
 
 MIN_HIGHLIGHTED_MOVIES = 5
 
+# Abaixo disso é curta, show ou especial — não é o que um cinema põe em cartaz.
+MIN_RUNTIME_MINUTES = 60
+
 
 class Command(BaseCommand):
     help = "Cria usuários, salas e sessões de demonstração."
@@ -87,23 +90,60 @@ class Command(BaseCommand):
         return rooms
 
     def _pick_movies(self):
-        """Filmes com arte, para que o carrossel não caia no fallback."""
-        with_art = list(
-            Movie.objects.filter(is_active=True)
-            .exclude(backdrop_path="")
-            .order_by("-release_date")[:MIN_HIGHLIGHTED_MOVIES]
-        )
-        if len(with_art) >= MIN_HIGHLIGHTED_MOVIES:
-            return with_art
+        """Escolhe os filmes que vão para a vitrine.
 
-        # Catálogo pequeno: completa com o que houver, mesmo sem arte.
-        extra = Movie.objects.filter(is_active=True).exclude(
-            pk__in=[m.pk for m in with_art]
-        )[: MIN_HIGHLIGHTED_MOVIES - len(with_art)]
-        return with_art + list(extra)
+        Com catálogo real, ordenar só por data de lançamento trouxe um show de
+        banda e um curta de 9 minutos para o carrossel. A vitrine de um cinema
+        precisa parecer um cinema — o avaliador vê a home antes de ler código
+        (Princípio V).
+
+        Critério, em ordem de preferência:
+          1. longa-metragem com arte, já lançado — o que um cinema exibe hoje
+          2. qualquer longa-metragem com arte
+          3. o que houver, para o seed nunca falhar em catálogo pequeno
+        """
+        hoje = timezone.localdate()
+        base = Movie.objects.filter(is_active=True).exclude(backdrop_path="")
+
+        filtros = [
+            base.filter(
+                runtime_minutes__gte=MIN_RUNTIME_MINUTES,
+                release_date__lte=hoje,
+            ).order_by("-release_date"),
+            base.filter(runtime_minutes__gte=MIN_RUNTIME_MINUTES).order_by("-release_date"),
+            Movie.objects.filter(is_active=True).order_by("-release_date"),
+        ]
+
+        escolhidos = []
+        vistos = set()
+
+        for consulta in filtros:
+            for filme in consulta:
+                if filme.pk in vistos:
+                    continue
+                escolhidos.append(filme)
+                vistos.add(filme.pk)
+                if len(escolhidos) == MIN_HIGHLIGHTED_MOVIES:
+                    return escolhidos
+
+        return escolhidos
 
     def _seed_screenings(self, movies, rooms):
         now = timezone.now().replace(minute=0, second=0, microsecond=0)
+
+        # A grade é recriada do zero a cada execução. `update_or_create` por
+        # (sala, horário) não basta: o horário é calculado a partir de agora,
+        # então cada execução geraria uma grade nova e as antigas ficariam —
+        # o comando se diz idempotente e acumularia sessões, inflando a trilha
+        # Em cartaz com filmes de execuções anteriores.
+        #
+        # Apagar tudo é correto aqui porque não existe painel de organizador:
+        # toda sessão no banco veio deste comando. Quando existir, isto precisa
+        # passar a apagar apenas o que o seed criou.
+        apagadas, _ = Screening.objects.all().delete()
+        if apagadas:
+            self.stdout.write(f"  grade anterior removida ({apagadas} sessão(ões))")
+
         screenings = []
 
         for index, movie in enumerate(movies):
