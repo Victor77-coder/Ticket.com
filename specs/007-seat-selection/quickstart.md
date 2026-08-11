@@ -27,7 +27,7 @@ quatro na mesma. Rodar `migrate` não é opcional aqui.
 Antes de qualquer outra coisa. É ela que a feature inteira existe para criar:
 
 ```bash
-docker compose exec db psql -U postgres -d ingressos -c "\d screening_reservedseat"
+docker compose exec db psql -U ingressos -d ingressos -c "\d screening_reservedseat"
 ```
 
 **Esperado**: entre os índices, `unico_assento_por_sessao` como `UNIQUE (screening_id, seat_id)`.
@@ -177,7 +177,7 @@ wait
 E a prova que não depende da resposta HTTP:
 
 ```bash
-docker compose exec db psql -U postgres -d ingressos -c \
+docker compose exec db psql -U ingressos -d ingressos -c \
   "SELECT screening_id, seat_id, count(*) FROM screening_reservedseat
    GROUP BY 1,2 HAVING count(*) > 1;"
 ```
@@ -226,6 +226,20 @@ docker compose exec backend pytest tests/test_seat_map_api.py tests/test_reserva
 docker compose exec backend pytest tests/test_reservation_concurrency.py
 docker compose exec frontend npm run test
 ```
+
+### Linha de base — antes da feature 007
+
+Medida em 2026-08-11, com a `006` fechada e a árvore limpa. É contra estes números que SC-012
+é verificado no fim: nenhuma asserção das features 001–006 pode mudar nem falhar.
+
+| Suíte | Asserções |
+|---|---|
+| Back-end (`pytest`) | **141 passed** |
+| Front-end (`vitest`) | **97 passed** em 6 arquivos |
+
+> O `vitest` também acusa **1 unhandled error** pré-existente — `el.scrollBy is not a function`
+> em `components/rows/MovieRow.tsx:59`, porque o jsdom não implementa `scrollBy`. Vem da `004`,
+> não desta feature, e está registrado aqui para não ser atribuído à `007` no fim.
 
 ### Provar que o teste de concorrência testa alguma coisa
 

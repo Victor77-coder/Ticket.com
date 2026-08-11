@@ -154,3 +154,19 @@ TMDB_REGION = "BR"
 TMDB_TIMEOUT_SECONDS = 10.0
 
 SITE_URL = env("SITE_URL", default="http://localhost:5003")
+
+# --- Reserva de assentos ---
+# Prazo da reserva temporária. Fixo de propósito: não é lido do ambiente,
+# porque encurtá-lo para demonstrar a expiração ao vivo foi descartado —
+# ver "Limitação assumida da demonstração" em specs/007-seat-selection/spec.md.
+RESERVATION_HOLD_MINUTES = 10
+
+# Teto de lugares por reserva. Impede que uma pessoa trave a sala inteira
+# sem impedir a compra de um grupo.
+MAX_SEATS_PER_RESERVATION = 6
+
+# Lugares reservados para acessibilidade por sala, na última fileira.
+ACCESSIBLE_SEATS_PER_ROOM = 3
+
+# Lugares por fileira do mapa. O corredor visual fica entre o quinto e o sexto.
+SEATS_PER_ROW = 10

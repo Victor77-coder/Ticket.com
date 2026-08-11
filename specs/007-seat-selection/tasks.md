@@ -37,8 +37,8 @@ ver sem poder reservar não entrega nada, e reservar sem ver não é escolha de 
 
 **Purpose**: Saber de onde se parte, e declarar os números que a feature usa
 
-- [ ] T001 Rodar `docker compose exec backend pytest` e `docker compose exec frontend npm run test` e registrar as contagens atuais em `specs/007-seat-selection/quickstart.md` — é a linha de base contra a qual SC-012 é medido no fim (FR-033)
-- [ ] T002 Declarar `RESERVATION_HOLD_MINUTES = 10` e `MAX_SEATS_PER_RESERVATION = 6` em `backend/config/settings/base.py`, com comentário apontando para as suposições da spec
+- [X] T001 Rodar `docker compose exec backend pytest` e `docker compose exec frontend npm run test` e registrar as contagens atuais em `specs/007-seat-selection/quickstart.md` — é a linha de base contra a qual SC-012 é medido no fim (FR-033)
+- [X] T002 Declarar `RESERVATION_HOLD_MINUTES = 10` e `MAX_SEATS_PER_RESERVATION = 6` em `backend/config/settings/base.py`, com comentário apontando para as suposições da spec
 
 ---
 
@@ -51,16 +51,16 @@ fronteira aberta desde a 001.
 T003–T007 formam **uma unidade indivisível**: nenhum commit pode existir com modelo de ocupação
 sem a constraint que o protege — é literalmente o que o Princípio II proíbe.
 
-- [ ] T003 Remover o bloco `FRONTEIRA COM A FEATURE DE RESERVA` do docstring de `backend/apps/screening/models.py` e substituí-lo por nota apontando que a constraint desta feature é o que o aviso exigia
-- [ ] T004 Declarar `Seat` em `backend/apps/screening/models.py` com `room`, `row`, `number`, `kind` e `UniqueConstraint(room, row, number)` (data-model.md)
-- [ ] T005 Declarar `Reservation` em `backend/apps/screening/models.py` com `screening`, `customer`, `status`, `expires_at`, `idempotency_key` único e `created_at`
-- [ ] T006 Declarar `ReservedSeat` em `backend/apps/screening/models.py` com `reservation`, `screening` denormalizado, `seat` e a `UniqueConstraint(fields=["screening", "seat"], name="unico_assento_por_sessao")` — **sem `condition`**, com comentário explicando por que um índice parcial sobre `now()` é impossível (R1)
-- [ ] T007 Gerar `backend/apps/screening/migrations/0002_*.py` com `makemigrations` e **conferir lendo o arquivo** que os três modelos e a constraint estão todos nele — se saíram em migrações separadas, refazer
-- [ ] T008 Aplicar a migração e verificar no banco com `\d screening_reservedseat` que `unico_assento_por_sessao` aparece como `UNIQUE (screening_id, seat_id)` **sem cláusula `WHERE`** (quickstart.md)
-- [ ] T009 Substituir o corpo de `Screening.seats_taken` em `backend/apps/screening/models.py` para contar ocupações não vencidas da sessão, atualizando o docstring que anunciava o retorno zero (data-model.md)
-- [ ] T010 Gerar os assentos das salas em `backend/apps/catalog/management/commands/seed_demo.py`: fileiras de 10 lugares, letra por fileira, 3 lugares de acessibilidade na última — idempotente como o resto do comando (R7)
-- [ ] T011 [P] Cobrir a geração de assentos em `backend/tests/test_seed_demo.py`: contagem por sala, última fileira incompleta quando a capacidade não fecha, e rodar duas vezes não duplica
-- [ ] T012 [P] Acrescentar as fixtures `seats`, `make_reservation` e `occupy_seat` em `backend/tests/conftest.py`, reaproveitando `room` e `make_screening` já existentes
+- [X] T003 Remover o bloco `FRONTEIRA COM A FEATURE DE RESERVA` do docstring de `backend/apps/screening/models.py` e substituí-lo por nota apontando que a constraint desta feature é o que o aviso exigia
+- [X] T004 Declarar `Seat` em `backend/apps/screening/models.py` com `room`, `row`, `number`, `kind` e `UniqueConstraint(room, row, number)` (data-model.md)
+- [X] T005 Declarar `Reservation` em `backend/apps/screening/models.py` com `screening`, `customer`, `status`, `expires_at`, `idempotency_key` único e `created_at`
+- [X] T006 Declarar `ReservedSeat` em `backend/apps/screening/models.py` com `reservation`, `screening` denormalizado, `seat` e a `UniqueConstraint(fields=["screening", "seat"], name="unico_assento_por_sessao")` — **sem `condition`**, com comentário explicando por que um índice parcial sobre `now()` é impossível (R1)
+- [X] T007 Gerar `backend/apps/screening/migrations/0002_*.py` com `makemigrations` e **conferir lendo o arquivo** que os três modelos e a constraint estão todos nele — se saíram em migrações separadas, refazer
+- [X] T008 Aplicar a migração e verificar no banco com `\d screening_reservedseat` que `unico_assento_por_sessao` aparece como `UNIQUE (screening_id, seat_id)` **sem cláusula `WHERE`** (quickstart.md)
+- [X] T009 Substituir o corpo de `Screening.seats_taken` em `backend/apps/screening/models.py` para contar ocupações não vencidas da sessão, atualizando o docstring que anunciava o retorno zero (data-model.md)
+- [X] T010 Gerar os assentos das salas em `backend/apps/catalog/management/commands/seed_demo.py`: fileiras de 10 lugares, letra por fileira, 3 lugares de acessibilidade na última — idempotente como o resto do comando (R7)
+- [X] T011 [P] Cobrir a geração de assentos em `backend/tests/test_seed_demo.py`: contagem por sala, última fileira incompleta quando a capacidade não fecha, e rodar duas vezes não duplica
+- [X] T012 [P] Acrescentar as fixtures `seats`, `make_reservation` e `occupy_seat` em `backend/tests/conftest.py`, reaproveitando `room` e `make_screening` já existentes
 
 **Checkpoint**: a constraint existe no banco e o seed produz salas com assentos. Nada é exibido
 nem reservável ainda.

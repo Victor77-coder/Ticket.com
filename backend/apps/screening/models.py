@@ -1,17 +1,20 @@
-"""Salas e sessões.
+"""Salas, sessões, assentos e reservas.
 
-Escopo deliberadamente mínimo: só o necessário para decidir quais filmes
-entram no carrossel (FR-002) e para listar o que está à venda.
+Da 001 até a 006 este arquivo carregou um aviso: escrita de ocupação de
+assento não entrava sem a constraint UNIQUE(screening, seat) que a protege,
+porque criar uma sem a outra é o que o Princípio II proíbe.
 
-FRONTEIRA COM A FEATURE DE RESERVA — não adicionar aqui:
-  - modelos Seat, Reservation, Ticket
-  - a constraint UNIQUE(screening, seat) exigida pelo Princípio II
-  - qualquer coluna que materialize ocupação de assento
+A feature 007 atravessou a fronteira, e o aviso saiu porque foi cumprido:
+ReservedSeat e `unico_assento_por_sessao` nasceram na mesma migração. A
+garantia continua sendo a razão de o modelo poder existir — ver a seção
+"onde a garantia vive" em specs/007-seat-selection/data-model.md.
 
-Criar escrita de assento sem a constraint que a protege violaria o
-Princípio II da constitution. Ver a seção de fronteira em data-model.md.
+Ticket permanece fora: emissão de ingresso é a próxima feature.
 """
 
+import uuid
+
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -81,15 +84,141 @@ class Screening(models.Model):
 
     @property
     def seats_taken(self):
-        """Assentos já vendidos.
+        """Assentos ocupados por reserva viva.
 
-        Valor derivado por consulta, nunca coluna materializada. Enquanto a
-        feature de reserva não existir não há ingresso emitido, então o valor
-        é sempre 0. Quando ela chegar, esta propriedade passa a contar os
-        ingressos confirmados — sem migração de dados aqui.
+        Valor derivado por consulta, nunca coluna materializada — foi assim
+        que a 004 escreveu esta propriedade prevendo a feature de reserva, e
+        é por isso que a 007 pôde preenchê-la sem migração de dados.
+
+        Reserva vencida não conta: a liberação é por consulta, sem depender
+        de rotina agendada ter passado.
         """
-        return 0
+        return self.reserved_seats.filter(
+            reservation__expires_at__gt=timezone.now()
+        ).count()
 
     @property
     def has_available_seats(self):
         return self.seats_taken < self.room.capacity
+
+
+class Seat(models.Model):
+    """Um lugar físico da sala. O mesmo em todas as sessões dela."""
+
+    class Kind(models.TextChoices):
+        COMMON = "common", "Comum"
+        ACCESSIBLE = "accessible", "Acessibilidade"
+
+    room = models.ForeignKey(Room, related_name="seats", on_delete=models.CASCADE)
+    row = models.CharField(max_length=2)
+    number = models.PositiveSmallIntegerField()
+    kind = models.CharField(max_length=16, choices=Kind.choices, default=Kind.COMMON)
+
+    class Meta:
+        verbose_name = "assento"
+        verbose_name_plural = "assentos"
+        ordering = ["row", "number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["room", "row", "number"],
+                name="unico_lugar_por_posicao_na_sala",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.row}{self.number}"
+
+    @property
+    def label(self):
+        return f"{self.row}{self.number}"
+
+
+class Reservation(models.Model):
+    """Intenção de compra de um cliente para uma sessão.
+
+    É a unidade que segue para o pagamento: um cliente comprando três
+    lugares tem uma reserva, não três.
+    """
+
+    class Status(models.TextChoices):
+        HELD = "held", "Reservada"
+        EXPIRED = "expired", "Expirada"
+        CANCELLED = "cancelled", "Cancelada"
+
+    screening = models.ForeignKey(
+        Screening, related_name="reservations", on_delete=models.PROTECT
+    )
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name="reservations", on_delete=models.PROTECT
+    )
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.HELD)
+    expires_at = models.DateTimeField()
+
+    # A idempotência é resolvida por esta constraint, nunca por consulta
+    # prévia: "já existe reserva parecida?" é justamente o padrão que a
+    # concorrência quebra — duas requisições verificam, nenhuma encontra,
+    # ambas criam.
+    idempotency_key = models.UUIDField(default=uuid.uuid4, unique=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "reserva"
+        verbose_name_plural = "reservas"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Reserva {self.pk} — {self.customer} — {self.screening}"
+
+    @property
+    def is_expired(self):
+        """Vencimento é sempre lido do relógio, nunca do campo `status`.
+
+        `status` é registro histórico e serve à feature de pagamento para
+        distinguir "venceu" de "foi paga". Ele não é o que libera o lugar —
+        se fosse, haveria uma janela entre o vencimento e a rotina que o
+        marcasse, e nessa janela o lugar apareceria tomado sem estar.
+        """
+        return self.expires_at <= timezone.now()
+
+
+class ReservedSeat(models.Model):
+    """A ocupação de um lugar por uma reserva.
+
+    É esta tabela que carrega o Princípio II.
+    """
+
+    reservation = models.ForeignKey(
+        Reservation, related_name="seats", on_delete=models.CASCADE
+    )
+    # Denormalizado de propósito: `reservation.screening` já tem a
+    # informação, mas a constraint precisa das duas colunas na MESMA tabela,
+    # e nem o Django nem o PostgreSQL declaram unicidade através de
+    # travessia de chave estrangeira. Preenchido num único ponto do código
+    # (services/reservas.py) e nunca editado depois.
+    screening = models.ForeignKey(
+        Screening, related_name="reserved_seats", on_delete=models.PROTECT
+    )
+    seat = models.ForeignKey(Seat, related_name="occupations", on_delete=models.PROTECT)
+
+    class Meta:
+        verbose_name = "assento reservado"
+        verbose_name_plural = "assentos reservados"
+        constraints = [
+            # A garantia do Princípio II. ABSOLUTA, sem `condition`.
+            #
+            # O índice parcial sobre "reserva viva" seria a saída natural
+            # para conciliar com a expiração e é IMPOSSÍVEL: o PostgreSQL
+            # exige predicado imutável em índice parcial, e now() não é.
+            #
+            # A conciliação está em services/reservas.py: a linha vencida é
+            # apagada sob SELECT FOR UPDATE, dentro da própria transação de
+            # reserva. Ver R1 e R2 em specs/007-seat-selection/research.md.
+            models.UniqueConstraint(
+                fields=["screening", "seat"],
+                name="unico_assento_por_sessao",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.seat} — sessão {self.screening_id}"
