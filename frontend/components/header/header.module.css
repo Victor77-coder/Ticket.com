@@ -1,0 +1,299 @@
+/* Cabeçalho global do site.
+ *
+ * Todos os valores vêm de tokens.css — Princípio V. Se falta um valor, ele é
+ * definido lá antes de ser usado aqui.
+ *
+ * `sticky` e não `fixed` (R7): sticky permanece no fluxo e reserva a própria
+ * altura, então nenhuma página precisa compensar com padding-top.
+ */
+
+.faixa {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-cabecalho);
+  width: 100%;
+  background: var(--cor-superficie);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.conteudo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--esp-4);
+  max-width: var(--largura-conteudo);
+  min-height: var(--altura-cabecalho);
+  margin: 0 auto;
+  padding: var(--esp-3) var(--esp-5);
+}
+
+.espacoBusca {
+  min-width: 0;
+  justify-self: center;
+  width: 100%;
+  max-width: var(--largura-max-sugestoes);
+}
+
+.espacoConta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* --- Identidade --- */
+
+/* O wordmark é texto, não imagem (R8): selecionável, escala com o zoom e é
+ * lido corretamente por leitor de tela. A autoria vem do tratamento
+ * tipográfico, não de um asset importado. */
+.marca {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.05em;
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-forte);
+  letter-spacing: -0.03em;
+  line-height: var(--altura-linha-apertada);
+  color: var(--cor-texto);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.marcaSufixo {
+  color: var(--cor-destaque);
+  font-weight: var(--peso-medio);
+}
+
+.marca:hover .marcaSufixo {
+  color: var(--cor-destaque-forte);
+}
+
+/* --- Busca --- */
+
+.busca {
+  position: relative;
+  width: 100%;
+}
+
+.buscaRotulo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.buscaCampo {
+  width: 100%;
+  padding: var(--esp-2) var(--esp-4);
+  font: inherit;
+  font-size: var(--texto-sm);
+  color: var(--cor-texto);
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-pilula);
+  transition: border-color var(--transicao-rapida);
+}
+
+.buscaCampo::placeholder {
+  color: var(--cor-texto-fraco);
+}
+
+.buscaCampo:hover {
+  border-color: var(--cor-texto-fraco);
+}
+
+/* --- Painel de sugestões --- */
+
+.painel {
+  position: absolute;
+  top: calc(100% + var(--esp-2));
+  left: 0;
+  right: 0;
+  z-index: 1;
+  max-height: var(--altura-max-sugestoes);
+  overflow-y: auto;
+  background: var(--cor-superficie-elevada);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra-lg);
+}
+
+.painelAviso {
+  margin: 0;
+  padding: var(--esp-4);
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.painelErro {
+  color: var(--cor-erro);
+}
+
+.painelDica {
+  margin: 0;
+  padding: 0 var(--esp-4) var(--esp-4);
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-fraco);
+}
+
+.lista {
+  margin: 0;
+  padding: var(--esp-2);
+  list-style: none;
+}
+
+.opcao {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  min-height: var(--altura-item-sugestao);
+  padding: var(--esp-2) var(--esp-3);
+  border-radius: var(--raio-sm);
+  cursor: pointer;
+  /* A borda transparente reserva o espaço: a opção ativa não desloca as
+   * vizinhas ao ganhar destaque. */
+  border-left: 3px solid transparent;
+}
+
+/* O destaque não é comunicado só por cor (FR-028): a barra lateral é forma,
+ * e `aria-selected` carrega a informação para tecnologias assistivas. */
+.opcaoAtiva {
+  background: var(--cor-destaque-fraca);
+  border-left-color: var(--cor-destaque);
+}
+
+.opcaoArte {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: var(--raio-sm);
+}
+
+.opcaoArteVazia {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 54px;
+  border-radius: var(--raio-sm);
+  background: linear-gradient(145deg, var(--cor-superficie), var(--cor-fundo));
+  border: 1px solid var(--cor-borda);
+}
+
+.opcaoTexto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.opcaoTitulo {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  color: var(--cor-texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.opcaoAno {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-fraco);
+}
+
+.apenasLeitorDeTela {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- Acesso à conta ---
+ *
+ * O componente existe e está testado, mas não está montado no cabeçalho: a
+ * rota de entrada pertence à feature de autenticação (FR-023).
+ */
+
+.conta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-3);
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--raio-pilula);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color var(--transicao-rapida),
+    border-color var(--transicao-rapida);
+}
+
+.conta:hover {
+  color: var(--cor-texto);
+  border-color: var(--cor-borda-forte);
+}
+
+.contaIcone {
+  flex: 0 0 auto;
+}
+
+.contaTexto {
+  white-space: nowrap;
+}
+
+@media (max-width: 30rem) {
+  /* Em tela muito estreita fica só o ícone. O nome acessível continua no
+   * aria-label, então nada se perde para quem usa leitor de tela. */
+  .contaTexto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
+/* --- Telas estreitas ---
+ *
+ * A busca desce para uma segunda linha em vez de encolher até virar um campo
+ * inutilizável. Os três elementos continuam alcançáveis e nada é escondido
+ * atrás de um menu sem alternativa (FR-005).
+ */
+@media (max-width: 40rem) {
+  .conteudo {
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+    row-gap: var(--esp-3);
+    padding: var(--esp-3) var(--esp-4);
+  }
+
+  .espacoBusca {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    max-width: none;
+  }
+}
+
+/* --- Impressão ---
+ *
+ * `sticky` no papel repetiria a faixa ou sobreporia conteúdo. O cabeçalho não
+ * tem função numa página impressa (caso de borda do spec).
+ */
+@media print {
+  .faixa {
+    position: static;
+    border-bottom: none;
+  }
+
+  .espacoBusca,
+  .espacoConta {
+    display: none;
+  }
+}
