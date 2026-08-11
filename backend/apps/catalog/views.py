@@ -15,11 +15,21 @@ from rest_framework.views import APIView
 from apps.catalog import selectors
 from apps.catalog.serializers import (
     HighlightSerializer,
+    MovieCardSerializer,
     MovieDetailSerializer,
     SearchResultSerializer,
 )
 
 HIGHLIGHTS_CACHE_SECONDS = 60
+HOME_CACHE_SECONDS = 60
+
+# Ordem fixa das trilhas na home (FR-001). É do servidor: o cliente renderiza
+# o que veio, na ordem em que veio.
+TRILHAS = (
+    ("em-cartaz", "Em cartaz", selectors.get_sellable_movies),
+    ("em-alta", "Em alta", selectors.get_trending_movies),
+    ("em-breve", "Em breve", selectors.get_upcoming_movies),
+)
 
 
 @method_decorator(cache_page(HIGHLIGHTS_CACHE_SECONDS), name="get")
@@ -71,6 +81,35 @@ class SearchView(APIView):
                 "results": data,
             }
         )
+
+
+@method_decorator(cache_page(HOME_CACHE_SECONDS), name="get")
+class HomeRowsView(APIView):
+    """GET /api/v1/home/ — as três trilhas da home.
+
+    Lê exclusivamente o banco local. Nunca chama o TMDb: com a API externa
+    fora do ar esta resposta permanece idêntica (Princípio VII, SC-004).
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        rows = []
+
+        for key, title, selecionar in TRILHAS:
+            filmes = MovieCardSerializer(selecionar(), many=True).data
+
+            # Trilha vazia é omitida do array, não devolvida vazia (FR-006).
+            # Deixar o cliente decidir colocaria a regra em dois lugares, e o
+            # dia em que um deles esquecesse apareceria um título de seção com
+            # nada embaixo.
+            if not filmes:
+                continue
+
+            rows.append({"key": key, "title": title, "count": len(filmes), "movies": filmes})
+
+        return Response({"rows": rows})
 
 
 class MovieDetailView(APIView):

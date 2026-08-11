@@ -96,6 +96,8 @@ class MovieDetailSerializer(serializers.Serializer):
     poster_url = serializers.CharField(allow_null=True)
     certification_br = serializers.CharField(allow_null=True)
     runtime_minutes = serializers.IntegerField(allow_null=True)
+    # Alimenta "Estreia em DD/MM/AAAA" na página do filme sem sessão (FR-025).
+    release_date = serializers.DateField(allow_null=True)
     genres = serializers.SerializerMethodField()
     screenings = serializers.SerializerMethodField()
 
@@ -104,3 +106,29 @@ class MovieDetailSerializer(serializers.Serializer):
 
     def get_screenings(self, movie):
         return ScreeningSerializer(movie.screenings.all(), many=True).data
+
+
+class MovieCardSerializer(serializers.Serializer):
+    """Cartão de filme nas trilhas da home.
+
+    Sem `backdrop_url`: o cartão é vertical, de cartaz — enviar a arte
+    horizontal seria transferir dado que nenhuma tela usa.
+
+    Sem `trailer`: não há reprodução na trilha.
+
+    Sem `is_trending` / `is_upcoming` / `catalog_synced_at`: são mecânica
+    interna de classificação. O cliente recebe a trilha pronta e não precisa
+    saber por que o filme está nela (gate do Princípio IV).
+    """
+
+    id = serializers.IntegerField()
+    slug = serializers.CharField()
+    title = serializers.CharField()
+    poster_url = serializers.CharField(allow_null=True)
+    certification_br = serializers.CharField(allow_null=True)
+    runtime_minutes = serializers.IntegerField(allow_null=True)
+    release_date = serializers.DateField(allow_null=True)
+    movie_path = serializers.SerializerMethodField()
+
+    def get_movie_path(self, movie):
+        return f"/filmes/{movie.slug}"

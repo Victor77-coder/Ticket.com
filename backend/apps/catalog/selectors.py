@@ -11,6 +11,9 @@ from apps.screening.models import Screening
 
 HIGHLIGHTS_LIMIT = 5
 
+# Limite da trilha Em alta, definido pelo usuário no pedido da feature (FR-003).
+TRENDING_LIMIT = 9
+
 # --- Busca do cabeçalho ---
 SEARCH_LIMIT_PADRAO = 6
 SEARCH_LIMIT_MIN = 1
@@ -26,12 +29,15 @@ def _sellable_screenings(now):
     )
 
 
-def get_highlighted_movies(limit=HIGHLIGHTS_LIMIT):
-    """Filmes em destaque no carrossel (FR-002).
+def get_sellable_movies(limit=None):
+    """Filmes com ao menos uma sessão publicada e futura.
 
-    Elegível é o filme ativo com ao menos uma sessão publicada e futura.
-    A ordem é pela sessão mais próxima; o desempate por título existe para
-    que o resultado seja determinístico e o teste não fique instável.
+    Uma regra, dois consumidores: o carrossel pede 5, a trilha Em cartaz pede
+    todos. Duplicar a regra criaria dois lugares para manter em sincronia, e a
+    divergência apareceria como promessa quebrada na trilha (R5, SC-003).
+
+    A ordem é pela sessão mais próxima; o desempate por título existe para que
+    o resultado seja determinístico e o teste não fique instável.
     """
     now = timezone.now()
     sellable = _sellable_screenings(now)
@@ -56,6 +62,49 @@ def get_highlighted_movies(limit=HIGHLIGHTS_LIMIT):
             Prefetch("screenings", queryset=sellable.select_related("room")),
         )
         .order_by("next_screening_at", "title")[:limit]
+    )
+
+
+def get_highlighted_movies(limit=HIGHLIGHTS_LIMIT):
+    """Filmes em destaque no carrossel (FR-002 da feature 001).
+
+    É `get_sellable_movies` com teto de 5. A regra de elegibilidade é a mesma
+    que alimenta a trilha Em cartaz — é isso que garante que as duas
+    superfícies façam a mesma promessa de compra.
+    """
+    return get_sellable_movies(limit=limit)
+
+
+def get_trending_movies(limit=TRENDING_LIMIT):
+    """Filmes em alta, para a trilha da home (FR-003).
+
+    `is_trending` é zerado a cada sincronização e remarcado, então esta
+    consulta reflete a última lista do catálogo externo — não um acúmulo
+    histórico.
+    """
+    return (
+        Movie.objects.filter(is_active=True, is_trending=True)
+        .prefetch_related("genres")
+        .order_by("-release_date", "title")[:limit]
+    )
+
+
+def get_upcoming_movies(limit=None):
+    """Filmes com estreia futura, para a trilha da home (FR-004).
+
+    Exige a marca **e** a data futura. Só a marca deixaria um filme já
+    estreado preso na trilha até a próxima sincronização; só a data traria
+    todo filme futuro do catálogo, inclusive os que o TMDb não considera
+    lançamento próximo (R3).
+    """
+    return (
+        Movie.objects.filter(
+            is_active=True,
+            is_upcoming=True,
+            release_date__gt=timezone.localdate(),
+        )
+        .prefetch_related("genres")
+        .order_by("release_date", "title")[:limit]
     )
 
 
