@@ -48,6 +48,25 @@ export type MovieDetail = {
   screenings: Screening[];
 };
 
+/** Derivado de specs/002-site-header-navigation/contracts/search-api.md */
+
+export type SearchSuggestion = {
+  slug: string;
+  title: string;
+  poster_url: string | null;
+  year: number | null;
+  movie_path: string;
+};
+
+export type SearchResponse = {
+  /** O termo já normalizado pelo servidor — confirma a qual busca isto responde. */
+  termo: string;
+  count: number;
+  /** Há mais correspondências do que o limite pedido (FR-011). */
+  truncated: boolean;
+  results: SearchSuggestion[];
+};
+
 /**
  * Resultado de uma busca na API.
  *

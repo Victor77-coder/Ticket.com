@@ -6,7 +6,7 @@
  * back-end chega ao bundle.
  */
 
-import type { ApiResult, HighlightsResponse, MovieDetail } from "./types";
+import type { ApiResult, HighlightsResponse, MovieDetail, SearchResponse } from "./types";
 
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:8000";
 const TIMEOUT_MS = 8000;
@@ -55,4 +55,18 @@ export function fetchHighlights(): Promise<ApiResult<HighlightsResponse>> {
 
 export function fetchMovie(slug: string): Promise<ApiResult<MovieDetail>> {
   return getJson<MovieDetail>(`/api/v1/filmes/${encodeURIComponent(slug)}/`);
+}
+
+/**
+ * Busca de filmes por título.
+ *
+ * Chamada apenas pelo Route Handler `/api/busca`, nunca pelo navegador: no
+ * Compose `API_BASE_URL` é `http://backend:8000`, um nome que só resolve
+ * dentro da rede do Compose (R1).
+ */
+export function fetchSearch(termo: string, limite?: number): Promise<ApiResult<SearchResponse>> {
+  const params = new URLSearchParams({ q: termo });
+  if (limite !== undefined) params.set("limite", String(limite));
+
+  return getJson<SearchResponse>(`/api/v1/busca/?${params}`);
 }
