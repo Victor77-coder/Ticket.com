@@ -25,6 +25,27 @@
   --cor-destaque: #ff5c39;
   --cor-destaque-forte: #ff7a5c;
   --cor-destaque-fraca: rgba(255, 92, 57, 0.14);
+  /* Texto sobre o botão laranja. Escura o bastante para contrastar com o
+   * destaque, e por isso não é nenhuma das cores de texto. Vivia literal em
+   * dois arquivos antes desta feature (R10). */
+  --cor-sobre-destaque: #150703;
+
+  /* Fundo do quadro de trailer — preto real, não a superfície da interface:
+   * a barra do vídeo precisa desaparecer contra ele. */
+  --cor-fundo-video: #000;
+
+  /* Vestígio do laranja nos fundos de substituição. Antes eram dois valores
+   * quase iguais (0.22 e 0.18) em arquivos diferentes — a diferença não era
+   * decisão, era deriva. */
+  --cor-destaque-vestigio: rgba(255, 92, 57, 0.2);
+
+  /* --- Superfícies translúcidas ---
+   * Existem para flutuar sobre a arte do filme, onde uma superfície opaca
+   * cortaria a imagem. Não substituem `--cor-superficie`. */
+  --cor-realce-sutil: rgba(255, 255, 255, 0.06);
+  --cor-superficie-flutuante: rgba(20, 20, 28, 0.72);
+  --cor-fundo-flutuante: rgba(10, 10, 15, 0.85);
+  --cor-erro-fraca: rgba(255, 107, 107, 0.08);
 
   /* --- Estados --- */
   --cor-sucesso: #3ecf8e;
@@ -42,25 +63,71 @@
   );
   --veu-painel-base: linear-gradient(to top, rgba(10, 10, 15, 0.95) 0%, transparent 55%);
 
-  /* --- Tipografia --- */
-  --fonte-base:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    sans-serif;
+  /* Em tela estreita o texto ocupa a largura toda, então o véu precisa subir
+   * em vez de vir da lateral. Vivia literal no media query do painel. */
+  --veu-painel-estreito: linear-gradient(
+    to top,
+    rgba(10, 10, 15, 0.97) 0%,
+    rgba(10, 10, 15, 0.75) 45%,
+    rgba(10, 10, 15, 0.3) 100%
+  );
 
+  /* --- Tipografia ---
+   *
+   * Archivo, família única em fonte variável, carregada em app/layout.tsx.
+   * O eixo de largura (`wdth`) é o que separa display de texto — o título do
+   * filme sai expandido e o corpo sai normal, do mesmo arquivo. Licença SIL
+   * Open Font License.
+   *
+   * Não é Inter, Roboto nem a pilha do sistema de propósito: essas são as
+   * fontes que qualquer aplicação usa por padrão, e nenhuma comunica escolha
+   * (Princípio V). Ver R1 em specs/006-visual-identity/research.md.
+   */
+  --fonte-base: var(--fonte-archivo), ui-sans-serif, system-ui, sans-serif;
+
+  /* Escala com razão 1,25. Os valores anteriores não seguiam razão nenhuma —
+   * 0.75, 0.875, 1, 1.25, 1.75, 2.5 — e saltos irregulares fazem a página
+   * parecer montada em vez de composta (R3). */
   --texto-xs: 0.75rem;
-  --texto-sm: 0.875rem;
+  --texto-sm: 0.8125rem;
   --texto-md: 1rem;
   --texto-lg: 1.25rem;
-  --texto-xl: 1.75rem;
-  --texto-2xl: 2.5rem;
-  --texto-3xl: clamp(2rem, 5vw, 3.75rem);
+  --texto-xl: 1.5625rem;
+  --texto-2xl: 1.953rem;
+
+  /* O único degrau fora da escala, fluido de propósito: precisa dominar a
+   * dobra em qualquer largura. */
+  --texto-display: clamp(2.5rem, 6vw, 4.5rem);
+  --texto-3xl: var(--texto-display); /* apelido, para não quebrar consumidor */
 
   --peso-normal: 400;
   --peso-medio: 500;
-  --peso-forte: 700;
+  /* 600 e não 700: com display expandido ao lado, 700 em texto de interface
+   * fica pesado demais. */
+  --peso-forte: 600;
+  --peso-display: 700;
 
-  --altura-linha-apertada: 1.15;
+  /* Números crus — `font-variation-settings` não aceita unidade. É a única
+   * categoria de token sem unidade, por isso está anotada. */
+  --largura-display: 118;
+  --largura-normal: 100;
+
+  --espacamento-display: -0.02em;
+
+  --altura-linha-apertada: 1.05;
   --altura-linha-base: 1.6;
+
+  /* --- Ritmo vertical ---
+   *
+   * Dois níveis com números distintos. Antes os dois espaços eram o mesmo
+   * `--esp-7`, e é por isso que a home lia como lista uniforme em vez de
+   * página com hierarquia (R4, FR-001).
+   *
+   * São tokens de relação, não de espaço bruto: `--esp-6` serve em qualquer
+   * lugar, `--ritmo-dobra` tem um significado só.
+   */
+  --ritmo-dobra: clamp(3.5rem, 8vw, 6rem);
+  --ritmo-secao: clamp(2rem, 5vw, 3.5rem);
 
   /* --- Espaçamento --- */
   --esp-1: 0.25rem;
@@ -82,9 +149,26 @@
   --sombra-md: 0 6px 20px rgba(0, 0, 0, 0.4);
   --sombra-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
 
-  /* --- Movimento --- */
+  /* --- Movimento ---
+   *
+   * "Movimento" é deslocamento ou escala — anima `transform`. Mudança de cor
+   * ou borda é **realce**, não movimento, e não conta para o teto de três
+   * gestos do FR-015 (R5).
+   *
+   * Os três movimentos do produto: elevação do cartaz, transição de painel do
+   * carrossel, deslocamento da trilha.
+   */
+  --curva-saida: cubic-bezier(0.22, 0.61, 0.36, 1);
+
   --transicao-rapida: 160ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transicao-painel: 520ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  --transicao-painel: 520ms var(--curva-saida);
+
+  --movimento-cartaz: 220ms;
+  --elevacao-cartaz: -6px;
+
+  /* Brilho do esqueleto de carregamento. Duração em token porque vivia
+   * literal nos dois módulos antes desta feature. */
+  --brilho-esqueleto: 1.6s;
 
   /* --- Medidas do carrossel ---
    * O cabeçalho é sticky e ocupa espaço no fluxo, então a primeira dobra
