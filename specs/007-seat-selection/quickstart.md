@@ -73,6 +73,34 @@ Olhar o mapa e localizar cada um:
 Rendering → Emulate vision deficiencies → Achromatopsia). Os quatro continuam distinguíveis?
 Se dois viram a mesma coisa, FR-008 falhou.
 
+Para repetir a conferência sem abrir as ferramentas à mão, com a aplicação no ar:
+
+```bash
+cd frontend && node tests/e2e/acromatopsia.mjs <id-da-sessao> /tmp/mapa
+```
+
+Gera `/tmp/mapa-cor.png` e `/tmp/mapa-cinza.png`. **A comparação entre os dois é a verificação** —
+a captura em cor sozinha não diz nada sobre FR-008. A sessão escolhida precisa ter lugar tomado,
+senão o estado 3 não entra na imagem.
+
+### Resultado medido — 2026-08-11 (SC-007)
+
+Sessão com um lugar selecionado, dois tomados e três de acessibilidade, em acromatopsia:
+
+| Estado | Como se lê sem cor |
+|---|---|
+| Livre | contorno claro, número visível |
+| Selecionado | preenchimento claro + marca de conferido escura |
+| Tomado | preenchimento escuro + traço diagonal, sem número |
+| Acessibilidade | contorno **tracejado** + silhueta recortada |
+
+Os quatro continuam distinguíveis. **Nenhum par depende de cor para se separar.**
+
+> **Armadilha da medição, encontrada aqui**: a primeira captura pegou o lugar selecionado **no
+> meio da transição** de cor e ele apareceu quase apagado — o que parecia violação de FR-008 era
+> o obturador rápido demais. O script espera a transição terminar antes de capturar. Se a
+> verificação for feita à mão, selecionar o lugar e **esperar** antes de olhar.
+
 Acionar um lugar **tomado**: nada acontece, e o motivo aparece. Acionar um de **acessibilidade**:
 idem, com o motivo próprio dele.
 
@@ -190,6 +218,35 @@ possível, porque a constraint recusaria a inserção antes.
 > aconteceu — repita. **A prova formal é o teste automatizado**, com barreira sincronizando as duas
 > threads no ponto crítico; o exercício manual serve para ver o `409` com os próprios olhos.
 
+### Resultado medido — 2026-08-11
+
+```
+cliente1 409
+cliente2 201
+```
+
+`cliente1` recebeu `O lugar A1 acabou de ser reservado por outra pessoa. Escolha outro.` com
+`assentos_indisponiveis: [{"fileira": "A", "numero": 1}]`. A consulta de duplicatas devolveu
+`(0 rows)`.
+
+### O que esta caminhada manual pegou e nenhum teste pegava
+
+Na primeira execução, **`cliente1` e `cliente2` receberam `403` "Apenas clientes podem reservar
+lugares."** — dois clientes legítimos, recusados por papel. Não era papel: era **CSRF**.
+
+A `SessionAuthentication` do DRF exige o par `csrftoken`/`X-CSRFToken` em toda escrita, e o Next
+chama servidor-a-servidor, sem token nenhum. A falha vinha como `PermissionDenied`, indistinguível
+da recusa por papel.
+
+Os 27 testes de API passavam porque o `Client()` do Django marca a requisição com
+`_dont_enforce_csrf_checks`, e a `SessionAuthentication` respeita a marca. **A suíte inteira
+concordava com uma rota que recusava o proxy em produção.**
+
+Corrigido com `SessionAuthenticationSemCsrf` em `apps/accounts/authentication.py` — mesma decisão
+que a `003` já tinha registrado em R1 e aplicado no login. E o teste que faltava,
+`test_reserva_funciona_com_a_checagem_de_csrf_ligada`, usa `Client(enforce_csrf_checks=True)`:
+verificado que ele **falha com `403`** se o autenticador padrão voltar.
+
 ---
 
 ## A expiração
@@ -240,6 +297,16 @@ Medida em 2026-08-11, com a `006` fechada e a árvore limpa. É contra estes nú
 > O `vitest` também acusa **1 unhandled error** pré-existente — `el.scrollBy is not a function`
 > em `components/rows/MovieRow.tsx:59`, porque o jsdom não implementa `scrollBy`. Vem da `004`,
 > não desta feature, e está registrado aqui para não ser atribuído à `007` no fim.
+
+### Contagem final — com a 007 fechada
+
+| Suíte | Antes | Depois | Diferença |
+|---|---|---|---|
+| Back-end (`pytest`) | 141 passed | **202 passed** | +61, nenhuma falha |
+| Front-end (`vitest`) | 97 passed em 6 arquivos | **116 passed** em 7 arquivos | +19, nenhuma falha |
+
+Nenhuma asserção das features 001–006 mudou de texto nem de resultado (SC-012, FR-033, FR-034).
+O `unhandled error` do `scrollBy` continua exatamente um, e continua vindo da `004`.
 
 ### Provar que o teste de concorrência testa alguma coisa
 

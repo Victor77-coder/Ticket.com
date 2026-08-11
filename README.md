@@ -132,8 +132,8 @@ identificar você e oferece a saída.
 ## Testes
 
 ```bash
-docker compose exec backend pytest          # 136 testes
-docker compose exec frontend npm run test   # 97 testes
+docker compose exec backend pytest
+docker compose exec frontend npm run test
 ```
 
 Ponta a ponta (ver a ressalva em Limitações conhecidas):
@@ -144,8 +144,9 @@ cd frontend && npx playwright test
 
 Os testes obrigatórios são os que a constitution exige como prova: acesso público e ausência de
 vazamento de dado de gestão nas respostas públicas (Princípio IV), resiliência à queda do TMDb
-(Princípio VII), e a garantia de que a lista de sugestões nunca exibe o resultado de um termo já
-abandonado.
+(Princípio VII), a garantia de que a lista de sugestões nunca exibe o resultado de um termo já
+abandonado, e a corrida de reserva — exatamente uma vence, e o teste **falha** se a constraint for
+removida (Princípio II).
 
 ---
 
@@ -167,6 +168,17 @@ há. Depois de entrar, o visitante volta para a página de onde partiu.
 carrossel: **Em cartaz** (o que dá para comprar agora), **Em alta** e **Em breve**, as duas
 últimas vindas do TMDb. Cada cartaz leva à página do filme; quando não há sessão, a página informa
 a data de estreia e explica o motivo.
+
+**Escolha de assentos** (`specs/007-seat-selection/`) — mapa da sala a partir da sessão, seleção
+com limite de seis lugares e reserva com prazo de dez minutos. O mapa é público; reservar exige
+entrar, e só o papel cliente reserva — organizador e portaria recebem recusa **do servidor**.
+Passado o prazo, os lugares voltam ao estoque sem nenhuma rotina agendada: a liberação é por
+consulta, o que elimina a janela entre o vencimento e a passagem de um processo.
+
+O mesmo lugar nunca é vendido duas vezes, e a garantia é do PostgreSQL: `UNIQUE(sessão, assento)`
+na tabela de ocupação. A corrida perdedora falha no banco, não numa checagem prévia em Python.
+`backend/tests/test_reservation_concurrency.py` prova isso com duas threads e conexões separadas —
+e está verificado que ele **falha** se a constraint for removida.
 
 ---
 
@@ -247,6 +259,15 @@ vira defesa real contra requisição forjada, em vez de exigir propagar o par
 A sessão continua sendo do Django: hash de senha, invalidação no logout e prazo de validade são
 dele.
 
+**As rotas de reserva usam uma `SessionAuthentication` que não exige CSRF.** Parece o atalho que
+abre um buraco, e é o contrário: a proteção continua onde ela funciona. O navegador nunca chama o
+Django direto — ele chama o Next, na mesma origem, e o Next repassa o cookie numa requisição
+servidor-a-servidor, que não carrega credencial ambiente de navegador nenhuma. Exigir
+`X-CSRFToken` nesse salto não protege contra site de terceiro; só quebra o proxy. É a mesma
+decisão que o login já tinha tomado com `csrf_exempt`, agora explícita em
+`apps/accounts/authentication.py`. O que defende contra requisição forjada é o cookie
+`httpOnly` + `SameSite=Lax` emitido pelo próprio Next.
+
 **As três recusas de entrada produzem a mesma frase.** Usuário inexistente, senha errada e conta
 inativa respondem "Usuário ou senha incorretos.". Não foi preciso unificar nada à mão: o
 `authenticate()` do Django devolve `None` nos três casos, e os caminhos convergem sozinhos. É mais
@@ -273,8 +294,17 @@ cinema — uma sala existe sem lugar associado —, então o seletor não teria 
 quando houver o conceito de praça no modelo. Registrado em
 `specs/002-site-header-navigation/spec.md`.
 
-**Não há reserva de assento, pagamento, ingresso com QR nem tela de portaria.** São o núcleo do
-desafio e ainda não foram construídos. O que existe hoje vai do catálogo até a listagem de sessões.
+**Não há pagamento, ingresso com QR nem tela de portaria.** O que existe hoje vai do catálogo até
+a reserva dos lugares, com prazo correndo e caminho apontado para o pagamento — que é a próxima
+feature. Nenhum ingresso é emitido nesta etapa.
+
+**A expiração da reserva não é demonstrável ao vivo.** O prazo é fixo em dez minutos e não é lido
+do ambiente — um prazo configurável viraria "dois segundos" na demonstração e a garantia deixaria
+de ser a mesma que roda em produção. Esperar dez minutos parado também não é demonstração. Para
+ver o comportamento, force o vencimento no banco seguindo
+`specs/007-seat-selection/quickstart.md`; quem **prova** o comportamento são
+`test_reserva_vencida_aparece_livre_no_mapa` e `test_outro_cliente_reserva_lugares_vencidos`, em
+`backend/tests/test_reservation_api.py`.
 
 **`/filmes/{slug-inexistente}` responde HTTP 200 em vez de 404.** A página correta — "Filme não
 encontrado" — é exibida, mas o Next.js não consegue trocar o status depois que a renderização

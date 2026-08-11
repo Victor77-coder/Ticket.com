@@ -119,25 +119,25 @@ está testando a garantia e não o código.
 
 - [X] T033 [US2] Criar `backend/tests/test_reservation_concurrency.py` com duas threads reais, **conexões de banco separadas**, `django_db(transaction=True)` e barreira sincronizando o ponto crítico: exatamente uma reserva vence, a outra recebe recusa (por bloqueio **ou** por constraint, tanto faz), e o banco fica com **uma** ocupação (R4, SC-002)
 - [X] T034 [US2] Acrescentar em `backend/tests/test_reservation_concurrency.py` a asserção direta de que não existe par `(screening, seat)` duplicado após a corrida — a prova que não depende do código de resposta (SC-003)
-- [ ] T035 [P] [US2] Cobrir em `backend/tests/test_reservation_api.py` que uma seleção com qualquer lugar já tomado **não reserva nenhum** e nomeia o culpado no `409` (FR-018, FR-019, SC-009)
-- [ ] T036 [P] [US2] Cobrir em `backend/tests/test_reservation_api.py` as recusas de `400`: seleção vazia, acima de 6 lugares, assento de outra sala, assento de acessibilidade (FR-009, FR-013, FR-014)
-- [ ] T037 [P] [US2] Cobrir em `backend/tests/test_reservation_api.py` que dois envios com a mesma `chave_idempotencia` produzem `201` e depois `200`, **com o mesmo `id`** — uma reserva só (FR-023)
-- [ ] T038 [P] [US2] Cobrir em `backend/tests/test_reservation_api.py` que sessão em rascunho, cancelada ou já iniciada recusa a reserva com `404` (FR-002, FR-003)
+- [X] T035 [P] [US2] Cobrir em `backend/tests/test_reservation_api.py` que uma seleção com qualquer lugar já tomado **não reserva nenhum** e nomeia o culpado no `409` (FR-018, FR-019, SC-009)
+- [X] T036 [P] [US2] Cobrir em `backend/tests/test_reservation_api.py` as recusas de `400`: seleção vazia, acima de 6 lugares, assento de outra sala, assento de acessibilidade (FR-009, FR-013, FR-014)
+- [X] T037 [P] [US2] Cobrir em `backend/tests/test_reservation_api.py` que dois envios com a mesma `chave_idempotencia` produzem `201` e depois `200`, **com o mesmo `id`** — uma reserva só (FR-023)
+- [X] T038 [P] [US2] Cobrir em `backend/tests/test_reservation_api.py` que sessão em rascunho, cancelada ou já iniciada recusa a reserva com `404` (FR-002, FR-003)
 
 ### Implementação da User Story 2
 
 - [X] T039 [US2] Criar `backend/apps/screening/services/reservas.py` com `criar_reserva(cliente, sessao, assentos, chave)` dentro de `transaction.atomic`, na ordem exata de data-model.md: valida a sessão → **bloqueia** as ocupações com `select_for_update` → apaga as vencidas / recusa as vivas → cria a reserva → cria as ocupações (FR-017, R2)
 - [X] T040 [US2] Traduzir `IntegrityError` da inserção em recusa de negócio dentro de `backend/apps/screening/services/reservas.py`, com comentário registrando que é **resultado esperado**, não falha de sistema (R3)
 - [X] T041 [US2] Resolver a idempotência em `backend/apps/screening/services/reservas.py` pela violação de `UNIQUE(idempotency_key)`, devolvendo a reserva existente — nunca por consulta prévia, que é o padrão que a concorrência quebra (R9)
-- [ ] T042 [US2] Acrescentar o serializer de entrada e o de reserva criada em `backend/apps/screening/serializers.py`, com `expira_em` como instante absoluto (contrato, FR-020)
-- [ ] T043 [US2] Acrescentar `ReservationCreateView` em `backend/apps/screening/views.py`, mapeando as recusas para `400`, `404` e `409` com as frases do contrato (FR-030)
-- [ ] T044 [US2] Registrar `reservas/` em `backend/apps/screening/urls.py` e **conferir que o servidor sobe**
-- [ ] T045 [P] [US2] Criar `frontend/app/api/reservar/route.ts` repassando corpo e cookie ao Django e devolvendo status e corpo **sem alterá-los**, no padrão de `frontend/app/api/entrar/route.ts` (contrato)
-- [ ] T046 [US2] Criar `frontend/components/seats/SelectionSummary.tsx` com quantidade, total e o botão de confirmar, impondo o limite de 6 e informando ao ser atingido (FR-013, FR-015)
-- [ ] T047 [US2] Gerar a `chave_idempotencia` **uma vez por seleção** em `frontend/components/seats/SelectionSummary.tsx`, não por clique (R9)
-- [ ] T048 [US2] Exibir a reserva confirmada em `frontend/app/sessoes/[id]/page.tsx`: lugares nomeados, até quando vale, e o caminho para o pagamento (FR-020, FR-028)
-- [ ] T049 [US2] Tratar o `409` em `frontend/app/sessoes/[id]/page.tsx` com a frase que nomeia o lugar perdido e recarregar o mapa — nada de erro genérico (FR-030, FR-031)
-- [ ] T050 [P] [US2] Cobrir em `frontend/tests/seats.test.tsx` a seleção e o desmarque, o limite de 6, o total exibido e a recusa por seleção vazia (FR-012, FR-013, FR-015)
+- [X] T042 [US2] Acrescentar o serializer de entrada e o de reserva criada em `backend/apps/screening/serializers.py`, com `expira_em` como instante absoluto (contrato, FR-020)
+- [X] T043 [US2] Acrescentar `ReservationCreateView` em `backend/apps/screening/views.py`, mapeando as recusas para `400`, `404` e `409` com as frases do contrato (FR-030)
+- [X] T044 [US2] Registrar `reservas/` em `backend/apps/screening/urls.py` e **conferir que o servidor sobe**
+- [X] T045 [P] [US2] Criar `frontend/app/api/reservar/route.ts` repassando corpo e cookie ao Django e devolvendo status e corpo **sem alterá-los**, no padrão de `frontend/app/api/entrar/route.ts` (contrato)
+- [X] T046 [US2] Criar `frontend/components/seats/SelectionSummary.tsx` com quantidade, total e o botão de confirmar, impondo o limite de 6 e informando ao ser atingido (FR-013, FR-015)
+- [X] T047 [US2] Gerar a `chave_idempotencia` **uma vez por seleção** em `frontend/components/seats/SelectionSummary.tsx`, não por clique (R9)
+- [X] T048 [US2] Exibir a reserva confirmada em `frontend/app/sessoes/[id]/page.tsx`: lugares nomeados, até quando vale, e o caminho para o pagamento (FR-020, FR-028)
+- [X] T049 [US2] Tratar o `409` em `frontend/app/sessoes/[id]/page.tsx` com a frase que nomeia o lugar perdido e recarregar o mapa — nada de erro genérico (FR-030, FR-031)
+- [X] T050 [P] [US2] Cobrir em `frontend/tests/seats.test.tsx` a seleção e o desmarque, o limite de 6, o total exibido e a recusa por seleção vazia (FR-012, FR-013, FR-015)
 
 **Checkpoint**: MVP completo. O cliente vê a sala, escolhe, reserva, e a corrida tem um vencedor
 só — provado por teste.
@@ -154,16 +154,16 @@ conferir que o retorno é para o mapa daquela sessão
 
 ### Testes da User Story 3
 
-- [ ] T051 [P] [US3] Cobrir em `backend/tests/test_reservation_api.py` que `organizador` e `portaria` recebem `403` ao chamar a API de reserva **diretamente**, sem passar pela interface (FR-024, FR-025, SC-005)
-- [ ] T052 [P] [US3] Cobrir em `backend/tests/test_reservation_api.py` que sem sessão ativa a resposta é `401` com "Entre para reservar." (FR-026)
-- [ ] T053 [P] [US3] Cobrir em `backend/tests/test_reservation_api.py` que `cliente2` recebe `404` — não `403` — ao pedir a reserva de `cliente1`, porque `403` confirmaria que ela existe (FR-027, SC-006)
+- [X] T051 [P] [US3] Cobrir em `backend/tests/test_reservation_api.py` que `organizador` e `portaria` recebem `403` ao chamar a API de reserva **diretamente**, sem passar pela interface (FR-024, FR-025, SC-005)
+- [X] T052 [P] [US3] Cobrir em `backend/tests/test_reservation_api.py` que sem sessão ativa a resposta é `401` com "Entre para reservar." (FR-026)
+- [X] T053 [P] [US3] Cobrir em `backend/tests/test_reservation_api.py` que `cliente2` recebe `404` — não `403` — ao pedir a reserva de `cliente1`, porque `403` confirmaria que ela existe (FR-027, SC-006)
 
 ### Implementação da User Story 3
 
-- [ ] T054 [US3] Criar a permissão `IsCustomer` em `backend/apps/screening/permissions.py`, decidindo pelo papel do usuário da sessão, e aplicá-la em `ReservationCreateView` (FR-024, Princípio IV)
-- [ ] T055 [US3] Acrescentar `ReservationDetailView` em `backend/apps/screening/views.py` filtrando pelo dono, e registrar `reservas/<int:pk>/` em `backend/apps/screening/urls.py` (FR-027)
-- [ ] T056 [US3] Conduzir a `/entrar?next=` a partir do `401` em `frontend/app/sessoes/[id]/page.tsx`, reaproveitando o retorno seguro já validado na `003` — sem introduzir destino externo
-- [ ] T057 [P] [US3] Cobrir em `frontend/tests/seats.test.tsx` que o visitante vê o mapa e que a confirmação sem sessão conduz à entrada com o motivo (FR-010, FR-026)
+- [X] T054 [US3] Criar a permissão `IsCustomer` em `backend/apps/screening/permissions.py`, decidindo pelo papel do usuário da sessão, e aplicá-la em `ReservationCreateView` (FR-024, Princípio IV)
+- [X] T055 [US3] Acrescentar `ReservationDetailView` em `backend/apps/screening/views.py` filtrando pelo dono, e registrar `reservas/<int:pk>/` em `backend/apps/screening/urls.py` (FR-027)
+- [X] T056 [US3] Conduzir a `/entrar?next=` a partir do `401` em `frontend/app/sessoes/[id]/page.tsx`, reaproveitando o retorno seguro já validado na `003` — sem introduzir destino externo
+- [X] T057 [P] [US3] Cobrir em `frontend/tests/seats.test.tsx` que o visitante vê o mapa e que a confirmação sem sessão conduz à entrada com o motivo (FR-010, FR-026)
 
 **Checkpoint**: a autorização é do servidor, e o caminho do visitante fecha.
 
@@ -178,16 +178,16 @@ consegue reservar os mesmos lugares
 
 ### Testes da User Story 4
 
-- [ ] T058 [P] [US4] Cobrir em `backend/tests/test_reservation_api.py` que uma reserva vencida deixa seus lugares como `livre` no mapa, **sem** que nenhuma rotina tenha rodado (FR-021, SC-004)
-- [ ] T059 [P] [US4] Cobrir em `backend/tests/test_reservation_api.py` que outro cliente reserva os lugares vencidos com sucesso, e que a linha antiga foi removida — não duplicada (R2)
-- [ ] T060 [P] [US4] Cobrir em `backend/tests/test_reservation_api.py` que uma reserva **dentro** do prazo continua bloqueando os lugares para outro cliente (US4 cenário 4)
-- [ ] T061 [P] [US4] Cobrir em `backend/tests/test_reservation_api.py` que consultar uma reserva vencida devolve `situacao: expirada` com a frase de reescolha, e que ela não serve para prosseguir (FR-022)
+- [X] T058 [P] [US4] Cobrir em `backend/tests/test_reservation_api.py` que uma reserva vencida deixa seus lugares como `livre` no mapa, **sem** que nenhuma rotina tenha rodado (FR-021, SC-004)
+- [X] T059 [P] [US4] Cobrir em `backend/tests/test_reservation_api.py` que outro cliente reserva os lugares vencidos com sucesso, e que a linha antiga foi removida — não duplicada (R2)
+- [X] T060 [P] [US4] Cobrir em `backend/tests/test_reservation_api.py` que uma reserva **dentro** do prazo continua bloqueando os lugares para outro cliente (US4 cenário 4)
+- [X] T061 [P] [US4] Cobrir em `backend/tests/test_reservation_api.py` que consultar uma reserva vencida devolve `situacao: expirada` com a frase de reescolha, e que ela não serve para prosseguir (FR-022)
 
 ### Implementação da User Story 4
 
-- [ ] T062 [US4] Filtrar ocupação viva por `expires_at > now()` em `backend/apps/screening/selectors.py` — a liberação é por consulta, não por processo agendado (spec, Assumptions)
-- [ ] T063 [US4] Devolver `situacao` derivada do vencimento em `ReservationDetailView` de `backend/apps/screening/views.py`, com a frase própria da reserva expirada (FR-022, FR-030)
-- [ ] T064 [US4] Exibir a contagem regressiva em `frontend/components/seats/SelectionSummary.tsx` a partir do instante absoluto `expira_em`, e o estado de reserva expirada com o caminho para escolher de novo (FR-020, FR-030)
+- [X] T062 [US4] Filtrar ocupação viva por `expires_at > now()` em `backend/apps/screening/selectors.py` — a liberação é por consulta, não por processo agendado (spec, Assumptions)
+- [X] T063 [US4] Devolver `situacao` derivada do vencimento em `ReservationDetailView` de `backend/apps/screening/views.py`, com a frase própria da reserva expirada (FR-022, FR-030)
+- [X] T064 [US4] Exibir a contagem regressiva a partir do instante absoluto `expira_em`, e o estado de reserva expirada com o caminho para escolher de novo (FR-020, FR-030) — implementado em `frontend/components/seats/ReservationPanel.tsx`, não em `SelectionSummary.tsx` como a tarefa previa: o prazo só existe **depois** que a reserva é criada, e o resumo da seleção já não está em tela nessa hora
 
 **Checkpoint**: o estoque não morre. As quatro user stories estão fechadas.
 
@@ -198,12 +198,12 @@ consegue reservar os mesmos lugares
 **Purpose**: Provar que a garantia é real, que nada da 001–006 quebrou, e registrar a limitação
 
 - [X] T065 **Provar que o teste de concorrência testa**: comentar a `UniqueConstraint` em `backend/apps/screening/models.py`, gerar e aplicar a migração, rodar `backend/tests/test_reservation_concurrency.py` e **confirmar que FALHA**. Desfazer alteração e migração em seguida, e registrar o resultado em `specs/007-seat-selection/quickstart.md` (R4, R12)
-- [ ] T066 [P] Varrer `frontend/components/seats/seats.module.css` e `frontend/app/sessoes/[id]/sessao.module.css` com os comandos de `specs/006-visual-identity/contracts/token-contract.md` e confirmar **zero** valores de cor, espaçamento, tipografia, raio ou duração fora dos tokens (FR-035)
-- [ ] T067 [P] Conferir o mapa em escala de cinza (emulação de acromatopsia) e registrar o resultado em `specs/007-seat-selection/quickstart.md` — os quatro estados continuam distinguíveis (SC-007)
-- [ ] T068 [P] Criar `frontend/tests/e2e/reserva.spec.ts` cobrindo o percurso filme → sessão → mapa → seleção → reserva confirmada (Princípio I)
-- [ ] T069 Rodar a suíte inteira do back-end e do front-end, confirmar que **nenhuma asserção das features 001–006 mudou** nem falhou, e anotar as contagens finais ao lado da linha de base em `specs/007-seat-selection/quickstart.md` (FR-033, FR-034, SC-012)
-- [ ] T070 Registrar em `README.md`, nas limitações conhecidas, que a expiração não é demonstrável ao vivo — prazo fixo de 10 minutos — e apontar qual teste prova o comportamento (spec, "Limitação assumida da demonstração")
-- [ ] T071 Percorrer `specs/007-seat-selection/quickstart.md` de ponta a ponta, incluindo a reprodução manual da corrida, e corrigir o que divergir do implementado
+- [X] T066 [P] Varrer `frontend/components/seats/seats.module.css` e `frontend/app/sessoes/[id]/sessao.module.css` com os comandos de `specs/006-visual-identity/contracts/token-contract.md` e confirmar **zero** valores de cor, espaçamento, tipografia, raio ou duração fora dos tokens (FR-035)
+- [X] T067 [P] Conferir o mapa em escala de cinza (emulação de acromatopsia) e registrar o resultado em `specs/007-seat-selection/quickstart.md` — os quatro estados continuam distinguíveis (SC-007)
+- [X] T068 [P] Criar `frontend/tests/e2e/reserva.spec.ts` cobrindo o percurso filme → sessão → mapa → seleção → reserva confirmada (Princípio I)
+- [X] T069 Rodar a suíte inteira do back-end e do front-end, confirmar que **nenhuma asserção das features 001–006 mudou** nem falhou, e anotar as contagens finais ao lado da linha de base em `specs/007-seat-selection/quickstart.md` (FR-033, FR-034, SC-012)
+- [X] T070 Registrar em `README.md`, nas limitações conhecidas, que a expiração não é demonstrável ao vivo — prazo fixo de 10 minutos — e apontar qual teste prova o comportamento (spec, "Limitação assumida da demonstração")
+- [X] T071 Percorrer `specs/007-seat-selection/quickstart.md` de ponta a ponta, incluindo a reprodução manual da corrida, e corrigir o que divergir do implementado — **a caminhada achou o que a suíte não achava**: a reserva devolvia `403` para cliente legítimo por exigência de CSRF da `SessionAuthentication`, invisível para o `Client()` de teste. Corrigido e coberto por `test_reserva_funciona_com_a_checagem_de_csrf_ligada`; registrado no quickstart
 
 ---
 
