@@ -12,9 +12,10 @@ import pytest
 from django.core.management import call_command
 from django.utils import timezone
 
+from apps.catalog.management.commands.seed_demo import Command
 from apps.catalog.models import Movie
 from apps.catalog.selectors import get_highlighted_movies, get_sellable_movies
-from apps.screening.models import Screening
+from apps.screening.models import Reservation, ReservedSeat, Room, Screening, Seat
 
 # Os títulos como o TMDb os devolve — o seed procura por fragmento.
 CATALOGO = [
@@ -239,3 +240,99 @@ def test_seed_continua_criando_os_quatro_usuarios(catalogo):
     User = get_user_model()
     for username in ["organizador", "cliente1", "cliente2", "portaria"]:
         assert User.objects.filter(username=username).exists()
+
+
+# --- Mapa das salas (feature 007) -----------------------------------------
+
+
+@pytest.mark.django_db
+def test_seed_gera_um_lugar_para_cada_unidade_de_capacidade(catalogo):
+    _semear()
+
+    for room in Room.objects.all():
+        assert room.seats.count() == room.capacity
+
+
+@pytest.mark.django_db
+def test_lugares_ficam_em_fileiras_de_dez_com_letra_por_fileira(catalogo):
+    _semear()
+
+    sala = Room.objects.get(name="Sala 1")  # 60 lugares → A a F
+
+    letras = sorted({s.row for s in sala.seats.all()})
+    assert letras == ["A", "B", "C", "D", "E", "F"]
+
+    for letra in letras:
+        numeros = sorted(s.number for s in sala.seats.filter(row=letra))
+        assert numeros == list(range(1, 11))
+
+
+def test_capacidade_que_nao_fecha_a_fileira_deixa_a_ultima_incompleta():
+    """Sala de 45 lugares dá quatro fileiras cheias e uma com cinco.
+
+    O que não pode acontecer é inventar cinco lugares que a sala não tem só
+    para a última fileira ficar simétrica.
+
+    Testado direto na regra de posição, e não semeando uma sala: o seed só
+    administra as salas que ele mesmo cria (DEMO_ROOMS), e ambas fecham a
+    grade exata. Criar uma sala de fora para o teste provaria outra coisa —
+    que o seed invade salas alheias, que é justamente o que ele não faz.
+    """
+    posicoes = Command._posicoes_da_sala(45, por_fileira=10)
+
+    assert len(posicoes) == 45
+    assert posicoes[0] == ("A", 1)
+    assert posicoes[-1] == ("E", 5)
+    assert [p for p in posicoes if p[0] == "E"] == [("E", n) for n in range(1, 6)]
+    assert not [p for p in posicoes if p[0] == "F"]
+
+
+@pytest.mark.django_db
+def test_acessibilidade_fica_na_ultima_fileira(catalogo):
+    _semear()
+
+    sala = Room.objects.get(name="Sala 1")
+    acessiveis = sala.seats.filter(kind=Seat.Kind.ACCESSIBLE)
+
+    assert acessiveis.count() == 3
+    assert {s.row for s in acessiveis} == {"F"}
+    assert sorted(s.number for s in acessiveis) == [8, 9, 10]
+
+
+@pytest.mark.django_db
+def test_duas_execucoes_nao_duplicam_lugares(catalogo):
+    _semear()
+    antes = Seat.objects.count()
+
+    _semear()
+
+    assert Seat.objects.count() == antes
+
+
+@pytest.mark.django_db
+def test_seed_refaz_o_cenario_mesmo_com_reserva_existente(catalogo):
+    """Reserva viva não pode travar o seed.
+
+    `ReservedSeat.seat` e `Reservation.screening` são PROTECT. Sem apagar as
+    reservas antes de refazer a grade e o mapa, a segunda execução estouraria
+    `ProtectedError` — e o comando que se diz idempotente falharia na segunda
+    vez, justo depois de alguém ter percorrido a demonstração.
+    """
+    from django.contrib.auth import get_user_model
+
+    _semear()
+
+    sessao = Screening.objects.first()
+    assento = sessao.room.seats.first()
+    reserva = Reservation.objects.create(
+        screening=sessao,
+        customer=get_user_model().objects.get(username="cliente1"),
+        expires_at=timezone.now() + timedelta(minutes=10),
+    )
+    ReservedSeat.objects.create(reservation=reserva, screening=sessao, seat=assento)
+
+    _semear()
+
+    assert Reservation.objects.count() == 0
+    assert ReservedSeat.objects.count() == 0
+    assert Seat.objects.count() == 100

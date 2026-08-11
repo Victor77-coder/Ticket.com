@@ -9,6 +9,7 @@ Idempotente: rodar de novo atualiza, não duplica.
 from datetime import timedelta
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -16,7 +17,7 @@ from django.utils import timezone
 
 from apps.catalog.models import Movie
 from apps.catalog.selectors import HIGHLIGHTS_LIMIT
-from apps.screening.models import Room, Screening
+from apps.screening.models import Reservation, Room, Screening, Seat
 
 User = get_user_model()
 
@@ -71,6 +72,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         users = self._seed_users()
         rooms = self._seed_rooms()
+
+        # Antes de qualquer coisa que dependa da grade: limpar reservas e
+        # sessões. Precisa vir cedo porque os assentos são refeitos abaixo, e
+        # ReservedSeat.seat é PROTECT — com ocupação viva, refazer o mapa da
+        # sala falharia.
+        self._reset_demo_state()
+
+        seats = self._seed_seats(rooms)
         movies = self._pick_movies()
 
         if not movies:
@@ -84,7 +93,7 @@ class Command(BaseCommand):
 
         screenings = self._seed_screenings(movies, rooms)
 
-        self._report(users, rooms, movies, screenings)
+        self._report(users, rooms, seats, movies, screenings)
 
     def _seed_users(self):
         created = []
@@ -112,6 +121,98 @@ class Command(BaseCommand):
             )
             rooms.append(room)
         return rooms
+
+    def _reset_demo_state(self):
+        """Apaga reservas e sessões antes de recriar a demonstração.
+
+        A grade é recriada do zero a cada execução — `update_or_create` por
+        (sala, horário) não basta, porque o horário é calculado a partir de
+        agora e cada execução geraria uma grade nova, acumulando as antigas.
+
+        As reservas vão junto, e não por descuido: elas apontam para sessões
+        com PROTECT, então sobreviver à grade seria impossível de qualquer
+        forma. Mais importante, uma reserva de uma sessão que deixou de
+        existir não significa nada — o seed reconstrói o cenário inteiro.
+
+        Apagar tudo é correto porque não existe painel de organizador: toda
+        sessão e toda reserva no banco vieram deste comando ou do fluxo de
+        demonstração. Quando o painel existir, isto precisa passar a apagar
+        apenas o que o seed criou.
+        """
+        reservas, _ = Reservation.objects.all().delete()
+        if reservas:
+            self.stdout.write(f"  reservas anteriores removidas ({reservas} linha(s))")
+
+        apagadas, _ = Screening.objects.all().delete()
+        if apagadas:
+            self.stdout.write(f"  grade anterior removida ({apagadas} sessão(ões))")
+
+    def _seed_seats(self, rooms):
+        """Gera o mapa físico de cada sala a partir da capacidade.
+
+        Fileiras de SEATS_PER_ROW lugares, identificadas por letra. Capacidade
+        que não fecha a fileira deixa a última incompleta — sem inventar
+        lugares que a sala não tem.
+
+        Os lugares de acessibilidade ficam na última fileira, que é a
+        convenção de sala real: é onde há espaço para cadeira de rodas sem
+        obstruir a passagem (R7).
+
+        Idempotente por reconstrução: os assentos da sala são apagados e
+        refeitos. Só é seguro porque `_reset_demo_state` já removeu as
+        ocupações — sem isso, `ReservedSeat.seat` com PROTECT impediria.
+        """
+        por_fileira = settings.SEATS_PER_ROW
+        criados = []
+
+        for room in rooms:
+            room.seats.all().delete()
+
+            posicoes = self._posicoes_da_sala(room.capacity, por_fileira)
+
+            # Os últimos lugares da última fileira. `min` protege a sala cuja
+            # última fileira tem menos lugares que a cota de acessibilidade.
+            ultima_letra = posicoes[-1][0] if posicoes else None
+            na_ultima = [p for p in posicoes if p[0] == ultima_letra]
+            acessiveis = {
+                p for p in na_ultima[-min(settings.ACCESSIBLE_SEATS_PER_ROOM, len(na_ultima)) :]
+            }
+
+            criados.extend(
+                Seat.objects.bulk_create(
+                    [
+                        Seat(
+                            room=room,
+                            row=letra,
+                            number=numero,
+                            kind=(
+                                Seat.Kind.ACCESSIBLE
+                                if (letra, numero) in acessiveis
+                                else Seat.Kind.COMMON
+                            ),
+                        )
+                        for letra, numero in posicoes
+                    ]
+                )
+            )
+
+        return criados
+
+    @staticmethod
+    def _posicoes_da_sala(capacity, por_fileira):
+        """As posições (letra, número) de uma sala, na ordem de leitura.
+
+        Vinte e seis fileiras é o teto do alfabeto — bem acima de qualquer
+        sala do cenário, mas o corte explícito evita gerar identificação
+        ilegível em silêncio se a capacidade crescer.
+        """
+        teto = 26 * por_fileira
+        total = min(capacity, teto)
+
+        return [
+            (chr(ord("A") + indice // por_fileira), indice % por_fileira + 1)
+            for indice in range(total)
+        ]
 
     def _buscar_por_nome(self, fragmento):
         """Encontra um filme por fragmento do título, ou None.
@@ -214,20 +315,9 @@ class Command(BaseCommand):
         return escolhidos
 
     def _seed_screenings(self, movies, rooms):
+        # A grade anterior já foi removida por `_reset_demo_state`, junto das
+        # reservas que dependiam dela.
         now = timezone.now().replace(minute=0, second=0, microsecond=0)
-
-        # A grade é recriada do zero a cada execução. `update_or_create` por
-        # (sala, horário) não basta: o horário é calculado a partir de agora,
-        # então cada execução geraria uma grade nova e as antigas ficariam —
-        # o comando se diz idempotente e acumularia sessões, inflando a trilha
-        # Em cartaz com filmes de execuções anteriores.
-        #
-        # Apagar tudo é correto aqui porque não existe painel de organizador:
-        # toda sessão no banco veio deste comando. Quando existir, isto precisa
-        # passar a apagar apenas o que o seed criou.
-        apagadas, _ = Screening.objects.all().delete()
-        if apagadas:
-            self.stdout.write(f"  grade anterior removida ({apagadas} sessão(ões))")
 
         screenings = []
 
@@ -259,11 +349,11 @@ class Command(BaseCommand):
 
         return screenings
 
-    def _report(self, users, rooms, movies, screenings):
+    def _report(self, users, rooms, seats, movies, screenings):
         self.stdout.write(self.style.SUCCESS("\nCenário de demonstração pronto.\n"))
         self.stdout.write(
             f"  {len(movies)} filme(s) à venda · {len(rooms)} sala(s) · "
-            f"{len(screenings)} sessão(ões) publicada(s)\n"
+            f"{len(seats)} lugar(es) · {len(screenings)} sessão(ões) publicada(s)\n"
         )
 
         # A vitrine precisa ser conferível sem abrir o navegador (FR-014): os
