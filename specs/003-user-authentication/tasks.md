@@ -149,13 +149,13 @@ sessão e confirmar o retorno ao estado de visitante sem erro visível
 
 **Purpose**: Fechar o desbloqueio da feature 002 e as obrigações da constitution
 
-- [ ] T045 Estender `frontend/tests/e2e/header.spec.ts` com o percurso visitante → entrada → autenticado → saída, e com a volta ao estado de visitante quando a sessão expira — **fecha a T038 de `002-site-header-navigation`** (SC-009)
-- [ ] T046 Marcar T037 e T038 como concluídas em `specs/002-site-header-navigation/tasks.md`, removendo os avisos `🚧 NÃO EXECUTAR AINDA`
-- [ ] T047 [P] Atualizar `README.md`: remover "Não há autenticação" das limitações conhecidas, registrar as credenciais como utilizáveis de fato e descrever o fluxo de entrada
-- [ ] T048 [P] Registrar em `README.md` a limitação do contador de tentativas viver em cache local — reiniciar o back-end zera os bloqueios (R4)
-- [ ] T049 [P] Adicionar à seção de decisões do `README.md` por que o cookie é emitido pelo Next e não repassado do Django (R1)
+- [X] T045 Estender `frontend/tests/e2e/header.spec.ts` com o percurso visitante → entrada → autenticado → saída, e com a volta ao estado de visitante quando a sessão expira — **fecha a T038 de `002-site-header-navigation`** (SC-009)
+- [X] T046 Marcar T037 e T038 como concluídas em `specs/002-site-header-navigation/tasks.md`, removendo os avisos `🚧 NÃO EXECUTAR AINDA`
+- [X] T047 [P] Atualizar `README.md`: remover "Não há autenticação" das limitações conhecidas, registrar as credenciais como utilizáveis de fato e descrever o fluxo de entrada
+- [X] T048 [P] Registrar em `README.md` a limitação do contador de tentativas viver em cache local — reiniciar o back-end zera os bloqueios (R4)
+- [X] T049 [P] Adicionar à seção de decisões do `README.md` por que o cookie é emitido pelo Next e não repassado do Django (R1)
 - [ ] T050 [P] Verificar SC-007 percorrendo entrada e saída apenas pelo teclado, corrigindo foco visível e ordem em `frontend/app/entrar/page.tsx` e `frontend/components/header/AccountMenu.tsx`
-- [ ] T051 Executar as verificações de segurança de `specs/003-user-authentication/quickstart.md`: cookie ausente em `document.cookie`, destino de retorno externo descartado, e nenhuma credencial na resposta
+- [X] T051 Executar as verificações de segurança de `specs/003-user-authentication/quickstart.md`: cookie ausente em `document.cookie`, destino de retorno externo descartado, e nenhuma credencial na resposta
 - [ ] T052 Percorrer os sete princípios da constitution contra a aplicação rodando e registrar desvios remanescentes nas limitações conhecidas do `README.md`
 
 ---
