@@ -36,10 +36,10 @@ US1 (P1) → US2 (P1) → US3 (P2).
 
 **Purpose**: Configuração de sessão e de autenticação, sem ainda expor endpoint
 
-- [ ] T001 Configurar a sessão em `backend/config/settings/base.py`: `SESSION_COOKIE_AGE = 1209600` (duas semanas, padrão do Django), `SESSION_EXPIRE_AT_BROWSER_CLOSE = False` e `SESSION_ENGINE` no banco (R5)
-- [ ] T002 Adicionar `rest_framework.authentication.SessionAuthentication` a `DEFAULT_AUTHENTICATION_CLASSES` em `backend/config/settings/base.py`, mantendo `IsAuthenticated` como permissão padrão
-- [ ] T003 [P] Definir as constantes do limite de tentativas em `backend/config/settings/base.py`: 5 falhas, janela de 15 minutos (R4)
-- [ ] T004 Registrar `apps.accounts.urls` sob `api/v1/auth/` em `backend/config/urls.py`
+- [X] T001 Configurar a sessão em `backend/config/settings/base.py`: `SESSION_COOKIE_AGE = 1209600` (duas semanas, padrão do Django), `SESSION_EXPIRE_AT_BROWSER_CLOSE = False` e `SESSION_ENGINE` no banco (R5)
+- [X] T002 Adicionar `rest_framework.authentication.SessionAuthentication` a `DEFAULT_AUTHENTICATION_CLASSES` em `backend/config/settings/base.py`, mantendo `IsAuthenticated` como permissão padrão
+- [X] T003 [P] Definir as constantes do limite de tentativas em `backend/config/settings/base.py`: 5 falhas, janela de 15 minutos (R4)
+- [X] T004 Registrar `apps.accounts.urls` sob `api/v1/auth/` em `backend/config/urls.py`
 
 ---
 
@@ -49,14 +49,14 @@ US1 (P1) → US2 (P1) → US3 (P2).
 
 **⚠️ CRITICAL**: Nenhuma user story pode começar antes desta fase terminar
 
-- [ ] T005 Criar `SessionSerializer` em `backend/apps/accounts/serializers.py` expondo **apenas** `nome` (nome de exibição montado no servidor) e `papel`, conforme `contracts/auth-api.md`
-- [ ] T006 Implementar `SessionView` (`GET /api/v1/auth/me/`) em `backend/apps/accounts/views.py`, devolvendo 200 com a sessão ou 401 quando não houver — o 401 é estado normal, não falha
-- [ ] T007 Criar `backend/apps/accounts/urls.py` com as três rotas de `contracts/auth-api.md`
-- [ ] T008 [P] Escrever o teste do gate do Princípio IV em `backend/tests/test_auth_api.py`: a resposta de sessão não contém `password`, hash, `id`, `email`, `last_login`, `is_staff` nem `is_superuser` (FR-023, SC-006)
-- [ ] T009 [P] Adicionar o tipo `Sessao` em `frontend/lib/types.ts` com `nome` e `papel`, derivado de `contracts/auth-api.md`
-- [ ] T010 Criar `frontend/lib/session.ts` com `getSessao()`: lê o cookie via `cookies()`, chama `/api/v1/auth/me/` no Django e devolve a sessão ou `null` (R6)
-- [ ] T011 Adicionar `fetchSession`, `postLogin` e `postLogout` em `frontend/lib/api.ts`, repassando o cookie de sessão na chamada servidor-a-servidor
-- [ ] T012 [P] Definir os estilos da tela de entrada em `frontend/app/entrar/entrar.module.css` usando exclusivamente os tokens de `frontend/styles/tokens.css` (Princípio V)
+- [X] T005 Criar `SessionSerializer` em `backend/apps/accounts/serializers.py` expondo **apenas** `nome` (nome de exibição montado no servidor) e `papel`, conforme `contracts/auth-api.md`
+- [X] T006 Implementar `SessionView` (`GET /api/v1/auth/me/`) em `backend/apps/accounts/views.py`, devolvendo 200 com a sessão ou 401 quando não houver — o 401 é estado normal, não falha
+- [X] T007 Criar `backend/apps/accounts/urls.py` com as três rotas de `contracts/auth-api.md`
+- [X] T008 [P] Escrever o teste do gate do Princípio IV em `backend/tests/test_auth_api.py`: a resposta de sessão não contém `password`, hash, `id`, `email`, `last_login`, `is_staff` nem `is_superuser` (FR-023, SC-006)
+- [X] T009 [P] Adicionar o tipo `Sessao` em `frontend/lib/types.ts` com `nome` e `papel`, derivado de `contracts/auth-api.md`
+- [X] T010 Criar `frontend/lib/session.ts` com `getSessao()`: lê o cookie via `cookies()`, chama `/api/v1/auth/me/` no Django e devolve a sessão ou `null` (R6)
+- [X] T011 Adicionar `fetchSession`, `postLogin` e `postLogout` em `frontend/lib/api.ts`, repassando o cookie de sessão na chamada servidor-a-servidor
+- [X] T012 [P] Definir os estilos da tela de entrada em `frontend/app/entrar/entrar.module.css` usando exclusivamente os tokens de `frontend/styles/tokens.css` (Princípio V)
 
 **Checkpoint**: a sessão é descritível e resolvível no servidor; nada ainda a cria
 
@@ -71,25 +71,25 @@ US1 (P1) → US2 (P1) → US3 (P2).
 
 ### Testes da User Story 1
 
-- [ ] T013 [P] [US1] Escrever em `backend/tests/test_auth_api.py` o teste da mensagem uniforme: usuário inexistente, senha errada e conta inativa produzem **a mesma** resposta 401 e a mesma frase (FR-004, SC-005)
-- [ ] T014 [P] [US1] Escrever em `backend/tests/test_auth_api.py` o teste de entrada bem-sucedida para os quatro usuários semeados, verificando que cada um recebe o próprio papel (SC-002)
-- [ ] T015 [P] [US1] Escrever em `backend/tests/test_auth_api.py` os testes de campo faltando (400) e de corpo malformado
-- [ ] T016 [P] [US1] Escrever `backend/tests/test_auth_throttle.py`: cinco falhas seguidas passam a responder 429 com o tempo de espera, uma entrada bem-sucedida zera o contador, e o bloqueio é por par origem+identificador (FR-007)
-- [ ] T017 [P] [US1] Escrever em `frontend/tests/auth.test.tsx` o teste de validação do destino de retorno: `//exemplo.com`, `/\exemplo.com` e `https://exemplo.com` são descartados em favor de `/` (FR-011)
+- [X] T013 [P] [US1] Escrever em `backend/tests/test_auth_api.py` o teste da mensagem uniforme: usuário inexistente, senha errada e conta inativa produzem **a mesma** resposta 401 e a mesma frase (FR-004, SC-005)
+- [X] T014 [P] [US1] Escrever em `backend/tests/test_auth_api.py` o teste de entrada bem-sucedida para os quatro usuários semeados, verificando que cada um recebe o próprio papel (SC-002)
+- [X] T015 [P] [US1] Escrever em `backend/tests/test_auth_api.py` os testes de campo faltando (400) e de corpo malformado
+- [X] T016 [P] [US1] Escrever `backend/tests/test_auth_throttle.py`: cinco falhas seguidas passam a responder 429 com o tempo de espera, uma entrada bem-sucedida zera o contador, e o bloqueio é por par origem+identificador (FR-007)
+- [X] T017 [P] [US1] Escrever em `frontend/tests/auth.test.tsx` o teste de validação do destino de retorno: `//exemplo.com`, `/\exemplo.com` e `https://exemplo.com` são descartados em favor de `/` (FR-011)
 
 ### Implementação da User Story 1
 
-- [ ] T018 [US1] Implementar o contador de tentativas em `backend/apps/accounts/services/throttle.py`, chaveado por origem e identificador, com janela deslizante no cache (R4)
-- [ ] T019 [US1] Criar `LoginSerializer` em `backend/apps/accounts/serializers.py` validando presença de `username` e `password` antes de qualquer tentativa de autenticação (FR-006)
-- [ ] T020 [US1] Implementar `LoginView` (`POST /api/v1/auth/login/`) em `backend/apps/accounts/views.py`, usando `authenticate()` e devolvendo **uma única** mensagem quando ele retornar `None` (FR-004, R3)
-- [ ] T021 [US1] Integrar o contador de tentativas em `backend/apps/accounts/views.py`: consultar antes de autenticar, incrementar na falha, zerar no sucesso, responder 429 com `retry_after_seconds` (FR-007)
-- [ ] T022 [US1] Implementar a validação do destino de retorno em `frontend/lib/session.ts`: aceitar apenas caminho começando por `/` e não por `//` nem `/\` (FR-011, R7)
-- [ ] T023 [US1] Implementar o Route Handler `frontend/app/api/entrar/route.ts`: repassa ao Django e, no sucesso, emite o cookie `httpOnly`, `sameSite=lax`, `path=/`, `maxAge=1209600`, com `secure` fora de desenvolvimento (R1)
-- [ ] T024 [US1] Implementar a tela de entrada em `frontend/app/entrar/page.tsx` com campos rotulados, `autoComplete` reconhecível por gerenciadores de senha (FR-030) e envio funcional sem JavaScript
-- [ ] T025 [US1] Implementar o estado de erro da tela em `frontend/app/entrar/page.tsx`: mensagem em pt-BR anunciada a tecnologias assistivas, identificador preservado e senha **nunca** preservada (FR-005, FR-028)
-- [ ] T026 [US1] Implementar o redirecionamento de usuário já autenticado que acesse `/entrar`, em `frontend/app/entrar/page.tsx` (FR-008)
-- [ ] T027 [US1] Montar `<AccountButton />` no espaço de conta de `frontend/components/header/SiteHeader.tsx`, passando a sessão resolvida — **desbloqueia a T037 de `002-site-header-navigation`** (FR-024)
-- [ ] T028 [US1] Passar a sessão do `frontend/app/layout.tsx` ao cabeçalho, resolvendo-a com `getSessao()` (R6)
+- [X] T018 [US1] Implementar o contador de tentativas em `backend/apps/accounts/services/throttle.py`, chaveado por origem e identificador, com janela deslizante no cache (R4)
+- [X] T019 [US1] Criar `LoginSerializer` em `backend/apps/accounts/serializers.py` validando presença de `username` e `password` antes de qualquer tentativa de autenticação (FR-006)
+- [X] T020 [US1] Implementar `LoginView` (`POST /api/v1/auth/login/`) em `backend/apps/accounts/views.py`, usando `authenticate()` e devolvendo **uma única** mensagem quando ele retornar `None` (FR-004, R3)
+- [X] T021 [US1] Integrar o contador de tentativas em `backend/apps/accounts/views.py`: consultar antes de autenticar, incrementar na falha, zerar no sucesso, responder 429 com `retry_after_seconds` (FR-007)
+- [X] T022 [US1] Implementar a validação do destino de retorno em `frontend/lib/session.ts`: aceitar apenas caminho começando por `/` e não por `//` nem `/\` (FR-011, R7)
+- [X] T023 [US1] Implementar o Route Handler `frontend/app/api/entrar/route.ts`: repassa ao Django e, no sucesso, emite o cookie `httpOnly`, `sameSite=lax`, `path=/`, `maxAge=1209600`, com `secure` fora de desenvolvimento (R1)
+- [X] T024 [US1] Implementar a tela de entrada em `frontend/app/entrar/page.tsx` com campos rotulados, `autoComplete` reconhecível por gerenciadores de senha (FR-030) e envio funcional sem JavaScript
+- [X] T025 [US1] Implementar o estado de erro da tela em `frontend/app/entrar/page.tsx`: mensagem em pt-BR anunciada a tecnologias assistivas, identificador preservado e senha **nunca** preservada (FR-005, FR-028)
+- [X] T026 [US1] Implementar o redirecionamento de usuário já autenticado que acesse `/entrar`, em `frontend/app/entrar/page.tsx` (FR-008)
+- [X] T027 [US1] Montar `<AccountButton />` no espaço de conta de `frontend/components/header/SiteHeader.tsx`, passando a sessão resolvida — **desbloqueia a T037 de `002-site-header-navigation`** (FR-024)
+- [X] T028 [US1] Passar a sessão do `frontend/app/layout.tsx` ao cabeçalho, resolvendo-a com `getSessao()` (R6)
 
 **Checkpoint**: US1 completa — o visitante entra e o cabeçalho o identifica
 
@@ -104,18 +104,18 @@ ponto de conta volta a convidar a entrar, e que recarregar não restaura a sess�
 
 ### Testes da User Story 2
 
-- [ ] T029 [P] [US2] Escrever em `backend/tests/test_auth_api.py` o teste de saída: a chave de sessão deixa de resolver depois do logout, e sair sem sessão responde 204 sem erro (FR-014)
-- [ ] T030 [P] [US2] Escrever em `frontend/tests/auth.test.tsx` os testes do menu de conta: abre com o nome, oferece sair, e fecha por Escape e por clique fora
+- [X] T029 [P] [US2] Escrever em `backend/tests/test_auth_api.py` o teste de saída: a chave de sessão deixa de resolver depois do logout, e sair sem sessão responde 204 sem erro (FR-014)
+- [X] T030 [P] [US2] Escrever em `frontend/tests/auth.test.tsx` os testes do menu de conta: abre com o nome, oferece sair, e fecha por Escape e por clique fora
 
 ### Implementação da User Story 2
 
-- [ ] T031 [US2] Implementar `LogoutView` (`POST /api/v1/auth/logout/`) em `backend/apps/accounts/views.py`, respondendo 204 inclusive quando não houver sessão
-- [ ] T032 [US2] Implementar o Route Handler `frontend/app/api/sair/route.ts`: chama o Django e apaga o cookie com `maxAge=0`. Aceita **apenas** `POST` (R8)
-- [ ] T033 [US2] Criar `frontend/components/header/AccountMenu.tsx` como ilha cliente que envolve o `AccountButton`, controlando abertura e disparando a saída (Complexity Tracking do plan.md)
-- [ ] T034 [US2] Ligar `AccountMenu` ao `onAbrirConta` do `AccountButton` em `frontend/components/header/SiteHeader.tsx`, mantendo o cabeçalho como server component
-- [ ] T035 [US2] Estilizar o menu de conta em `frontend/components/header/header.module.css`, reaproveitando as classes `.conta*` já existentes
-- [ ] T036 [US2] Garantir que o menu seja operável por teclado, com foco visível e sem armadilha de foco, em `frontend/components/header/AccountMenu.tsx` (FR-029, SC-007)
-- [ ] T037 [US2] Revalidar a rota após a saída em `frontend/components/header/AccountMenu.tsx`, para que o cabeçalho volte ao estado de visitante em todas as páginas (FR-015)
+- [X] T031 [US2] Implementar `LogoutView` (`POST /api/v1/auth/logout/`) em `backend/apps/accounts/views.py`, respondendo 204 inclusive quando não houver sessão
+- [X] T032 [US2] Implementar o Route Handler `frontend/app/api/sair/route.ts`: chama o Django e apaga o cookie com `maxAge=0`. Aceita **apenas** `POST` (R8)
+- [X] T033 [US2] Criar `frontend/components/header/AccountMenu.tsx` como ilha cliente que envolve o `AccountButton`, controlando abertura e disparando a saída (Complexity Tracking do plan.md)
+- [X] T034 [US2] Ligar `AccountMenu` ao `onAbrirConta` do `AccountButton` em `frontend/components/header/SiteHeader.tsx`, mantendo o cabeçalho como server component
+- [X] T035 [US2] Estilizar o menu de conta em `frontend/components/header/header.module.css`, reaproveitando as classes `.conta*` já existentes
+- [X] T036 [US2] Garantir que o menu seja operável por teclado, com foco visível e sem armadilha de foco, em `frontend/components/header/AccountMenu.tsx` (FR-029, SC-007)
+- [X] T037 [US2] Revalidar a rota após a saída em `frontend/components/header/AccountMenu.tsx`, para que o cabeçalho volte ao estado de visitante em todas as páginas (FR-015)
 
 **Checkpoint**: US1 + US2 formam o MVP — entrar e sair funcionam de ponta a ponta
 
@@ -130,16 +130,16 @@ sessão e confirmar o retorno ao estado de visitante sem erro visível
 
 ### Testes da User Story 3
 
-- [ ] T038 [P] [US3] Escrever em `backend/tests/test_auth_api.py` o teste de sessão expirada: `/api/v1/auth/me/` responde 401 e nenhuma exceção é levantada (FR-017)
-- [ ] T039 [P] [US3] Escrever em `frontend/tests/header.test.tsx` o teste do cabeçalho nos dois estados, agora que o ponto de conta está montado — visitante convida a entrar, autenticado exibe o nome (FR-024, FR-025)
-- [ ] T040 [P] [US3] Escrever em `frontend/tests/header.test.tsx` o teste de que a diferença entre os dois estados não é comunicada apenas por cor (FR-026)
+- [X] T038 [P] [US3] Escrever em `backend/tests/test_auth_api.py` o teste de sessão expirada: `/api/v1/auth/me/` responde 401 e nenhuma exceção é levantada (FR-017)
+- [X] T039 [P] [US3] Escrever em `frontend/tests/header.test.tsx` o teste do cabeçalho nos dois estados, agora que o ponto de conta está montado — visitante convida a entrar, autenticado exibe o nome (FR-024, FR-025)
+- [X] T040 [P] [US3] Escrever em `frontend/tests/header.test.tsx` o teste de que a diferença entre os dois estados não é comunicada apenas por cor (FR-026)
 
 ### Implementação da User Story 3
 
-- [ ] T041 [US3] Tratar o 401 como estado de visitante em `frontend/lib/session.ts`, nunca como erro — a página continua utilizável (FR-017)
-- [ ] T042 [US3] Garantir que o cabeçalho reflita a sessão em todas as rotas, verificando `frontend/app/layout.tsx` e a página do filme
-- [ ] T043 [US3] Implementar a condução à tela de entrada com explicação em pt-BR quando uma ação exigir conta e a sessão tiver expirado, em `frontend/lib/session.ts` (FR-018 da spec — cenário 4 da US3)
-- [ ] T044 [US3] Confirmar que o cookie carrega `secure` fora de desenvolvimento, amarrado ao `DEBUG`, em `frontend/app/api/entrar/route.ts`
+- [X] T041 [US3] Tratar o 401 como estado de visitante em `frontend/lib/session.ts`, nunca como erro — a página continua utilizável (FR-017)
+- [X] T042 [US3] Garantir que o cabeçalho reflita a sessão em todas as rotas, verificando `frontend/app/layout.tsx` e a página do filme
+- [X] T043 [US3] Implementar a condução à tela de entrada com explicação em pt-BR quando uma ação exigir conta e a sessão tiver expirado, em `frontend/lib/session.ts` (FR-018 da spec — cenário 4 da US3)
+- [X] T044 [US3] Confirmar que o cookie carrega `secure` fora de desenvolvimento, amarrado ao `DEBUG`, em `frontend/app/api/entrar/route.ts`
 
 **Checkpoint**: as três user stories funcionam de forma independente
 
