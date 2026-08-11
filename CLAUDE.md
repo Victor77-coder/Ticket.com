@@ -2,15 +2,19 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Plan: `specs/002-site-header-navigation/plan.md`
-- Spec: `specs/002-site-header-navigation/spec.md`
-- Research: `specs/002-site-header-navigation/research.md`
-- Data model: `specs/002-site-header-navigation/data-model.md`
-- Contracts: `specs/002-site-header-navigation/contracts/`
-- Quickstart: `specs/002-site-header-navigation/quickstart.md`
+- Plan: `specs/003-user-authentication/plan.md`
+- Spec: `specs/003-user-authentication/spec.md`
+- Research: `specs/003-user-authentication/research.md`
+- Data model: `specs/003-user-authentication/data-model.md`
+- Contracts: `specs/003-user-authentication/contracts/`
+- Quickstart: `specs/003-user-authentication/quickstart.md`
 
-Feature anterior, já implementada (carrossel da home, catálogo TMDb, página do filme):
-`specs/001-movie-highlights-carousel/`
+Features anteriores, já implementadas:
+
+- `specs/001-movie-highlights-carousel/` — carrossel da home, catálogo TMDb, página do filme
+- `specs/002-site-header-navigation/` — cabeçalho global e busca por título.
+  **42/44 tarefas**: T037 e T038 estão bloqueadas esperando a rota de entrada que a feature 003
+  entrega. O `AccountButton` já existe, desenhado e testado, apenas desmontado.
 
 Project constitution (governa todas as features): `.specify/memory/constitution.md`
 <!-- SPECKIT END -->
