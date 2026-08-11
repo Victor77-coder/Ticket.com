@@ -128,3 +128,57 @@ export type MovieRowData = {
 export type HomeRowsResponse = {
   rows: MovieRowData[];
 };
+
+// --- Mapa de assentos (feature 007) --------------------------------------
+
+/**
+ * Um lugar do mapa.
+ *
+ * `tipo` e `situacao` são independentes: um lugar de acessibilidade pode
+ * estar livre ou tomado como qualquer outro. "Selecionado" não aparece aqui
+ * porque é estado do navegador — não existe no servidor até virar reserva.
+ */
+export type Assento = {
+  id: number;
+  numero: number;
+  tipo: "comum" | "acessibilidade";
+  situacao: "livre" | "tomado";
+};
+
+export type Fileira = {
+  letra: string;
+  assentos: Assento[];
+};
+
+/**
+ * O mapa de uma sessão.
+ *
+ * Sem a capacidade da sala: é dado de gestão, e o cliente já recebe todos os
+ * lugares (gate do Princípio IV).
+ */
+export type MapaSessao = {
+  id: number;
+  filme: { titulo: string; slug: string };
+  sala: { nome: string };
+  inicio: string;
+  preco: string;
+  esgotada: boolean;
+  limite_por_reserva: number;
+  fileiras: Fileira[];
+};
+
+/** Um lugar como a reserva confirmada o nomeia. */
+export type LugarReservado = {
+  fileira: string;
+  numero: number;
+};
+
+export type Reserva = {
+  id: number;
+  sessao: number;
+  assentos: LugarReservado[];
+  total: string;
+  /** Instante absoluto — o relógio do navegador pode estar errado. */
+  expira_em: string;
+  situacao: "reservada" | "expirada";
+};

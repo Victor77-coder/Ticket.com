@@ -1,0 +1,313 @@
+/* O mapa da sala.
+ *
+ * FR-008 é a regra que governa este arquivo: os quatro estados NÃO podem se
+ * distinguir só por cor. Cada um tem forma própria — contorno, preenchido,
+ * riscado, com símbolo — e cada um tem rótulo próprio no `aria-label`.
+ *
+ * O teste da regra é olhar o mapa em escala de cinza. Se dois estados viram
+ * a mesma coisa, o arquivo está errado.
+ */
+
+.sala {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-5);
+}
+
+/* --- A tela --- */
+
+.tela {
+  width: min(100%, 26rem);
+  text-align: center;
+}
+
+.telaArco {
+  height: var(--altura-tela-sala);
+  background: var(--cor-borda-forte);
+  border-radius: var(--raio-pilula) var(--raio-pilula) 0 0;
+  transform: perspective(20rem) rotateX(38deg);
+}
+
+.telaRotulo {
+  display: block;
+  margin-top: var(--esp-3);
+  font-size: var(--texto-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cor-texto-fraco);
+}
+
+/* --- Fileiras --- */
+
+.fileiras {
+  display: flex;
+  flex-direction: column;
+  gap: var(--assento-espaco);
+}
+
+.fileira {
+  display: flex;
+  align-items: center;
+  gap: var(--assento-espaco);
+}
+
+.letra {
+  width: var(--esp-5);
+  flex-shrink: 0;
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-forte);
+  color: var(--cor-texto-fraco);
+  text-align: center;
+}
+
+/* O corredor central. É o detalhe que faz a grade ler como sala de cinema
+ * em vez de tabela — e é por isso que ele existe (R7). */
+.corredor {
+  width: var(--assento-corredor);
+  flex-shrink: 0;
+}
+
+/* --- O lugar --- */
+
+.assento {
+  position: relative;
+  width: var(--assento-tamanho);
+  height: var(--assento-tamanho);
+  padding: 0;
+  background: none;
+  border: 2px solid var(--cor-assento-livre);
+  /* Cantos arredondados só embaixo: é a silhueta de uma poltrona vista de
+   * cima, e é o que dá orientação ao mapa sem precisar de legenda. */
+  border-radius: var(--raio-sm) var(--raio-sm) var(--raio-md) var(--raio-md);
+  cursor: pointer;
+  transition:
+    background-color var(--transicao-rapida),
+    border-color var(--transicao-rapida);
+}
+
+.numero {
+  font-size: var(--texto-xs);
+  line-height: 1;
+  color: var(--cor-texto-fraco);
+}
+
+/* Estado 1 — LIVRE: contorno, vazio. */
+.livre:hover {
+  border-color: var(--cor-destaque-forte);
+}
+
+/* Estado 2 — SELECIONADO: preenchido + marca de conferido. */
+.selecionado {
+  background: var(--cor-destaque);
+  border-color: var(--cor-destaque);
+}
+
+.selecionado .numero {
+  color: var(--cor-sobre-destaque);
+  font-weight: var(--peso-forte);
+}
+
+.selecionado::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--cor-sobre-destaque);
+  /* Marca de conferido, desenhada em máscara para não depender de fonte de
+   * ícone nem de emoji — que variam por sistema. */
+  clip-path: polygon(
+    18% 48%,
+    30% 36%,
+    43% 52%,
+    70% 22%,
+    82% 34%,
+    43% 76%
+  );
+  opacity: 0.85;
+}
+
+/* Estado 3 — TOMADO: preenchido escuro + traço diagonal. */
+.tomado {
+  background: var(--cor-assento-tomado);
+  border-color: var(--cor-assento-tomado);
+  cursor: not-allowed;
+}
+
+.tomado .numero {
+  opacity: 0;
+}
+
+.tomado::after {
+  content: "";
+  position: absolute;
+  inset: 20%;
+  background: var(--cor-assento-marca);
+  clip-path: polygon(0 42%, 100% 42%, 100% 58%, 0 58%);
+  transform: rotate(-45deg);
+}
+
+/* Estado 4 — ACESSIBILIDADE: contorno tracejado + símbolo. */
+.acessibilidade {
+  border-style: dashed;
+  border-color: var(--cor-texto-suave);
+  cursor: not-allowed;
+}
+
+.acessibilidade .numero {
+  opacity: 0;
+}
+
+.acessibilidade::after {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  border: 2px solid var(--cor-texto-suave);
+  border-radius: var(--raio-pilula);
+  /* Círculo com um corte embaixo — silhueta reconhecível de assento
+   * reservado, sem depender de glifo de acessibilidade que nem toda fonte
+   * tem. */
+  clip-path: polygon(0 0, 100% 0, 100% 62%, 62% 62%, 62% 100%, 0 100%);
+}
+
+/* --- Legenda --- */
+
+.legenda {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--esp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.itemLegenda {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.amostra {
+  position: relative;
+  width: var(--esp-4);
+  height: var(--esp-4);
+  flex-shrink: 0;
+  border: 2px solid var(--cor-assento-livre);
+  border-radius: var(--raio-sm) var(--raio-sm) var(--raio-md) var(--raio-md);
+}
+
+/* --- Resumo da seleção --- */
+
+.resumo {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  padding: var(--esp-4) var(--esp-5);
+  background: var(--cor-fundo-flutuante);
+  border-top: 1px solid var(--cor-borda);
+  backdrop-filter: blur(12px);
+}
+
+.resumoLugares {
+  margin: 0;
+  font-weight: var(--peso-medio);
+}
+
+.resumoVazio {
+  margin: 0;
+  color: var(--cor-texto-suave);
+}
+
+.resumoTotal {
+  margin: var(--esp-1) 0 0;
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-forte);
+  font-variation-settings: "wdth" var(--largura-display);
+}
+
+.confirmar {
+  padding: var(--esp-3) var(--esp-6);
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+  font-weight: var(--peso-forte);
+  border: none;
+  border-radius: var(--raio-md);
+  cursor: pointer;
+  transition: background-color var(--transicao-rapida);
+}
+
+.confirmar:hover:not(:disabled) {
+  background: var(--cor-destaque-forte);
+}
+
+.confirmar:disabled {
+  background: var(--cor-superficie-elevada);
+  color: var(--cor-texto-fraco);
+  cursor: not-allowed;
+}
+
+.aviso {
+  width: 100%;
+  margin: 0;
+  padding: var(--esp-3) var(--esp-4);
+  background: var(--cor-erro-fraca);
+  border-radius: var(--raio-sm);
+  color: var(--cor-erro);
+  font-size: var(--texto-sm);
+}
+
+/* --- Reserva confirmada --- */
+
+.confirmada {
+  padding: var(--esp-6);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  text-align: center;
+}
+
+.confirmadaTitulo {
+  margin: 0 0 var(--esp-3);
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-display);
+  font-variation-settings: "wdth" var(--largura-display);
+}
+
+.confirmadaLugares {
+  margin: 0 0 var(--esp-2);
+  color: var(--cor-texto-suave);
+}
+
+.prazo {
+  margin: 0 0 var(--esp-5);
+  color: var(--cor-alerta);
+  font-weight: var(--peso-medio);
+}
+
+.expirada {
+  color: var(--cor-erro);
+}
+
+.seguir {
+  display: inline-block;
+  padding: var(--esp-3) var(--esp-6);
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+  font-weight: var(--peso-forte);
+  border: none;
+  border-radius: var(--raio-md);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+@media (max-width: 30rem) {
+  .letra {
+    width: var(--esp-4);
+  }
+}

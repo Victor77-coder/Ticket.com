@@ -88,17 +88,17 @@ que o mapa exibe todos os lugares, com os estados distinguíveis sem depender de
 - [X] T019 [US1] Criar `backend/apps/screening/serializers.py` com o mapa agrupado por fileira, `tipo` separado de `situacao`, e `esgotada` derivado (contrato)
 - [X] T020 [US1] Criar `backend/apps/screening/views.py` com `SeatMapView`, permissão `AllowAny`, resolvendo a sessão por `Screening.objects.sellable()` para que rascunho e cancelada caiam no mesmo `404` (FR-002, FR-003)
 - [X] T021 [US1] Criar `backend/apps/screening/urls.py` com `sessoes/<int:pk>/mapa/` e registrá-lo em `backend/config/urls.py` sob `api/v1/` — **conferir que o servidor sobe** antes de seguir
-- [ ] T022 [P] [US1] Acrescentar os tipos `MapaSessao`, `Fileira` e `Assento` em `frontend/lib/types.ts`, espelhando o contrato
-- [ ] T023 [US1] Acrescentar `buscarMapaSessao(id)` em `frontend/lib/api.ts`, seguindo o padrão de erro e degradação já usado pelos demais consumidores
-- [ ] T024 [P] [US1] Criar `frontend/components/seats/Seat.tsx`: `<button>` real, `aria-pressed` para seleção, `aria-disabled` para tomado, e rótulo com fileira, número e situação (R11, FR-011)
-- [ ] T025 [P] [US1] Criar `frontend/components/seats/seats.module.css` com os quatro estados distinguíveis por **forma e marca**, não só por cor — contorno, preenchido, traço e símbolo (FR-008)
-- [ ] T026 [US1] Declarar em `frontend/styles/tokens.css` os tokens novos que os estados exigirem, sem remover nem renomear nenhum existente (FR-035)
-- [ ] T027 [US1] Criar `frontend/components/seats/SeatMap.tsx`: a sala em fileiras, com a tela indicada no topo, letra por fileira e corredor entre o quinto e o sexto lugar (FR-005, R7)
-- [ ] T028 [US1] Criar `frontend/app/sessoes/[id]/page.tsx` e `sessao.module.css`, buscando o mapa no servidor e tratando `404` com `not-found` (FR-003)
-- [ ] T029 [US1] Tornar cada sessão da lista em `frontend/app/filmes/[slug]/page.tsx` um caminho para o mapa daquela sessão — **uma interação** (FR-001, SC-001)
-- [ ] T030 [US1] Exibir o estado explicativo de sessão esgotada em `frontend/app/sessoes/[id]/page.tsx`, em português, dizendo o que houve e a próxima ação — nunca área em branco (FR-030, FR-031)
-- [ ] T031 [P] [US1] Cobrir em `frontend/tests/seats.test.tsx` que os quatro estados têm marca própria além da cor, que acionar um lugar tomado não seleciona, e que o lugar de acessibilidade não entra no fluxo comum (FR-008, FR-009, FR-014)
-- [ ] T032 [P] [US1] Cobrir em `frontend/tests/seats.test.tsx` que o mapa inteiro é alcançável e acionável por teclado, sem armadilha de foco (FR-011, SC-008)
+- [X] T022 [P] [US1] Acrescentar os tipos `MapaSessao`, `Fileira` e `Assento` em `frontend/lib/types.ts`, espelhando o contrato
+- [X] T023 [US1] Acrescentar `buscarMapaSessao(id)` em `frontend/lib/api.ts`, seguindo o padrão de erro e degradação já usado pelos demais consumidores
+- [X] T024 [P] [US1] Criar `frontend/components/seats/Seat.tsx`: `<button>` real, `aria-pressed` para seleção, `aria-disabled` para tomado, e rótulo com fileira, número e situação (R11, FR-011)
+- [X] T025 [P] [US1] Criar `frontend/components/seats/seats.module.css` com os quatro estados distinguíveis por **forma e marca**, não só por cor — contorno, preenchido, traço e símbolo (FR-008)
+- [X] T026 [US1] Declarar em `frontend/styles/tokens.css` os tokens novos que os estados exigirem, sem remover nem renomear nenhum existente (FR-035)
+- [X] T027 [US1] Criar `frontend/components/seats/SeatMap.tsx`: a sala em fileiras, com a tela indicada no topo, letra por fileira e corredor entre o quinto e o sexto lugar (FR-005, R7)
+- [X] T028 [US1] Criar `frontend/app/sessoes/[id]/page.tsx` e `sessao.module.css`, buscando o mapa no servidor e tratando `404` com `not-found` (FR-003)
+- [X] T029 [US1] Tornar cada sessão da lista em `frontend/app/filmes/[slug]/page.tsx` um caminho para o mapa daquela sessão — **uma interação** (FR-001, SC-001)
+- [X] T030 [US1] Exibir o estado explicativo de sessão esgotada em `frontend/app/sessoes/[id]/page.tsx`, em português, dizendo o que houve e a próxima ação — nunca área em branco (FR-030, FR-031)
+- [X] T031 [P] [US1] Cobrir em `frontend/tests/seats.test.tsx` que os quatro estados têm marca própria além da cor, que acionar um lugar tomado não seleciona, e que o lugar de acessibilidade não entra no fluxo comum (FR-008, FR-009, FR-014)
+- [X] T032 [P] [US1] Cobrir em `frontend/tests/seats.test.tsx` que o mapa inteiro é alcançável e acionável por teclado, sem armadilha de foco (FR-011, SC-008)
 
 **Checkpoint**: o mapa abre, é legível e é público. Ninguém reserva nada ainda.
 

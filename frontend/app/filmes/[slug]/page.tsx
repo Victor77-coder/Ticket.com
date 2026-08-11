@@ -76,19 +76,27 @@ function ListaDeSessoes({
   return (
     <ul className={styles.sessoes}>
       {sessoes.map((sessao) => (
-        <li key={sessao.id} className={styles.sessao}>
-          <div>
-            <span className={styles.sessaoHorario}>{formatarHorario(sessao.starts_at)}</span>
-            <span className={styles.sessaoSala}>{sessao.room_name}</span>
-          </div>
-          <div className={styles.sessaoDireita}>
-            <span className={styles.sessaoPreco}>{formatarPreco(sessao.price)}</span>
-            {sessao.has_available_seats ? (
-              <span className={styles.sessaoStatus}>Disponível</span>
-            ) : (
-              <span className={styles.sessaoEsgotada}>Esgotada</span>
-            )}
-          </div>
+        <li key={sessao.id}>
+          {/* A sessão inteira é o alvo, não um botão ao lado dela: SC-001
+              pede uma interação daqui até o mapa. */}
+          <Link
+            href={`/sessoes/${sessao.id}`}
+            className={styles.sessao}
+            aria-label={`Escolher lugares — ${formatarHorario(sessao.starts_at)}, ${sessao.room_name}`}
+          >
+            <div>
+              <span className={styles.sessaoHorario}>{formatarHorario(sessao.starts_at)}</span>
+              <span className={styles.sessaoSala}>{sessao.room_name}</span>
+            </div>
+            <div className={styles.sessaoDireita}>
+              <span className={styles.sessaoPreco}>{formatarPreco(sessao.price)}</span>
+              {sessao.has_available_seats ? (
+                <span className={styles.sessaoStatus}>Escolher lugares</span>
+              ) : (
+                <span className={styles.sessaoEsgotada}>Esgotada</span>
+              )}
+            </div>
+          </Link>
         </li>
       ))}
     </ul>

@@ -189,6 +189,26 @@
   --largura-max-sugestoes: 30rem;
   --altura-item-sugestao: 4rem;
   --altura-max-sugestoes: calc(var(--altura-item-sugestao) * 6 + var(--esp-4));
+
+  /* --- Mapa de assentos ---
+   *
+   * O lugar é fluido porque a sala inteira precisa caber em 360px sem rolar
+   * na horizontal: dez lugares por fileira mais o corredor.
+   *
+   * As cores são apelidos das que já existem, de propósito. Os quatro
+   * estados do assento não se distinguem por cor — se distinguem por forma e
+   * marca (FR-008) —, então acrescentar paleta seria resolver com cor um
+   * problema que a cor não pode resolver sozinha.
+   */
+  --assento-tamanho: clamp(1.375rem, 3.4vw, 2rem);
+  --assento-espaco: var(--esp-1);
+  --assento-corredor: var(--esp-4);
+  --cor-assento-livre: var(--cor-borda-forte);
+  --cor-assento-tomado: var(--cor-borda);
+  --cor-assento-marca: var(--cor-texto-fraco);
+  /* A tela da sala: um arco claro no topo do mapa, que é o que faz o
+   * desenho ler como sala em vez de grade de caixas. */
+  --altura-tela-sala: var(--esp-2);
 }
 
 /* Quem pediu menos movimento não recebe movimento (FR-011). O JS também

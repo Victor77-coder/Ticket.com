@@ -1,0 +1,46 @@
+/* Todos os valores vêm de tokens.css — Princípio V. */
+
+.pagina {
+  max-width: var(--largura-conteudo);
+  margin: 0 auto;
+  padding: var(--esp-6) var(--esp-5) 0;
+}
+
+.voltar {
+  display: inline-block;
+  margin-bottom: var(--esp-6);
+  color: var(--cor-texto-suave);
+  text-decoration: none;
+  font-size: var(--texto-sm);
+}
+
+.voltar:hover {
+  color: var(--cor-texto);
+}
+
+.cabecalho {
+  margin-bottom: var(--ritmo-secao);
+  text-align: center;
+}
+
+.titulo {
+  margin: 0 0 var(--esp-2);
+  font-size: var(--texto-2xl);
+  font-weight: var(--peso-display);
+  font-variation-settings: "wdth" var(--largura-display);
+  letter-spacing: var(--espacamento-display);
+  line-height: var(--altura-linha-apertada);
+}
+
+.detalhes {
+  margin: 0;
+  color: var(--cor-texto-suave);
+}
+
+.erro {
+  padding: var(--esp-7);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  text-align: center;
+}

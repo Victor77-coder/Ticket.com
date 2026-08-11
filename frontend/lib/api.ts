@@ -11,6 +11,7 @@ import type {
   HighlightsResponse,
   HomeRowsResponse,
   LoginResponse,
+  MapaSessao,
   MovieDetail,
   SearchResponse,
   Sessao,
@@ -153,4 +154,16 @@ export function postLogout(sessionKey: string): Promise<ApiResultComStatus<void>
 /** As três trilhas da home em uma requisição (R4). */
 export function fetchHomeRows(): Promise<ApiResult<HomeRowsResponse>> {
   return getJson<HomeRowsResponse>("/api/v1/home/");
+}
+
+// --- Mapa de assentos (feature 007) --------------------------------------
+
+/**
+ * O mapa de uma sessão.
+ *
+ * Público: não repassa cookie. Sala, sessão e assentos são dados locais, e a
+ * resposta é idêntica com o TMDb fora do ar (FR-032).
+ */
+export function fetchSeatMap(id: number): Promise<ApiResultComStatus<MapaSessao>> {
+  return getJson<MapaSessao>(`/api/v1/sessoes/${id}/mapa/`);
 }
