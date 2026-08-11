@@ -78,3 +78,59 @@ para uma feature futura, não alargar esta.
 - A página do filme, a busca, a entrada — o SC-003 é sobre a **primeira dobra da home**, que é o
   que um avaliador vê antes de qualquer outra coisa.
 - Desempenho, acessibilidade ou comportamento — todos têm verificação própria e objetiva.
+
+---
+
+# Resultado — 2026-08-11
+
+Captura em `specs/006-visual-identity/captures/primeira-dobra-sem-cabecalho.png`, 1440×900, com o
+cabeçalho recortado.
+
+## Precisa estar presente — 4 de 4
+
+- [x] **Sala escura** — a arte do filme é a fonte de luz da composição; o resto recua.
+- [x] **Laranja de projeção** — presente em "Ver ingressos" e no indicador ativo, e é a única cor
+      saturada da tela.
+- [x] **Tipografia de cartaz** — "A ODISSEIA" saiu claramente expandido e pesado. O eixo `wdth`
+      pegou; era o único ponto onde a teoria podia não virar prática.
+- [x] **Hierarquia inequívoca** — em três segundos: qual filme, o que é, e qual a ação principal.
+
+## Não pode estar presente — 1 reprovação
+
+- [x] **Botão em pílula com borda fina e sem peso** — o botão **Trailer** é exatamente o padrão
+      que esta lista proíbe: contorno, sem preenchimento, cantos totalmente arredondados.
+
+Os demais itens da lista passaram: sem cartão decorativo, sem gradiente colorido além do véu, sem
+brilho, sem ícone de biblioteca, sem roxo ou creme, sem placeholder, sem retângulo cinza.
+
+## Achado fora das listas
+
+- **As setas do carrossel mantiveram o círculo com borda.** A R7 removeu a moldura das setas das
+  **trilhas** e a implementação seguiu a R7 ao pé da letra — mas as setas que aparecem na primeira
+  dobra são as do **carrossel**, que ficaram como estavam. A própria R7 chama esse círculo de "o
+  traço mais reconhecível de carrossel de catálogo genérico".
+
+  É inconsistência da implementação, não da decisão: a regra estava certa e foi aplicada em metade
+  dos lugares.
+
+## A pergunta final
+
+> Numa galeria ao lado de cinco catálogos de streaming, dava para apontar qual é o nosso?
+
+**Sim** — a tipografia expandida e o laranja sobre a sala escura carregam a identidade sozinhos.
+
+Mas a checagem **reprova**: dois elementos da primeira dobra ainda são o vocabulário genérico que
+a feature existe para eliminar, e um deles está literalmente na lista de proibidos.
+
+## Correções
+
+| # | Achado | Escopo |
+|---|---|---|
+| 1 | Setas do carrossel com círculo e borda | **Dentro** da 006 — completa a R7 |
+| 2 | Botão Trailer em pílula contornada | **Dentro** da 006 — item da lista de proibidos |
+| 3 | Sinopse cortada no meio da palavra ("com seres míticos, c…") | **Fora** — bug pré-existente da 001, ver abaixo |
+
+O terceiro achado não é visual: `synopsis_short` usa corte por **caractere** onde o próprio
+comentário do código promete corte "na fronteira de palavra". O defeito existe desde a `001` e só
+ficou visível agora, com uma sinopse real longa. Corrigi-lo muda conteúdo servido, não estilo —
+por isso vai como correção de defeito, não como parte desta feature.
