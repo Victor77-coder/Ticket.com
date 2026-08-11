@@ -133,7 +133,7 @@ identificar você e oferece a saída.
 
 ```bash
 docker compose exec backend pytest          # 136 testes
-docker compose exec frontend npm run test   # 95 testes
+docker compose exec frontend npm run test   # 97 testes
 ```
 
 Ponta a ponta (ver a ressalva em Limitações conhecidas):
@@ -217,6 +217,27 @@ As trilhas Em alta e Em breve, essas sim, vêm do TMDb — elas prometem descobe
 primeiros não bastam: uma resposta já decodificada pode chegar depois de uma mais nova, e a lista
 passaria a mostrar o resultado de um termo já apagado. A guarda por sequência é o que fecha essa
 janela.
+
+**A tipografia é Archivo, não Inter, Roboto ou a fonte do sistema.** Archivo é fonte variável com
+eixo de largura, o que significa que o título do filme sai expandido e o corpo sai normal **do
+mesmo arquivo** — não há duas famílias a casar, e a coerência é estrutural em vez de fruto de bom
+gosto. O corte expandido evoca cartaz de mostra de cinema, que é o oposto do genérico de
+streaming. Licença **SIL Open Font License**: uso comercial, modificação e redistribuição
+embutida, sem exigir atribuição na interface — a mais fácil de defender num repositório público.
+
+A fonte é baixada em tempo de build e servida pelo próprio domínio, sem requisição a terceiro em
+tempo de visita. É o mesmo raciocínio que mantém o TMDb fora do caminho de leitura, aplicado a
+fontes. O fallback ajustado por métrica é o que impede o texto de saltar quando ela chega.
+
+**O ritmo vertical tem dois níveis, e a diferença é o ponto.** O respiro entre o painel de
+destaques e a primeira trilha é maior que entre trilhas consecutivas. Antes os dois eram o mesmo
+valor, e era por isso que a home lia como lista uniforme em vez de página com hierarquia.
+
+**Três gestos de movimento, e só três**: elevação do cartaz, transição do painel, deslocamento da
+trilha. Retorno de pressão e brilho de carregamento são categorias distintas, com justificativa
+própria. Todo movimento anima apenas `transform` — a barra do indicador do carrossel usa `scaleX`
+em vez de animar `width`, e o brilho do esqueleto atravessa por `transform` em vez de repintar a
+área a cada quadro.
 
 **O cookie de sessão é emitido pelo Next, não repassado do Django.** Repassar o `Set-Cookie` de
 origem faria o `Domain` e o `Path` dependerem de como o Django enxerga o host, divergindo entre

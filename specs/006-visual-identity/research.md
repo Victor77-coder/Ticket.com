@@ -148,6 +148,28 @@ que faz uma interface parecer inquieta.
 Registrado aqui porque é exatamente o tipo de definição que, sem estar escrita, gera discussão na
 revisão.
 
+### Correção durante a implementação
+
+A definição acima era **coarse demais**. Ao contar os `transform` animados, apareceram seis, não
+três: além dos gestos de navegação, há o afundamento de 1px ao pressionar um botão, a barra do
+indicador do carrossel e o brilho do esqueleto.
+
+Nenhum dos três a mais é gesto de navegação, e nenhum foi acrescentado por esta feature. A
+definição precisa fica em três camadas:
+
+| Camada | Exemplos | Conta para o teto? |
+|---|---|---|
+| **Gesto de navegação** | elevação do cartaz, transição do painel, deslocamento da trilha | **sim — os três** |
+| **Retorno de estado** | afundamento de 1px ao pressionar, barra do indicador | não |
+| **Indicador de carregamento** | brilho do esqueleto | não |
+
+O teto do FR-015 é sobre o que se move **enquanto se percorre o conteúdo** — que é o que faz uma
+interface parecer inquieta. Retorno de pressão e indicador de carregamento são categorias
+distintas, com justificativa própria, e ambos já existiam.
+
+Registrado como correção em vez de reinterpretado em silêncio: a definição original teria feito a
+contagem falhar, e mover o critério sem dizer seria pior do que a falha.
+
 ---
 
 ## R6. A regra dos 60fps
@@ -243,11 +265,11 @@ autoridade.
 
 | Critério | Verificação |
 |---|---|
-| SC-001 — sem valor solto | procurar por hex, `rgb(`, `px` fora de `tokens.css` |
+| SC-001 — sem valor solto | procurar por hex, `rgba?(`, `hsla?(` fora de `tokens.css` |
 | SC-002 — sem família fora dos tokens | procurar por `font-family` fora de `tokens.css` |
 | SC-004 — teto de 3 movimentos | contar `transition` e `animation` sobre `transform` |
 | R6 — propriedades proibidas | procurar por animação de `width`, `height`, `top`, `left` |
-| SC-010 — sem texto de preenchimento | procurar por "lorem", "placeholder", "em breve", "TODO" |
+| SC-010 — sem texto de preenchimento | procurar por "lorem ipsum", "coming soon", `\bTODO\b` |
 
 **Rationale**: sem verificação executável, a disciplina de tokens dura até o próximo commit
 apressado. Escrita como comando, ela pode entrar no roteiro de revisão e é conferível por

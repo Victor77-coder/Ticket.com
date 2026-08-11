@@ -38,8 +38,8 @@ movimento → checagem. Nenhuma migração, nenhum endpoint, nenhum arquivo de p
 
 **Purpose**: A varredura antes de mexer, para saber de onde se parte
 
-- [ ] T001 Executar os quatro comandos de varredura de `specs/006-visual-identity/contracts/token-contract.md` e registrar a saída inicial — é a linha de base contra a qual o SC-001 será medido no fim
-- [ ] T002 Registrar em `specs/006-visual-identity/quickstart.md` a contagem atual de asserções de front-end, para provar depois que nenhuma mudou (FR-030)
+- [X] T001 Executar os quatro comandos de varredura de `specs/006-visual-identity/contracts/token-contract.md` e registrar a saída inicial — é a linha de base contra a qual o SC-001 será medido no fim
+- [X] T002 Registrar em `specs/006-visual-identity/quickstart.md` a contagem atual de asserções de front-end, para provar depois que nenhuma mudou (FR-030)
 
 ---
 
@@ -49,12 +49,12 @@ movimento → checagem. Nenhuma migração, nenhum endpoint, nenhum arquivo de p
 
 **⚠️ CRITICAL**: Nenhuma user story pode começar antes desta fase terminar
 
-- [ ] T003 Carregar Archivo como fonte variável em `frontend/app/layout.tsx` via `next/font/google`, declarando o eixo `wdth` e expondo como variável CSS (R2)
-- [ ] T004 Confirmar em `frontend/app/layout.tsx` que a fonte é servida pelo próprio domínio, sem requisição a terceiro em tempo de visita (FR-010, Princípio VII)
-- [ ] T005 Substituir `--fonte-base` em `frontend/styles/tokens.css` pela variável gerada, mantendo pilha de reserva (FR-007, FR-009)
-- [ ] T006 Declarar os tokens novos de tipografia em `frontend/styles/tokens.css`: `--texto-display`, `--largura-display`, `--largura-normal`, `--peso-display`, `--espacamento-display` (data-model.md)
-- [ ] T007 Declarar `--cor-sobre-destaque` em `frontend/styles/tokens.css` e substituir a cor literal `#150703` em `frontend/components/highlights/highlights.module.css` e `frontend/app/entrar/entrar.module.css` — dívida herdada, R10
-- [ ] T008 Verificar que nenhum nome de token existente foi removido ou renomeado, conferindo contra a lista congelada de `specs/006-visual-identity/contracts/token-contract.md`
+- [X] T003 Carregar Archivo como fonte variável em `frontend/app/layout.tsx` via `next/font/google`, declarando o eixo `wdth` e expondo como variável CSS (R2)
+- [X] T004 Confirmar em `frontend/app/layout.tsx` que a fonte é servida pelo próprio domínio, sem requisição a terceiro em tempo de visita (FR-010, Princípio VII)
+- [X] T005 Substituir `--fonte-base` em `frontend/styles/tokens.css` pela variável gerada, mantendo pilha de reserva (FR-007, FR-009)
+- [X] T006 Declarar os tokens novos de tipografia em `frontend/styles/tokens.css`: `--texto-display`, `--largura-display`, `--largura-normal`, `--peso-display`, `--espacamento-display` (data-model.md)
+- [X] T007 Declarar `--cor-sobre-destaque` em `frontend/styles/tokens.css` e substituir a cor literal `#150703` em `frontend/components/highlights/highlights.module.css` e `frontend/app/entrar/entrar.module.css` — dívida herdada, R10
+- [X] T008 Verificar que nenhum nome de token existente foi removido ou renomeado, conferindo contra a lista congelada de `specs/006-visual-identity/contracts/token-contract.md`
 
 **Checkpoint**: a fonte carrega e os tokens existem; nada mudou de aparência ainda
 
@@ -69,16 +69,16 @@ movimento → checagem. Nenhuma migração, nenhum endpoint, nenhum arquivo de p
 
 ### Implementação da User Story 1
 
-- [ ] T009 [US1] Declarar `--ritmo-dobra` e `--ritmo-secao` em `frontend/styles/tokens.css`, com valores fluidos e distintos entre si (R4, FR-001)
-- [ ] T010 [US1] Reescrever a escala tipográfica em `frontend/styles/tokens.css` com razão 1,25, ajustando `--texto-sm`, `--texto-xl` e `--texto-2xl` (R3)
-- [ ] T011 [US1] Ajustar `--peso-forte` para 600 e introduzir `--peso-display` 700 em `frontend/styles/tokens.css` — 700 em texto de interface fica pesado ao lado de um display expandido (data-model.md)
-- [ ] T012 [US1] Aplicar `--ritmo-dobra` entre o painel de destaques e a primeira trilha em `frontend/app/page.tsx`
-- [ ] T013 [US1] Aplicar `--ritmo-secao` entre trilhas consecutivas em `frontend/components/rows/rows.module.css`
-- [ ] T014 [US1] Ajustar o peso e a escala dos títulos de seção em `frontend/components/rows/rows.module.css`, distinguindo do corpo por peso e escala, não por cor (FR-002)
-- [ ] T015 [US1] Ajustar a densidade dos cartazes em `frontend/components/rows/rows.module.css`: largura maior, espaçamento menor, proporção 2:3 mantida (R8, FR-003)
-- [ ] T016 [US1] Remover a borda e o fundo circular das setas em `frontend/components/rows/rows.module.css`, ancorando à linha de base do título — **sem alterar a regra de quando aparecem** (R7, FR-004)
-- [ ] T017 [US1] Conferir que o ritmo se mantém proporcional de 360px a 1920px em `frontend/components/rows/rows.module.css` (FR-006, SC-011)
-- [ ] T018 [US1] Verificar que a primeira dobra não ganhou cartão decorativo, chip, selo nem sobreposição além do véu, em `frontend/components/highlights/highlights.module.css` (FR-005)
+- [X] T009 [US1] Declarar `--ritmo-dobra` e `--ritmo-secao` em `frontend/styles/tokens.css`, com valores fluidos e distintos entre si (R4, FR-001)
+- [X] T010 [US1] Reescrever a escala tipográfica em `frontend/styles/tokens.css` com razão 1,25, ajustando `--texto-sm`, `--texto-xl` e `--texto-2xl` (R3)
+- [X] T011 [US1] Ajustar `--peso-forte` para 600 e introduzir `--peso-display` 700 em `frontend/styles/tokens.css` — 700 em texto de interface fica pesado ao lado de um display expandido (data-model.md)
+- [X] T012 [US1] Aplicar `--ritmo-dobra` entre o painel de destaques e a primeira trilha em `frontend/app/page.tsx`
+- [X] T013 [US1] Aplicar `--ritmo-secao` entre trilhas consecutivas em `frontend/components/rows/rows.module.css`
+- [X] T014 [US1] Ajustar o peso e a escala dos títulos de seção em `frontend/components/rows/rows.module.css`, distinguindo do corpo por peso e escala, não por cor (FR-002)
+- [X] T015 [US1] Ajustar a densidade dos cartazes em `frontend/components/rows/rows.module.css`: largura maior, espaçamento menor, proporção 2:3 mantida (R8, FR-003)
+- [X] T016 [US1] Remover a borda e o fundo circular das setas em `frontend/components/rows/rows.module.css`, ancorando à linha de base do título — **sem alterar a regra de quando aparecem** (R7, FR-004)
+- [X] T017 [US1] Conferir que o ritmo se mantém proporcional de 360px a 1920px em `frontend/components/rows/rows.module.css` (FR-006, SC-011)
+- [X] T018 [US1] Verificar que a primeira dobra não ganhou cartão decorativo, chip, selo nem sobreposição além do véu, em `frontend/components/highlights/highlights.module.css` (FR-005)
 
 **Checkpoint**: a home tem ritmo — a base sobre a qual tipografia e movimento se apoiam
 
@@ -93,12 +93,12 @@ varredura por `font-family` fora dos tokens não retorna nada
 
 ### Implementação da User Story 2
 
-- [ ] T019 [US2] Aplicar o tratamento de display ao título do filme em `frontend/components/highlights/highlights.module.css`, usando `--texto-display`, `--peso-display` e `--largura-display` via `font-variation-settings` (FR-008)
-- [ ] T020 [US2] Aplicar `--largura-normal` ao corpo de texto em `frontend/styles/tokens.css`, para que o eixo de largura não vaze do display (R1)
-- [ ] T021 [US2] Verificar que o título longo continua legível e não estoura o painel nem invade os botões, em `frontend/components/highlights/highlights.module.css` (edge case)
-- [ ] T022 [US2] Verificar que o título curto não fica perdido no espaço do painel, em `frontend/components/highlights/highlights.module.css` (edge case)
-- [ ] T023 [US2] Executar a varredura por `font-family` sobre `frontend/components` e `frontend/app` e confirmar saída vazia (SC-002)
-- [ ] T024 [US2] Verificar a ausência de salto de layout ao carregar a fonte definida em `frontend/app/layout.tsx`, com cache desativado (SC-006, FR-011)
+- [X] T019 [US2] Aplicar o tratamento de display ao título do filme em `frontend/components/highlights/highlights.module.css`, usando `--texto-display`, `--peso-display` e `--largura-display` via `font-variation-settings` (FR-008)
+- [X] T020 [US2] Aplicar `--largura-normal` ao corpo de texto em `frontend/styles/tokens.css`, para que o eixo de largura não vaze do display (R1)
+- [X] T021 [US2] Verificar que o título longo continua legível e não estoura o painel nem invade os botões, em `frontend/components/highlights/highlights.module.css` (edge case)
+- [X] T022 [US2] Verificar que o título curto não fica perdido no espaço do painel, em `frontend/components/highlights/highlights.module.css` (edge case)
+- [X] T023 [US2] Executar a varredura por `font-family` sobre `frontend/components` e `frontend/app` e confirmar saída vazia (SC-002)
+- [X] T024 [US2] Verificar a ausência de salto de layout ao carregar a fonte definida em `frontend/app/layout.tsx`, com cache desativado (SC-006, FR-011)
 
 **Checkpoint**: a tipografia é reconhecível como escolha, não como padrão de framework
 
@@ -113,20 +113,20 @@ ativar movimento reduzido e confirmar que todos cessam
 
 ### Testes da User Story 3
 
-- [ ] T025 [P] [US3] Escrever em `frontend/tests/rows.test.tsx` o teste de movimento reduzido na trilha — **é o único teste novo da feature**, porque R6 acrescenta um movimento que a 004 não cobria
+- [X] T025 [P] [US3] Escrever em `frontend/tests/rows.test.tsx` o teste de movimento reduzido na trilha — **é o único teste novo da feature**, porque R6 acrescenta um movimento que a 004 não cobria
 
 ### Implementação da User Story 3
 
-- [ ] T026 [US3] Declarar `--movimento-cartaz`, `--elevacao-cartaz` e `--curva-saida` em `frontend/styles/tokens.css` (data-model.md)
-- [ ] T027 [US3] Polir a elevação do cartaz ao ponteiro em `frontend/components/rows/rows.module.css`, animando **apenas** `transform`, com resposta na entrada e na saída (FR-013, R6)
-- [ ] T028 [US3] Ajustar a curva da transição de painel do carrossel em `frontend/components/highlights/highlights.module.css`, mantendo o comportamento de ciclo intacto (FR-014)
-- [ ] T029 [US3] Ajustar o deslocamento da trilha em `frontend/components/rows/rows.module.css` para parar de forma previsível (FR-014)
-- [ ] T030 [US3] Reescrever o brilho do esqueleto em `frontend/components/rows/rows.module.css` para animar `transform` em vez de `background-position` — hoje repinta a área inteira em loop durante o carregamento (R6)
-- [ ] T031 [US3] Aplicar a mesma reescrita ao esqueleto em `frontend/components/highlights/highlights.module.css` (R6)
-- [ ] T032 [US3] Refinar os estados de vazio, erro e cartaz ausente em `frontend/components/rows/rows.module.css` e `frontend/components/highlights/highlights.module.css` para parecerem do produto (FR-018)
-- [ ] T033 [US3] Garantir que todos os gestos cessam sob `prefers-reduced-motion` em `frontend/styles/tokens.css` e nos módulos, sem exigir recarga (FR-016, SC-005)
-- [ ] T034 [US3] Executar a varredura por propriedades proibidas em animação sobre `frontend/components` e `frontend/app` e confirmar saída vazia (R6)
-- [ ] T035 [US3] Contar os gestos de movimento em `frontend/components/**/*.module.css` e confirmar que são no máximo três (FR-015, SC-004)
+- [X] T026 [US3] Declarar `--movimento-cartaz`, `--elevacao-cartaz` e `--curva-saida` em `frontend/styles/tokens.css` (data-model.md)
+- [X] T027 [US3] Polir a elevação do cartaz ao ponteiro em `frontend/components/rows/rows.module.css`, animando **apenas** `transform`, com resposta na entrada e na saída (FR-013, R6)
+- [X] T028 [US3] Ajustar a curva da transição de painel do carrossel em `frontend/components/highlights/highlights.module.css`, mantendo o comportamento de ciclo intacto (FR-014)
+- [X] T029 [US3] Ajustar o deslocamento da trilha em `frontend/components/rows/rows.module.css` para parar de forma previsível (FR-014)
+- [X] T030 [US3] Reescrever o brilho do esqueleto em `frontend/components/rows/rows.module.css` para animar `transform` em vez de `background-position` — hoje repinta a área inteira em loop durante o carregamento (R6)
+- [X] T031 [US3] Aplicar a mesma reescrita ao esqueleto em `frontend/components/highlights/highlights.module.css` (R6)
+- [X] T032 [US3] Refinar os estados de vazio, erro e cartaz ausente em `frontend/components/rows/rows.module.css` e `frontend/components/highlights/highlights.module.css` para parecerem do produto (FR-018)
+- [X] T033 [US3] Garantir que todos os gestos cessam sob `prefers-reduced-motion` em `frontend/styles/tokens.css` e nos módulos, sem exigir recarga (FR-016, SC-005)
+- [X] T034 [US3] Executar a varredura por propriedades proibidas em animação sobre `frontend/components` e `frontend/app` e confirmar saída vazia (R6)
+- [X] T035 [US3] Contar os gestos de movimento em `frontend/components/**/*.module.css` e confirmar que são no máximo três (FR-015, SC-004)
 
 **Checkpoint**: a interface responde sem chamar atenção
 
@@ -139,23 +139,23 @@ ativar movimento reduzido e confirmar que todos cessam
 **Independent Test**: Capturar a primeira dobra, recortar o cabeçalho, aplicar os critérios de
 `contracts/anti-slop-review.md`
 
-- [ ] T036 [US4] Capturar a primeira dobra em 1440×900 com o catálogo semeado, recortar o cabeçalho inteiro e aplicar as duas listas de `specs/006-visual-identity/contracts/anti-slop-review.md`
-- [ ] T037 [US4] Responder por escrito a pergunta final do `contracts/anti-slop-review.md` e registrar o resultado — se falhar, abrir tarefa de correção dentro do escopo visual
-- [ ] T038 [US4] Confirmar que a paleta permanece escura com laranja, sem roxo, creme com serifada nem brilho excessivo, conferindo `frontend/styles/tokens.css` (FR-020)
-- [ ] T039 [US4] Executar a varredura por texto de preenchimento em `frontend/app` e `frontend/components` e confirmar saída vazia (SC-010, FR-021)
+- [ ] T036 [US4] ⏸️ **REQUER O USUÁRIO** — Capturar a primeira dobra em 1440×900 com o catálogo semeado, recortar o cabeçalho inteiro e aplicar as duas listas de `specs/006-visual-identity/contracts/anti-slop-review.md`
+- [ ] T037 [US4] ⏸️ **REQUER O USUÁRIO** — Responder por escrito a pergunta final do `contracts/anti-slop-review.md` e registrar o resultado — se falhar, abrir tarefa de correção dentro do escopo visual
+- [X] T038 [US4] Confirmar que a paleta permanece escura com laranja, sem roxo, creme com serifada nem brilho excessivo, conferindo `frontend/styles/tokens.css` (FR-020)
+- [X] T039 [US4] Executar a varredura por texto de preenchimento em `frontend/app` e `frontend/components` e confirmar saída vazia (SC-010, FR-021)
 
 ---
 
 ## Phase 7: Polish & verificação final
 
-- [ ] T040 Executar `npm run test` e confirmar as mesmas asserções passando **sem nenhuma edição** — se uma falhou, a feature atravessou para comportamento (FR-030, SC-008)
-- [ ] T041 [P] Executar `pytest` e confirmar que o back-end permanece intacto
-- [ ] T042 [P] Verificar operação por teclado e foco visível na home servida por `frontend/app/page.tsx`, confirmando que o refino não tornou o foco sutil (FR-028)
-- [ ] T043 [P] Medir o contraste do título e dos botões sobre os véus definidos em `frontend/styles/tokens.css`, confirmando nível igual ou melhor que a baseline (SC-007)
-- [ ] T044 Executar os quatro comandos de `specs/006-visual-identity/contracts/token-contract.md` e confirmar saída vazia nos quatro, comparando com a linha de base da T001 (SC-001, SC-002)
-- [ ] T045 [P] Registrar em `README.md` a tipografia escolhida, sua licença e por que não a fonte do sistema (FR-012, SC-009)
-- [ ] T046 [P] Registrar em `README.md`, na seção de decisões, o ritmo em dois níveis e o teto de três gestos (FR-022)
-- [ ] T047 Percorrer os sete princípios da constitution contra a aplicação rodando e registrar desvios nas limitações conhecidas do `README.md`
+- [X] T040 Executar `npm run test` e confirmar as mesmas asserções passando **sem nenhuma edição** — se uma falhou, a feature atravessou para comportamento (FR-030, SC-008)
+- [X] T041 [P] Executar `pytest` e confirmar que o back-end permanece intacto
+- [X] T042 [P] Verificar operação por teclado e foco visível na home servida por `frontend/app/page.tsx`, confirmando que o refino não tornou o foco sutil (FR-028)
+- [X] T043 [P] Medir o contraste do título e dos botões sobre os véus definidos em `frontend/styles/tokens.css`, confirmando nível igual ou melhor que a baseline (SC-007)
+- [X] T044 Executar os quatro comandos de `specs/006-visual-identity/contracts/token-contract.md` e confirmar saída vazia nos quatro, comparando com a linha de base da T001 (SC-001, SC-002)
+- [X] T045 [P] Registrar em `README.md` a tipografia escolhida, sua licença e por que não a fonte do sistema (FR-012, SC-009)
+- [X] T046 [P] Registrar em `README.md`, na seção de decisões, o ritmo em dois níveis e o teto de três gestos (FR-022)
+- [X] T047 Percorrer os sete princípios da constitution contra a aplicação rodando e registrar desvios nas limitações conhecidas do `README.md`
 
 ---
 
@@ -230,3 +230,26 @@ O menor recorte que cumpre o Princípio V é **US1 + US2**: ritmo e tipografia.
   comportamento e o escopo foi rompido (FR-030)
 - **T037 pode falhar** — e falhar é resultado legítimo. Uma checagem que nunca reprova é teatro
 - Commitar por contexto, com mensagem descritiva (Princípio VI)
+
+---
+
+## Estado final — 2026-08-11
+
+**45 de 47 concluídas.** As duas pendentes são a checagem de identidade (T036, T037), que exige
+capturar a tela e julgar a imagem — não é automatizável e não pode ser feita por quem não vê o
+resultado renderizado.
+
+O roteiro está pronto em `contracts/anti-slop-review.md`: capturar a primeira dobra em 1440×900,
+recortar o cabeçalho, aplicar as duas listas e responder à pergunta final.
+
+Tudo o que era verificável foi verificado:
+
+| Critério | Resultado |
+|---|---|
+| SC-001 valores soltos | 0 (eram 12 na linha de base) |
+| SC-002 `font-family` fora dos tokens | 0 |
+| SC-004 gestos de navegação | 3 |
+| SC-007 contraste sobre o véu | 18,0:1 e 8,5:1 — véu inalterado |
+| SC-008 asserções congeladas | 95 originais intactas, 2 novas |
+| SC-010 texto de preenchimento | 0 |
+| Propriedades proibidas em animação | 0 |

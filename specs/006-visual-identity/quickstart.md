@@ -7,6 +7,23 @@ Pressupõe o ambiente de pé com catálogo sincronizado e semeado — ver o
 
 ---
 
+## 0. Linha de base (medida em 2026-08-11, antes da implementação)
+
+Registrada pela T001 e T002 para que o resultado final seja comparável.
+
+| Varredura | Antes |
+|---|---|
+| Cor literal fora dos tokens | **3** — `#150703` em dois arquivos, `background: #000` no trailer |
+| `font-family` fora dos tokens | 0 |
+| Duração literal | **2** — `1.6s` nos dois brilhos de esqueleto |
+| Propriedade proibida em animação | **2** — os mesmos brilhos, via `background-position` |
+| Asserções de front-end | **95** |
+
+A auditoria da spec previa duas violações; a varredura encontrou **cinco**. As três a mais —
+`background: #000` e as duas durações — entram no escopo pela mesma regra do FR-024.
+
+---
+
 ## 1. Ver
 
 ```bash
