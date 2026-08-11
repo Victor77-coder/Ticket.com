@@ -1,0 +1,90 @@
+import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+import { cleanup } from "@testing-library/react";
+
+import { AccountButton } from "@/components/header/AccountButton";
+import { SiteHeader } from "@/components/header/SiteHeader";
+
+afterEach(cleanup);
+
+describe("cabeçalho global", () => {
+  it("é exposto como a landmark de topo do site", () => {
+    render(<SiteHeader />);
+
+    // `banner` é a região que leitores de tela usam para pular ao topo do
+    // site (FR-027).
+    expect(screen.getByRole("banner")).toBeInTheDocument();
+  });
+
+  it("exibe o nome do site", () => {
+    render(<SiteHeader />);
+
+    expect(screen.getByRole("banner")).toHaveTextContent("ticket.com");
+  });
+
+  it("usa o nome do site como caminho de volta para a home", () => {
+    render(<SiteHeader />);
+
+    const marca = screen.getByRole("link", { name: /ticket\.com/i });
+    expect(marca).toHaveAttribute("href", "/");
+  });
+
+  it("apresenta o nome como texto, não como imagem", () => {
+    render(<SiteHeader />);
+
+    // R8: wordmark textual. Uma imagem não escala com o zoom nem é
+    // selecionável, e exigiria texto alternativo para dizer o mesmo.
+    const marca = screen.getByRole("link", { name: /ticket\.com/i });
+    expect(marca.querySelector("img")).toBeNull();
+  });
+});
+
+/**
+ * US3 — o componente existe e está testado, mas ainda NÃO está montado no
+ * cabeçalho: a rota de entrada pertence à feature de autenticação (FR-023).
+ */
+describe("acesso à conta", () => {
+  it("anuncia a ação de entrar quando não há sessão", () => {
+    render(<AccountButton usuario={null} />);
+
+    const acesso = screen.getByRole("link", { name: /entrar na sua conta/i });
+    expect(acesso).toBeInTheDocument();
+  });
+
+  it("conduz ao caminho de entrada", () => {
+    render(<AccountButton usuario={null} caminhoEntrada="/entrar" />);
+
+    expect(screen.getByRole("link", { name: /entrar na sua conta/i })).toHaveAttribute(
+      "href",
+      "/entrar",
+    );
+  });
+
+  it("identifica de quem é a sessão quando autenticado", () => {
+    render(<AccountButton usuario={{ nome: "Ana" }} />);
+
+    expect(screen.getByRole("button", { name: /ana/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /entrar na sua conta/i })).not.toBeInTheDocument();
+  });
+
+  it("diferencia os dois estados por texto, não apenas por cor", () => {
+    const { unmount } = render(<AccountButton usuario={null} />);
+    const visitante = screen.getByRole("link").textContent;
+    unmount();
+
+    render(<AccountButton usuario={{ nome: "Ana" }} />);
+    const autenticado = screen.getByRole("button").textContent;
+
+    expect(visitante).not.toEqual(autenticado);
+    expect(autenticado).toContain("Ana");
+  });
+
+  it("é anunciado por função, não como imagem sem descrição", () => {
+    render(<AccountButton usuario={null} />);
+
+    const acesso = screen.getByRole("link", { name: /entrar na sua conta/i });
+    // O SVG é decorativo: quem carrega o significado é o nome acessível.
+    expect(acesso.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+});

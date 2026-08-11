@@ -56,6 +56,27 @@ vi.mock("next/image", () => ({
   },
 }));
 
+// O App Router não existe fora do runtime do Next. A busca navega por
+// router.push; nos testes registramos o destino e o e2e cobre a navegação real.
+// A fábrica do vi.mock é avaliada na primeira importação de next/navigation,
+// já com este módulo carregado — a closure abaixo é segura.
+export const rotasVisitadas: string[] = [];
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: (href: string) => {
+      rotasVisitadas.push(href);
+    },
+    replace: () => {},
+    prefetch: () => {},
+    back: () => {},
+    forward: () => {},
+    refresh: () => {},
+  }),
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 vi.mock("next/link", () => ({
   default: ({ href, children, ...resto }: { href: string; children: React.ReactNode }) => (
     <a href={href} {...resto}>
