@@ -76,15 +76,38 @@ def get_highlighted_movies(limit=HIGHLIGHTS_LIMIT):
 
 
 def get_trending_movies(limit=TRENDING_LIMIT):
-    """Filmes em alta, para a trilha da home (FR-003).
+    """Filmes em alta **com sessão planejada**, para a trilha da home.
 
     `is_trending` é zerado a cada sincronização e remarcado, então esta
     consulta reflete a última lista do catálogo externo — não um acúmulo
     histórico.
+
+    Emenda de 2026-08-11 (FR-003a): estar em alta no catálogo externo não
+    basta. Num site de ingressos, uma faixa chamada "Em alta" que leva a filme
+    sem nada à venda é atrito sem contrapartida.
+
+    A condição de sessão é **a mesma** de `get_sellable_movies`, não uma
+    parecida: usar o predicado idêntico é o que impede as duas trilhas de
+    divergirem — um filme não pode ser comprável para uma e não para a outra
+    (R11).
     """
+    now = timezone.now()
+
     return (
         Movie.objects.filter(is_active=True, is_trending=True)
+        # `filter` sobre a relação inversa faz o join no banco, sem N+1 e sem
+        # trazer o filme para o Python só para descobrir se tem sessão.
+        .filter(
+            screenings__status=Screening.Status.PUBLISHED,
+            screenings__starts_at__gt=now,
+        )
+        # O join com sessões multiplica a linha por sessão; sem isto um filme
+        # com três sessões ocuparia três das nove vagas.
+        .distinct()
         .prefetch_related("genres")
+        # O corte vem DEPOIS do filtro (FR-003b). Cortar antes devolveria menos
+        # de 9 mesmo havendo elegíveis suficientes — e o erro seria silencioso,
+        # porque a trilha continuaria parecendo correta.
         .order_by("-release_date", "title")[:limit]
     )
 
