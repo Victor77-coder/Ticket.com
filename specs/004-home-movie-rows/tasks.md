@@ -295,23 +295,23 @@ continua chegando pronta e o cliente não distingue "filtrado" de "não classifi
 Escritos antes da mudança: os dois primeiros devem **falhar** contra o código atual, que filtra
 só por `is_trending`.
 
-- [ ] TE01 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de FR-003a: um filme com `is_trending=True` e **sem** sessão publicada e futura não aparece na trilha Em alta
-- [ ] TE02 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de FR-003b: com 12 filmes em alta e com sessão, a trilha traz 9 — o corte acontece **depois** do filtro, não antes
-- [ ] TE03 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de que sessão em rascunho e sessão passada **não** qualificam o filme para Em alta — é o mesmo predicado de Em cartaz, não um parecido
-- [ ] TE04 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de que a trilha Em alta é omitida quando nenhum filme em alta tem sessão (FR-006 aplicado ao caso novo)
-- [ ] TE05 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de que a trilha **Em breve continua não exigindo sessão** — a emenda não pode vazar para ela (FR-004)
+- [X] TE01 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de FR-003a: um filme com `is_trending=True` e **sem** sessão publicada e futura não aparece na trilha Em alta
+- [X] TE02 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de FR-003b: com 12 filmes em alta e com sessão, a trilha traz 9 — o corte acontece **depois** do filtro, não antes
+- [X] TE03 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de que sessão em rascunho e sessão passada **não** qualificam o filme para Em alta — é o mesmo predicado de Em cartaz, não um parecido
+- [X] TE04 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de que a trilha Em alta é omitida quando nenhum filme em alta tem sessão (FR-006 aplicado ao caso novo)
+- [X] TE05 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de que a trilha **Em breve continua não exigindo sessão** — a emenda não pode vazar para ela (FR-004)
 
 ## Fase E2: Implementação
 
-- [ ] TE06 [US2] Compor o predicado de sessão em `get_trending_movies` em `backend/apps/catalog/selectors.py`, reusando **exatamente** a mesma condição de `get_sellable_movies` — predicado idêntico, não equivalente, é o que impede as duas trilhas de divergirem (R11)
-- [ ] TE07 [US2] Garantir em `backend/apps/catalog/selectors.py` que o limite de 9 é aplicado depois do filtro, e que a consulta não duplica filme com várias sessões
-- [ ] TE08 [US2] Conferir em `backend/apps/catalog/selectors.py` que a consulta não introduz N+1 — a checagem de sessão precisa acontecer no banco, não por filme em Python
+- [X] TE06 [US2] Compor o predicado de sessão em `get_trending_movies` em `backend/apps/catalog/selectors.py`, reusando **exatamente** a mesma condição de `get_sellable_movies` — predicado idêntico, não equivalente, é o que impede as duas trilhas de divergirem (R11)
+- [X] TE07 [US2] Garantir em `backend/apps/catalog/selectors.py` que o limite de 9 é aplicado depois do filtro, e que a consulta não duplica filme com várias sessões
+- [X] TE08 [US2] Conferir em `backend/apps/catalog/selectors.py` que a consulta não introduz N+1 — a checagem de sessão precisa acontecer no banco, não por filme em Python
 
 ## Fase E3: Verificação e registro
 
-- [ ] TE09 Executar a verificação de SC-003a de `specs/004-home-movie-rows/quickstart.md` contra a aplicação no ar: nenhum filme de Em alta sem sessão publicada e futura
-- [ ] TE10 [P] Registrar em `README.md`, na seção de decisões, por que Em alta exige sessão e o que isso implica — a trilha vira subconjunto de Em cartaz
-- [ ] TE11 Reavaliar a sobreposição entre Em alta e Em cartaz com a home no ar, comparando o resultado com o número previsto em Assumptions de `specs/004-home-movie-rows/spec.md`, e reportar ao usuário
+- [X] TE09 Executar a verificação de SC-003a de `specs/004-home-movie-rows/quickstart.md` contra a aplicação no ar: nenhum filme de Em alta sem sessão publicada e futura
+- [X] TE10 [P] Registrar em `README.md`, na seção de decisões, por que Em alta exige sessão e o que isso implica — a trilha vira subconjunto de Em cartaz
+- [X] TE11 Reavaliar a sobreposição entre Em alta e Em cartaz com a home no ar, comparando o resultado com o número previsto em Assumptions de `specs/004-home-movie-rows/spec.md`, e reportar ao usuário
 
 ## Dependências
 

@@ -196,6 +196,15 @@ A trilha não faz nenhuma das duas coisas, e sem esses requisitos o CSS entrega 
 inércia e rolagem por teclado de graça e melhor do que qualquer código nosso. Repetir o padrão do
 carrossel ali seria coerência aparente pagando em código e em acessibilidade pior.
 
+**"Em alta" só mostra filme com sessão marcada.** O TMDb devolve os filmes mais comentados da
+semana, e a trilha não exibe todos: filtra pelos que já têm sessão publicada e futura na
+plataforma. A consequência foi medida antes de aplicar e é significativa — com o catálogo atual a
+trilha cai de 9 para 3 filmes, e os três já aparecem em "Em cartaz" logo acima. A trilha deixa de
+ser descoberta de catálogo e vira "o que está bombando entre o que dá para comprar". Foi decisão
+consciente: num site de ingressos, mandar o visitante para um filme sem nada à venda é atrito sem
+contrapartida. As alternativas descartadas — ordenar em vez de filtrar, ou marcar com um selo —
+estão em `specs/004-home-movie-rows/research.md` (R11), caso a decisão precise ser revista.
+
 **"Em cartaz" significa comprável, não "em exibição nos cinemas".** O TMDb tem uma lista chamada
 `now_playing`, e a trilha **não** vem dela: vem das sessões publicadas na plataforma. Num site de
 ingressos, uma faixa chamada "Em cartaz" que leva a filmes sem sessão à venda é promessa quebrada.
