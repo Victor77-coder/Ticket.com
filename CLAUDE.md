@@ -2,12 +2,12 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Plan: `specs/006-visual-identity/plan.md`
-- Spec: `specs/006-visual-identity/spec.md`
-- Research: `specs/006-visual-identity/research.md`
-- Data model: `specs/006-visual-identity/data-model.md` — aqui o "modelo" é o sistema de tokens
-- Contracts: `specs/006-visual-identity/contracts/`
-- Quickstart: `specs/006-visual-identity/quickstart.md`
+- Plan: `specs/007-seat-selection/plan.md`
+- Spec: `specs/007-seat-selection/spec.md`
+- Research: `specs/007-seat-selection/research.md`
+- Data model: `specs/007-seat-selection/data-model.md`
+- Contracts: `specs/007-seat-selection/contracts/`
+- Quickstart: `specs/007-seat-selection/quickstart.md`
 
 Features anteriores, já implementadas:
 
@@ -19,9 +19,14 @@ Features anteriores, já implementadas:
   de 11 tarefas). A trilha Em alta exige sessão planejada desde a emenda de 2026-08-11.
 
 - `specs/005-seed-and-carousel-tuning/` — carrossel de 3 e seed com 12 filmes à venda (22/22)
+- `specs/006-visual-identity/` — linguagem visual e disciplina de tokens (47/47). Nenhum valor de
+  cor, espaçamento, tipografia, raio ou duração pode ficar fora dos tokens.
 
-A feature 006 é **só linguagem visual**: nenhum endpoint, migração, contrato ou regra muda, e as
-asserções de teste existentes ficam congeladas. Se uma precisar mudar, a feature saiu do escopo.
+**A feature 007 atravessa a fronteira do Princípio II.** Desde a 001, `apps/screening/models.py`
+avisa que escrita de ocupação de assento não entra sem a constraint `UNIQUE(sessão, assento)` que
+a protege. Esta feature cria as duas coisas **na mesma migração** — separá-las é o que o princípio
+proíbe. O teste de concorrência não é diferencial: é prova obrigatória, e precisa **falhar** se a
+constraint for removida.
 
 Project constitution (governa todas as features): `.specify/memory/constitution.md`
 <!-- SPECKIT END -->
