@@ -140,13 +140,15 @@ ao caminho de entrada; com sessão ativa, o cabeçalho identifica de quem é.
 > **⚠️ Bloqueio registrado em [plan.md → Complexity Tracking](./plan.md#complexity-tracking)**
 >
 > O FR-022 (decisão do usuário) coloca login/logout na feature de autenticação, e o FR-023 proíbe
-> que o ponto de acesso conduza a um destino inexistente. Hoje não existe `/entrar`, não existe
-> sessão e não existe estado autenticado para ler.
+> que o ponto de acesso conduza a um destino inexistente.
 >
-> **T035 e T036 podem ser feitas agora** — o componente e seus testes são escritos neste branch.
-> **T037 e T038 NÃO PODEM ser executadas** até a feature de autenticação entregar o caminho de
-> entrada. Montar o ícone antes disso entrega um link para o nada, o que o Princípio I e o
-> Princípio V proíbem.
+> **T035 e T036 foram feitas nesta feature** — o componente e seus testes.
+> **T037 e T038 ficaram bloqueadas** até existir `/entrar`, sessão e estado autenticado para ler.
+> Montar o ícone antes disso entregaria um link para o nada, o que o Princípio I e o Princípio V
+> proíbem.
+>
+> ✅ **Resolvido em 2026-08-11** pela feature `003-user-authentication`, que entregou a rota de
+> entrada, a sessão e o `AccountMenu`. As duas tarefas estão concluídas.
 
 ### Implementation for User Story 3 — liberado
 
@@ -155,8 +157,8 @@ ao caminho de entrada; com sessão ativa, o cabeçalho identifica de quem é.
 
 ### Implementation for User Story 3 — 🚧 bloqueado pela feature de autenticação
 
-- [ ] T037 [US3] 🚧 **NÃO EXECUTAR AINDA** — Montar `<AccountButton />` no espaço de conta de `frontend/components/header/SiteHeader.tsx`, apontando para o caminho de entrada. Desbloqueia quando a feature de autenticação entregar a rota (FR-023)
-- [ ] T038 [US3] 🚧 **NÃO EXECUTAR AINDA** — Estender `frontend/tests/e2e/header.spec.ts` com o percurso visitante → caminho de entrada → estado autenticado no cabeçalho, e com a volta ao estado de visitante quando a sessão expira (FR-024)
+- [X] T037 [US3] Montar `<AccountButton />` no espaço de conta de `frontend/components/header/SiteHeader.tsx`, apontando para o caminho de entrada. Desbloqueada e concluída pela feature `003-user-authentication` (FR-023)
+- [X] T038 [US3] Estender `frontend/tests/e2e/header.spec.ts` com o percurso visitante → caminho de entrada → estado autenticado no cabeçalho, e com a volta ao estado de visitante quando a sessão expira (FR-024)
 
 **Checkpoint**: com T035 e T036 feitas, o componente existe e está testado, mas não montado. A US3 só fecha depois da autenticação.
 

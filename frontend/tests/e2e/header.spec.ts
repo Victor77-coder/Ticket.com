@@ -157,3 +157,77 @@ test("não há rolagem horizontal em tela estreita", async ({ page }) => {
 
   await expect(page.getByRole("banner").getByRole("link", { name: /ticket\.com/i })).toBeVisible();
 });
+
+// --- Acesso à conta (feature 003) ---
+// Percurso que a T038 previa e que só se tornou executável quando a
+// autenticação entregou a rota de entrada.
+
+test("percorre visitante → entrada → autenticado → saída", async ({ page }) => {
+  await page.goto("/");
+
+  const cabecalho = page.getByRole("banner");
+
+  // Visitante: o ponto de conta convida a entrar e leva ao destino.
+  const entrar = cabecalho.getByRole("link", { name: /entrar na sua conta/i });
+  await expect(entrar).toBeVisible();
+  await entrar.click();
+  await expect(page).toHaveURL(/\/entrar/);
+
+  await page.getByLabel("Usuário").fill("cliente1");
+  await page.getByLabel("Senha").fill("desafio2026");
+  await page.getByRole("button", { name: "Entrar" }).click();
+
+  // Autenticado: o mesmo ponto passa a identificar, em todas as páginas.
+  await expect(page).toHaveURL("/");
+  await expect(cabecalho.getByRole("button", { name: /camila/i })).toBeVisible();
+
+  await page.goto("/filmes");
+  await page.goto("/");
+  await expect(cabecalho.getByRole("button", { name: /camila/i })).toBeVisible();
+
+  // Saída: volta ao estado de visitante.
+  await cabecalho.getByRole("button", { name: /camila/i }).click();
+  await page.getByRole("menuitem", { name: "Sair" }).click();
+
+  await expect(cabecalho.getByRole("link", { name: /entrar na sua conta/i })).toBeVisible();
+});
+
+test("volta ao estado de visitante quando a sessão deixa de valer", async ({ page, context }) => {
+  await page.goto("/entrar");
+  await page.getByLabel("Usuário").fill("cliente1");
+  await page.getByLabel("Senha").fill("desafio2026");
+  await page.getByRole("button", { name: "Entrar" }).click();
+
+  await expect(page.getByRole("banner").getByRole("button", { name: /camila/i })).toBeVisible();
+
+  // Invalida a sessão por fora, como aconteceria ao expirar.
+  await context.clearCookies();
+  await page.reload();
+
+  // A página continua utilizável; só o cabeçalho muda de estado (FR-017).
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: /entrar na sua conta/i }),
+  ).toBeVisible();
+  await expect(page.getByRole("banner")).toBeVisible();
+});
+
+test("o retorno após a entrada respeita a página de origem", async ({ page }) => {
+  await page.goto("/entrar?next=%2Ffilmes%2Fduna-parte-dois");
+
+  await page.getByLabel("Usuário").fill("cliente2");
+  await page.getByLabel("Senha").fill("desafio2026");
+  await page.getByRole("button", { name: "Entrar" }).click();
+
+  await expect(page).toHaveURL(/\/filmes\/duna-parte-dois/);
+});
+
+test("descarta destino de retorno externo", async ({ page }) => {
+  await page.goto("/entrar?next=%2F%2Fexemplo.com");
+
+  await page.getByLabel("Usuário").fill("cliente1");
+  await page.getByLabel("Senha").fill("desafio2026");
+  await page.getByRole("button", { name: "Entrar" }).click();
+
+  // Nunca sai do site: o destino externo é trocado pela home (FR-011).
+  await expect(page).toHaveURL("/");
+});
