@@ -277,3 +277,55 @@ ponto das trilhas, dá para avançar nela sem esperar.
 - T033 altera arquivo da feature 001 — justificado em Complexity Tracking do plan.md
 - O endpoint de highlights permanece separado e intocado (R4)
 - Commitar por contexto, com mensagem descritiva (Princípio VI)
+
+---
+
+# Emenda de 2026-08-11 — Em alta exige sessão planejada
+
+As 55 tarefas acima permanecem concluídas. Esta seção realinha a implementação à emenda do spec
+(FR-003a, FR-003b, SC-003a), que chegou depois da entrega.
+
+**Escopo**: um seletor. Sem migração, sem mudança de contrato, sem tocar no front-end — a trilha
+continua chegando pronta e o cliente não distingue "filtrado" de "não classificado" (R11).
+
+**Todas as tarefas pertencem à US2** (Em alta e Em breve). Nenhuma outra story é afetada.
+
+## Fase E1: Testes da emenda
+
+Escritos antes da mudança: os dois primeiros devem **falhar** contra o código atual, que filtra
+só por `is_trending`.
+
+- [ ] TE01 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de FR-003a: um filme com `is_trending=True` e **sem** sessão publicada e futura não aparece na trilha Em alta
+- [ ] TE02 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de FR-003b: com 12 filmes em alta e com sessão, a trilha traz 9 — o corte acontece **depois** do filtro, não antes
+- [ ] TE03 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de que sessão em rascunho e sessão passada **não** qualificam o filme para Em alta — é o mesmo predicado de Em cartaz, não um parecido
+- [ ] TE04 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de que a trilha Em alta é omitida quando nenhum filme em alta tem sessão (FR-006 aplicado ao caso novo)
+- [ ] TE05 [P] [US2] Escrever em `backend/tests/test_home_rows_api.py` o teste de que a trilha **Em breve continua não exigindo sessão** — a emenda não pode vazar para ela (FR-004)
+
+## Fase E2: Implementação
+
+- [ ] TE06 [US2] Compor o predicado de sessão em `get_trending_movies` em `backend/apps/catalog/selectors.py`, reusando **exatamente** a mesma condição de `get_sellable_movies` — predicado idêntico, não equivalente, é o que impede as duas trilhas de divergirem (R11)
+- [ ] TE07 [US2] Garantir em `backend/apps/catalog/selectors.py` que o limite de 9 é aplicado depois do filtro, e que a consulta não duplica filme com várias sessões
+- [ ] TE08 [US2] Conferir em `backend/apps/catalog/selectors.py` que a consulta não introduz N+1 — a checagem de sessão precisa acontecer no banco, não por filme em Python
+
+## Fase E3: Verificação e registro
+
+- [ ] TE09 Executar a verificação de SC-003a de `specs/004-home-movie-rows/quickstart.md` contra a aplicação no ar: nenhum filme de Em alta sem sessão publicada e futura
+- [ ] TE10 [P] Registrar em `README.md`, na seção de decisões, por que Em alta exige sessão e o que isso implica — a trilha vira subconjunto de Em cartaz
+- [ ] TE11 Reavaliar a sobreposição entre Em alta e Em cartaz com a home no ar, comparando o resultado com o número previsto em Assumptions de `specs/004-home-movie-rows/spec.md`, e reportar ao usuário
+
+## Dependências
+
+- TE01 a TE05 antes de TE06 (os dois primeiros precisam falhar primeiro)
+- TE07 e TE08 dependem de TE06
+- TE09 depende de TE08
+- TE10 e TE11 dependem de TE09
+
+## Notas
+
+- **TE07 é a tarefa que parece redundante e não é**: cortar os 9 primeiros em alta e só então
+  filtrar por sessão devolveria menos de 9 mesmo havendo elegíveis suficientes. O erro seria
+  silencioso — a trilha continuaria parecendo correta.
+- **TE05 protege contra vazamento da regra**: Em breve exige o oposto (filmes sem sessão), e uma
+  refatoração distraída em `selectors.py` pode aplicar o filtro aos dois.
+- **TE11 não é cerimônia**: a emenda foi aplicada com a consequência medida em 3 filmes. Ver o
+  resultado na tela é o que permite ao usuário confirmar ou reverter a decisão.
