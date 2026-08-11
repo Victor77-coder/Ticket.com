@@ -49,27 +49,38 @@ listadas.
 
 ### User Story 2 - Descobrir o que está em alta e o que estreia em breve (Priority: P2)
 
-O visitante rola a home e encontra mais duas trilhas: **Em alta**, com os filmes mais comentados
-da semana, e **Em breve**, com os que ainda vão estrear. Ele usa as duas para descobrir títulos
-que talvez não conhecesse, mesmo que ainda não possa comprar ingresso para eles.
+O visitante rola a home e encontra mais duas trilhas. **Em alta** reúne os filmes mais comentados
+da semana **entre os que já têm sessão marcada na plataforma** — é descoberta que termina em
+compra, não em vitrine. **Em breve** reúne os que ainda vão estrear, aí sim sem exigir sessão,
+porque o propósito dela é justamente antecipar o que ainda não está à venda.
 
 **Why this priority**: Dá profundidade de catálogo à home e é o que diferencia a plataforma de uma
 simples lista de sessões. Depende da mesma estrutura de trilha da US1, mas entrega valor sozinha.
 
-**Independent Test**: Abrir a home e confirmar que as trilhas Em alta e Em breve exibem filmes,
-que Em alta traz no máximo 9 e que acionar qualquer cartaz leva à página do filme correspondente.
+**Independent Test**: Abrir a home e confirmar que a trilha Em alta traz no máximo 9 filmes e que
+**todos** têm sessão planejada; que Em breve lista estreias futuras da mais próxima para a mais
+distante; e que acionar qualquer cartaz leva à página do filme correspondente.
 
 **Acceptance Scenarios**:
 
-1. **Given** o catálogo tem filmes classificados como em alta, **When** o visitante abre a home,
-   **Then** a trilha **Em alta** exibe no máximo **9** cartazes.
-2. **Given** o catálogo tem filmes com estreia futura, **When** o visitante abre a home, **Then**
-   a trilha **Em breve** exibe esses filmes ordenados pela estreia mais próxima.
-3. **Given** um filme aparece em mais de uma trilha, **When** a home é carregada, **Then** ele é
+1. **Given** o catálogo tem filmes classificados como em alta e com sessão planejada, **When** o
+   visitante abre a home, **Then** a trilha **Em alta** exibe no máximo **9** cartazes.
+2. **Given** um filme classificado como em alta pelo catálogo externo **sem nenhuma sessão
+   planejada**, **When** a home é carregada, **Then** ele **não** aparece na trilha Em alta.
+3. **Given** nenhum filme em alta tem sessão planejada, **When** a home é carregada, **Then** a
+   trilha Em alta é omitida por inteiro, sem deixar título órfão.
+4. **Given** um filme em alta ganha sua primeira sessão planejada, **When** a home é carregada em
+   seguida, **Then** ele passa a aparecer na trilha Em alta.
+5. **Given** um filme em alta perde sua última sessão planejada, **When** a home é carregada em
+   seguida, **Then** ele deixa de aparecer na trilha Em alta.
+6. **Given** o catálogo tem filmes com estreia futura, **When** o visitante abre a home, **Then**
+   a trilha **Em breve** exibe esses filmes ordenados pela estreia mais próxima, **sem** exigir
+   sessão planejada.
+7. **Given** um filme aparece em mais de uma trilha, **When** a home é carregada, **Then** ele é
    exibido em todas em que se qualifica — a repetição é aceita.
-4. **Given** uma trilha não tem nenhum filme, **When** a home é carregada, **Then** aquela trilha
+8. **Given** uma trilha não tem nenhum filme, **When** a home é carregada, **Then** aquela trilha
    é omitida por inteiro, sem deixar título órfão.
-5. **Given** nenhuma das trilhas tem filme algum, **When** a home é carregada, **Then** a home
+9. **Given** nenhuma das trilhas tem filme algum, **When** a home é carregada, **Then** a home
    exibe um estado explicativo em português, e não uma página em branco.
 
 ---
@@ -102,6 +113,11 @@ Princípio V da constitution cobra interface autoral justamente onde é fácil e
 ---
 
 ### User Story 4 - Entender por que um filme não tem sessão (Priority: P3)
+
+> Com a regra de sessão planejada em Em alta, a trilha **Em breve** passa a ser o caminho típico
+> até esta situação — mas ela continua alcançável por busca, por link direto e por um filme que
+> perdeu a última sessão depois de a trilha ter sido montada. A story permanece necessária.
+
 
 O visitante aciona um filme que ainda vai estrear. A página o recebe com a mesma composição de
 qualquer outro filme — cartaz, título, sinopse, duração, classificação e gênero —, informa a data
@@ -137,8 +153,19 @@ página exibe a composição completa, a data de estreia e a explicação.
 - **Filme sem cartaz**: exibe um substituto com o título legível, mantendo a mesma proporção dos
   demais para não desalinhar a trilha.
 - **Filme repetido em duas trilhas**: permitido e esperado.
-- **Filme em alta que também está em cartaz**: aparece nas duas; a trilha Em cartaz continua sendo
-  a única que promete compra.
+- **Filme em alta que também está em cartaz**: aparece nas duas. Com a regra de sessão planejada,
+  essa sobreposição deixa de ser eventual e passa a ser a norma — ver a consequência registrada em
+  Assumptions.
+- **Filme em alta sem sessão planejada**: não aparece na trilha Em alta, mesmo estando marcado
+  como em alta pelo catálogo externo.
+- **Filme em alta que ganha sua primeira sessão**: passa a aparecer na trilha na carga seguinte da
+  home, sem exigir nova sincronização com o catálogo externo.
+- **Filme em alta que perde sua última sessão**: sai da trilha na carga seguinte, pelo mesmo
+  motivo.
+- **Mais de 9 filmes em alta com sessão**: exibe 9. O corte acontece **depois** do filtro de
+  sessão, não antes.
+- **Todos os filmes em alta sem sessão**: a trilha Em alta é omitida por inteiro (FR-006), como
+  qualquer trilha vazia.
 - **Catálogo externo indisponível**: as trilhas continuam funcionando com o que já está
   armazenado. Só a atualização da classificação fica pendente até a próxima sincronização.
 - **Data de estreia no passado, mas sem sessão**: a página não anuncia estreia futura; informa
@@ -157,9 +184,14 @@ página exibe a composição completa, a data de estreia e a explicação.
 - **FR-002**: A trilha **Em cartaz** DEVE conter os filmes com ao menos uma sessão publicada e
   futura na plataforma, ordenados pela sessão mais próxima.
 - **FR-003**: A trilha **Em alta** DEVE conter os filmes classificados como em alta pelo catálogo
-  externo, limitada a **9** filmes.
+  externo **que tenham ao menos uma sessão planejada** na plataforma, limitada a **9** filmes.
+- **FR-003a**: Um filme classificado como em alta pelo catálogo externo **sem** sessão planejada
+  NÃO PODE aparecer na trilha Em alta.
+- **FR-003b**: O limite de 9 DEVE ser aplicado **depois** do filtro de sessão planejada — a trilha
+  exibe até 9 filmes elegíveis, não os 9 primeiros em alta descartando os inelegíveis do conjunto.
 - **FR-004**: A trilha **Em breve** DEVE conter os filmes com estreia futura segundo o catálogo
-  externo, ordenados pela estreia mais próxima.
+  externo, ordenados pela estreia mais próxima. Esta trilha **NÃO** exige sessão planejada — seu
+  propósito é justamente antecipar o que ainda não está à venda.
 - **FR-005**: Um filme que se qualifica para mais de uma trilha DEVE aparecer em todas elas.
 - **FR-006**: Uma trilha sem nenhum filme DEVE ser omitida por completo, incluindo seu título.
 - **FR-007**: Quando nenhuma trilha tiver filmes, a home DEVE exibir um estado explicativo em
@@ -231,6 +263,9 @@ página exibe a composição completa, a data de estreia e a explicação.
 - **SC-002**: A trilha Em alta nunca exibe mais de 9 filmes.
 - **SC-003**: 100% dos filmes da trilha Em cartaz conduzem a uma página com ao menos uma sessão
   comprável no momento em que foram listados.
+- **SC-003a**: 100% dos filmes da trilha Em alta têm ao menos uma sessão planejada no momento em
+  que foram listados — verificável abrindo cada cartaz da trilha e conferindo que a página lista
+  sessão.
 - **SC-004**: As trilhas permanecem completas e navegáveis quando o catálogo externo está
   indisponível.
 - **SC-005**: Em larguras de 360px a 1920px, a página nunca apresenta rolagem horizontal.
@@ -252,6 +287,25 @@ página exibe a composição completa, a data de estreia e a explicação.
 - **A condicional do pedido não se aplica** — o catálogo externo fornece as três classificações
   nativamente, então não é preciso derivá-las de datas de lançamento. Os "9 filmes" viram limite
   de exibição da trilha Em alta.
+- **"Sessão planejada" = ao menos uma sessão publicada e futura** — o mesmo critério que a trilha
+  Em cartaz usa para "ter sessão à venda". Decisão do usuário em 2026-08-11, com a interpretação
+  confirmada.
+
+  A leitura alternativa — "planejada" incluindo sessão em rascunho — foi descartada porque seria
+  autodestrutiva: a página do filme só lista sessões publicadas, então um filme com apenas
+  rascunhos apareceria na trilha e levaria de volta ao "não possui sessões programadas" que esta
+  mudança existe para evitar. Na base atual nenhum filme tem sessão só em rascunho, então as duas
+  leituras produziriam hoje o mesmo resultado.
+
+- **Consequência aceita: Em alta passa a ser subconjunto de Em cartaz** — usando o mesmo critério
+  de sessão, todo filme de Em alta necessariamente também aparece em Em cartaz. A trilha deixa de
+  ser descoberta de catálogo e vira "o que está bombando entre o que dá para comprar".
+
+  Foi medido antes da decisão: com o catálogo atual, Em alta cairia de 9 para 3 filmes, os três já
+  visíveis na trilha logo acima. A alternativa — manter Em alta como descoberta pura — foi
+  rejeitada pelo usuário porque, num site de ingressos, mandar o visitante para um filme sem nada
+  à venda é atrito sem contrapartida.
+
 - **Repetição entre trilhas é aceita** — um filme em alta que também está em cartaz aparece nas
   duas. Suprimir a repetição faria trilhas mudarem de conteúdo conforme a ordem de renderização,
   que é pior de entender e de testar.

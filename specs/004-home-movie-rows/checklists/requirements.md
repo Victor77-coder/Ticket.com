@@ -33,6 +33,8 @@
 
 - [x] **I. Fluxo Completo** — trilha vazia é omitida em vez de virar título órfão (FR-006);
   filme sem sessão tem página completa e explicação, não beco sem saída (FR-024 a FR-027).
+  Reforçado na emenda de 2026-08-11: Em alta passa a exigir sessão planejada (FR-003a), então
+  deixa de ser caminho típico até uma página sem nada à venda.
 - [x] **IV. Papéis e Autorização no Servidor** — N/A: todas as trilhas e a página do filme são
   públicas; nenhuma ação desta feature exige conta.
 - [x] **V. Interface Autoral** — FR-030 proíbe texto genérico; FR-011 exige substituto legível em
@@ -72,6 +74,29 @@ pior do que não ter o botão. Cortar foi a decisão certa: entregá-lo de verda
 
 A US4 permanece, mas reduzida ao que sempre foi necessário — a página do filme sem sessão explicar
 o motivo e a data de estreia, sem prometer nada.
+
+### Emenda de 2026-08-11 — Em alta exige sessão planejada
+
+Mudança pedida pelo usuário depois da implementação: todo filme da trilha **Em alta** precisa ter
+ao menos uma sessão planejada. Filme em alta sem sessão sai da trilha.
+
+**Interpretação adotada**: "sessão planejada" = ao menos uma sessão **publicada e futura**, o
+mesmo critério de Em cartaz. O usuário sugeriu essa leitura e pediu clarificação se estivesse
+errada — não estava, e a alternativa se refuta sozinha: "planejada" incluindo rascunho colocaria
+na trilha filmes cuja página diria "não possui sessões programadas", que é exatamente o que a
+mudança existe para evitar. Na base atual nenhum filme tem sessão só em rascunho, então as duas
+leituras dariam hoje o mesmo resultado.
+
+**Consequência medida antes de aplicar**: Em alta vira subconjunto de Em cartaz. Com o catálogo
+atual, cai de 9 para 3 filmes — e os três já aparecem na trilha imediatamente acima. A trilha
+deixa de ser descoberta de catálogo e passa a ser "o que está bombando entre o que dá para
+comprar". Registrado em Assumptions do spec para que a decisão possa ser revista com o número na
+mão.
+
+**Divergência aberta**: a feature já estava implementada e testada (55/55) quando a mudança
+chegou. O código atual **não** aplica o filtro — `get_trending_movies` filtra só por
+`is_trending`. O plano, as tarefas e a implementação precisam ser realinhados antes de esta spec
+voltar a descrever o sistema.
 
 ### Sobreposição deliberada com o painel de destaques
 
