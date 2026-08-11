@@ -129,8 +129,8 @@ identificar você e oferece a saída.
 ## Testes
 
 ```bash
-docker compose exec backend pytest          # 92 testes
-docker compose exec frontend npm run test   # 80 testes
+docker compose exec backend pytest          # 115 testes
+docker compose exec frontend npm run test   # 95 testes
 ```
 
 Ponta a ponta (ver a ressalva em Limitações conhecidas):
@@ -160,6 +160,11 @@ pelo teclado.
 O ponto de conta no cabeçalho convida a entrar quando não há sessão e identifica o usuário quando
 há. Depois de entrar, o visitante volta para a página de onde partiu.
 
+**Trilhas da home** (`specs/004-home-movie-rows/`) — três faixas horizontais de cartazes abaixo do
+carrossel: **Em cartaz** (o que dá para comprar agora), **Em alta** e **Em breve**, as duas
+últimas vindas do TMDb. Cada cartaz leva à página do filme; quando não há sessão, a página informa
+a data de estreia e explica o motivo.
+
 ---
 
 ## Decisões que podem estranhar numa leitura rápida
@@ -183,6 +188,18 @@ site faria a pessoa procurar pelo nome exato e ouvir "nada encontrado".
 **O wordmark tem `aria-label` aparentemente redundante.** Não é: o nome é dividido em dois
 elementos para o tratamento tipográfico, e o algoritmo de nome acessível insere um espaço na
 fronteira entre eles. Sem o rótulo, o leitor de tela anuncia "ticket .com".
+
+**A trilha usa `scroll-snap` nativo; o carrossel foi escrito à mão.** Parece incoerência e é o
+contrário. O carrossel precisa fechar ciclo — do último volta ao primeiro — e rotacionar sozinho
+pausando em três situações distintas; `scroll-snap` exigiria clonar slides e não dá esse controle.
+A trilha não faz nenhuma das duas coisas, e sem esses requisitos o CSS entrega gesto de toque,
+inércia e rolagem por teclado de graça e melhor do que qualquer código nosso. Repetir o padrão do
+carrossel ali seria coerência aparente pagando em código e em acessibilidade pior.
+
+**"Em cartaz" significa comprável, não "em exibição nos cinemas".** O TMDb tem uma lista chamada
+`now_playing`, e a trilha **não** vem dela: vem das sessões publicadas na plataforma. Num site de
+ingressos, uma faixa chamada "Em cartaz" que leva a filmes sem sessão à venda é promessa quebrada.
+As trilhas Em alta e Em breve, essas sim, vêm do TMDb — elas prometem descoberta, não compra.
 
 **A busca combina debounce, `AbortController` e uma guarda por número de sequência.** Os dois
 primeiros não bastam: uma resposta já decodificada pode chegar depois de uma mais nova, e a lista
