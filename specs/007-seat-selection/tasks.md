@@ -76,18 +76,18 @@ que o mapa exibe todos os lugares, com os estados distinguíveis sem depender de
 
 ### Testes da User Story 1
 
-- [ ] T013 [P] [US1] Cobrir em `backend/tests/test_seat_map_api.py` que `GET /api/v1/sessoes/<id>/mapa/` devolve `200` com todas as fileiras da sala, na ordem de leitura, e o total de assentos igual à capacidade (FR-004)
-- [ ] T014 [P] [US1] Cobrir em `backend/tests/test_seat_map_api.py` que sessão inexistente, em rascunho, cancelada e já iniciada devolvem **a mesma** `404` com "Sessão não encontrada." (FR-003)
-- [ ] T015 [P] [US1] Cobrir em `backend/tests/test_seat_map_api.py` que o mapa responde `200` **sem sessão ativa** (FR-010) e que `situacao` só assume `livre` ou `tomado` (contrato)
-- [ ] T016 [P] [US1] Cobrir em `backend/tests/test_seat_map_api.py` que o mapa de uma sessão com reservas de outro cliente **não contém** nome, `id` de usuário, `id` de reserva nem `expires_at` de terceiro — gate do Princípio IV (contrato, "campos proibidos")
-- [ ] T017 [P] [US1] Cobrir em `backend/tests/test_seat_map_api.py` que o mapa é montado em **uma** consulta de assentos, com `django_assert_num_queries` (R8)
+- [X] T013 [P] [US1] Cobrir em `backend/tests/test_seat_map_api.py` que `GET /api/v1/sessoes/<id>/mapa/` devolve `200` com todas as fileiras da sala, na ordem de leitura, e o total de assentos igual à capacidade (FR-004)
+- [X] T014 [P] [US1] Cobrir em `backend/tests/test_seat_map_api.py` que sessão inexistente, em rascunho, cancelada e já iniciada devolvem **a mesma** `404` com "Sessão não encontrada." (FR-003)
+- [X] T015 [P] [US1] Cobrir em `backend/tests/test_seat_map_api.py` que o mapa responde `200` **sem sessão ativa** (FR-010) e que `situacao` só assume `livre` ou `tomado` (contrato)
+- [X] T016 [P] [US1] Cobrir em `backend/tests/test_seat_map_api.py` que o mapa de uma sessão com reservas de outro cliente **não contém** nome, `id` de usuário, `id` de reserva nem `expires_at` de terceiro — gate do Princípio IV (contrato, "campos proibidos")
+- [X] T017 [P] [US1] Cobrir em `backend/tests/test_seat_map_api.py` que o mapa é montado em **uma** consulta de assentos, com `django_assert_num_queries` (R8)
 
 ### Implementação da User Story 1
 
-- [ ] T018 [US1] Criar `backend/apps/screening/selectors.py` com `get_seat_map(screening)`: assentos da sala anotados com ocupação viva por subconsulta, ordenados por fileira e número (R8, data-model.md)
-- [ ] T019 [US1] Criar `backend/apps/screening/serializers.py` com o mapa agrupado por fileira, `tipo` separado de `situacao`, e `esgotada` derivado (contrato)
-- [ ] T020 [US1] Criar `backend/apps/screening/views.py` com `SeatMapView`, permissão `AllowAny`, resolvendo a sessão por `Screening.objects.sellable()` para que rascunho e cancelada caiam no mesmo `404` (FR-002, FR-003)
-- [ ] T021 [US1] Criar `backend/apps/screening/urls.py` com `sessoes/<int:pk>/mapa/` e registrá-lo em `backend/config/urls.py` sob `api/v1/` — **conferir que o servidor sobe** antes de seguir
+- [X] T018 [US1] Criar `backend/apps/screening/selectors.py` com `get_seat_map(screening)`: assentos da sala anotados com ocupação viva por subconsulta, ordenados por fileira e número (R8, data-model.md)
+- [X] T019 [US1] Criar `backend/apps/screening/serializers.py` com o mapa agrupado por fileira, `tipo` separado de `situacao`, e `esgotada` derivado (contrato)
+- [X] T020 [US1] Criar `backend/apps/screening/views.py` com `SeatMapView`, permissão `AllowAny`, resolvendo a sessão por `Screening.objects.sellable()` para que rascunho e cancelada caiam no mesmo `404` (FR-002, FR-003)
+- [X] T021 [US1] Criar `backend/apps/screening/urls.py` com `sessoes/<int:pk>/mapa/` e registrá-lo em `backend/config/urls.py` sob `api/v1/` — **conferir que o servidor sobe** antes de seguir
 - [ ] T022 [P] [US1] Acrescentar os tipos `MapaSessao`, `Fileira` e `Assento` em `frontend/lib/types.ts`, espelhando o contrato
 - [ ] T023 [US1] Acrescentar `buscarMapaSessao(id)` em `frontend/lib/api.ts`, seguindo o padrão de erro e degradação já usado pelos demais consumidores
 - [ ] T024 [P] [US1] Criar `frontend/components/seats/Seat.tsx`: `<button>` real, `aria-pressed` para seleção, `aria-disabled` para tomado, e rótulo com fileira, número e situação (R11, FR-011)

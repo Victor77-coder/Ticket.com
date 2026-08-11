@@ -28,7 +28,7 @@ conta, e exigir login para olhar afastaria o visitante antes de ele ter motivo p
 {
   "id": 12,
   "filme": { "titulo": "A Odisseia", "slug": "a-odisseia" },
-  "sala": { "nome": "Sala 1", "capacidade": 60 },
+  "sala": { "nome": "Sala 1" },
   "inicio": "2026-08-12T19:30:00-03:00",
   "preco": "32.00",
   "esgotada": false,
@@ -64,6 +64,12 @@ de apresentação.
 explicativo (FR-030) sem varrer a lista.
 
 **Ocupação vencida não aparece como `tomado`** (FR-021), sem depender de rotina ter passado.
+
+> **Correção durante a implementação (2026-08-11)**: o rascunho deste contrato trazia
+> `sala.capacidade`. Foi retirado ao ser confrontado com o gate do Princípio IV — o
+> `ScreeningSerializer` do catálogo já declara "sem custo, sem capacidade" desde a `001`, e abrir
+> exceção aqui seria incoerente. Não faz falta: o cliente recebe todos os lugares e conta se
+> precisar. `test_mapa_nao_expoe_a_capacidade_da_sala` fixa a ausência.
 
 ### `404 Not Found` — sessão inexistente, em rascunho, cancelada ou já iniciada
 
