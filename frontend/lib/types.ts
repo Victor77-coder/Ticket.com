@@ -40,6 +40,8 @@ export type MovieDetail = {
   slug: string;
   title: string;
   synopsis: string;
+  /** Alimenta "Estreia em DD/MM/AAAA" quando não há sessões (FR-025). */
+  release_date: string | null;
   backdrop_url: string | null;
   poster_url: string | null;
   certification_br: string | null;
@@ -95,4 +97,34 @@ export type LoginResponse = {
   session_key: string;
   expires_at: string;
   user: Sessao;
+};
+
+/** Cartão de filme nas trilhas da home. Sem backdrop e sem trailer. */
+export type MovieCard = {
+  id: number;
+  slug: string;
+  title: string;
+  /** Nulo aciona o substituto legível no cartão (FR-011). */
+  poster_url: string | null;
+  certification_br: string | null;
+  runtime_minutes: number | null;
+  release_date: string | null;
+  movie_path: string;
+};
+
+export type MovieRowData = {
+  key: "em-cartaz" | "em-alta" | "em-breve";
+  title: string;
+  count: number;
+  movies: MovieCard[];
+};
+
+/**
+ * Trilhas da home.
+ *
+ * Uma trilha sem filmes **não vem** no array — o servidor a omite. Se veio,
+ * renderiza (FR-006).
+ */
+export type HomeRowsResponse = {
+  rows: MovieRowData[];
 };

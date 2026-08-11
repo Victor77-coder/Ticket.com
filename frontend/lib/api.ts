@@ -9,6 +9,7 @@
 import type {
   ApiResult,
   HighlightsResponse,
+  HomeRowsResponse,
   LoginResponse,
   MovieDetail,
   SearchResponse,
@@ -147,4 +148,9 @@ export function postLogout(sessionKey: string): Promise<ApiResultComStatus<void>
   return postJson<void>("/api/v1/auth/logout/", undefined, {
     headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` },
   });
+}
+
+/** As três trilhas da home em uma requisição (R4). */
+export function fetchHomeRows(): Promise<ApiResult<HomeRowsResponse>> {
+  return getJson<HomeRowsResponse>("/api/v1/home/");
 }
