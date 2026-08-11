@@ -180,3 +180,17 @@
     max-width: 14rem;
   }
 }
+
+.vazioTexto {
+  margin: 0;
+  color: var(--cor-texto-suave);
+}
+
+/* A estreia é a informação principal do estado vazio: quem chegou por "Em
+ * breve" veio justamente saber quando. */
+.estreia {
+  margin: 0 0 var(--esp-2);
+  font-size: var(--texto-md);
+  font-weight: var(--peso-forte);
+  color: var(--cor-texto);
+}

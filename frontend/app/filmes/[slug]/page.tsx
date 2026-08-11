@@ -34,13 +34,42 @@ function formatarDuracao(minutos: number | null) {
   return resto === 0 ? `${horas}h` : `${horas}h${String(resto).padStart(2, "0")}`;
 }
 
-function ListaDeSessoes({ sessoes }: { sessoes: Screening[] }) {
+/**
+ * Data de estreia, apenas quando ela é futura.
+ *
+ * Sem data conhecida ou com data no passado, devolve null: anunciar "estreia
+ * em" numa data já vencida seria informação errada, e estimar uma data que
+ * não temos seria inventar (FR-027, SC-009).
+ */
+function estreiaFutura(iso: string | null): string | null {
+  if (!iso) return null;
+
+  const data = new Date(`${iso}T00:00:00`);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  if (data <= hoje) return null;
+
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(data);
+}
+
+function ListaDeSessoes({
+  sessoes,
+  releaseDate,
+}: {
+  sessoes: Screening[];
+  releaseDate: string | null;
+}) {
   if (sessoes.length === 0) {
+    const estreia = estreiaFutura(releaseDate);
+
     return (
-      <p className={styles.vazio}>
-        Não há sessões abertas para este filme no momento. A programação da próxima semana é
-        publicada às quartas-feiras.
-      </p>
+      <div className={styles.vazio}>
+        {estreia && <p className={styles.estreia}>Estreia em {estreia}</p>}
+        <p className={styles.vazioTexto}>
+          No momento, este filme não possui sessões programadas.
+        </p>
+      </div>
     );
   }
 
@@ -129,7 +158,7 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
             <h2 id="titulo-sessoes" className={styles.subtitulo}>
               Sessões
             </h2>
-            <ListaDeSessoes sessoes={filme.screenings} />
+            <ListaDeSessoes sessoes={filme.screenings} releaseDate={filme.release_date} />
           </section>
         </div>
       </article>
