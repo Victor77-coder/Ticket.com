@@ -208,3 +208,32 @@ describe("acessibilidade por teclado", () => {
     }
   });
 });
+
+// --- Movimento reduzido (feature 006) -------------------------------------
+// A feature 004 cobriu isto no carrossel, mas não na trilha. R6 da 006
+// acrescenta a elevação do cartaz aqui, então o caso passa a existir.
+
+describe("movimento reduzido", () => {
+  it("a trilha permanece navegável sem depender de animação", async () => {
+    const usuario = userEvent.setup();
+    simularTransbordo(true);
+    render(<MovieRow trilha={criarTrilha(12)} />);
+
+    // Com prefers-reduced-motion o CSS zera as transições; o comportamento
+    // não pode depender delas para funcionar.
+    await usuario.click(screen.getByRole("button", { name: /Ver mais filmes/ }));
+
+    expect(screen.getByRole("button", { name: /filmes anteriores/ })).toBeInTheDocument();
+    expect(screen.getAllByRole("link")).toHaveLength(12);
+  });
+
+  it("os cartões continuam alcançáveis com o movimento desligado", async () => {
+    const usuario = userEvent.setup();
+    render(<MovieRow trilha={criarTrilha(3)} />);
+
+    const links = screen.getAllByRole("link");
+    await usuario.tab();
+
+    expect(links[0]).toHaveFocus();
+  });
+});
