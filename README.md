@@ -1,13 +1,11 @@
 # Plataforma de Ingressos de Cinema
 
-Resposta ao **Desafio Elite Dev 2026** (Verzel).
+Venda e validação de ingressos de cinema — catálogo vindo do TMDb, sessões, e o caminho até a
+compra. Resposta ao Desafio Elite Dev 2026 (Verzel).
 
-Um organizador monta sessões a partir do catálogo do TMDb; o cliente navega pelos filmes em
-cartaz, escolhe uma sessão e compra o ingresso; a portaria valida a entrada.
-
-**Estado atual**: o carrossel de filmes em destaque e o caminho até a listagem de sessões estão
-implementados. O fluxo de reserva, pagamento, emissão de ingresso e validação na portaria
-**ainda não** — ver [O que ainda não está pronto](#o-que-ainda-não-está-pronto).
+O projeto é conduzido por especificação: cada feature nasce de um spec, um plano e uma lista de
+tarefas versionados em [`specs/`](./specs/), sob as regras de
+[`.specify/memory/constitution.md`](./.specify/memory/constitution.md).
 
 ---
 
@@ -16,9 +14,10 @@ implementados. O fluxo de reserva, pagamento, emissão de ingresso e validação
 | Camada | Tecnologia |
 |---|---|
 | Back-end | Django 5 + Django REST Framework (Python 3.12) |
-| Front-end | Next.js 15 (App Router) + React 19 + TypeScript |
+| Front-end | Next.js 15 (App Router) + React 19 |
 | Banco | PostgreSQL 16 |
-| Catálogo | TMDb (The Movie Database) |
+| Catálogo externo | TMDb — consumido **apenas** pelo back-end |
+| Orquestração | Docker Compose |
 
 ---
 
@@ -30,19 +29,18 @@ implementados. O fluxo de reserva, pagamento, emissão de ingresso e validação
 | API | <http://localhost:8000> |
 | PostgreSQL | `localhost:5438` |
 
-> **Por que 5003 e não 5000?** A porta 5000 foi a pedida originalmente, mas o macOS mantém o
-> AirPlay Receiver escutando nela por padrão: o serviço `ControlCenter` intercepta a requisição
-> antes do Docker e responde `403`. A 5438 do banco evita colidir com um PostgreSQL local em
-> 5432.
+A 5438 evita colidir com um PostgreSQL local em 5432. A interface usa 5003 e **não** 5000: no
+macOS o AirPlay Receiver escuta na 5000 e o `ControlCenter` intercepta a requisição antes do
+Docker, respondendo 403.
 
 ---
 
-## Como rodar
+## Setup
 
 ### Pré-requisitos
 
 - Docker e Docker Compose
-- Uma chave de API do TMDb — crie em <https://www.themoviedb.org/settings/api>
+- Uma chave de API do TMDb — <https://www.themoviedb.org/settings/api>
 
 ### 1. Variáveis de ambiente
 
@@ -50,53 +48,71 @@ implementados. O fluxo de reserva, pagamento, emissão de ingresso e validação
 cp .env.example .env
 ```
 
-Preencha no `.env`:
+Preencher no `.env`:
 
-- `POSTGRES_PASSWORD` — qualquer senha
-- `DJANGO_SECRET_KEY` — gere com `python3 -c "import secrets; print(secrets.token_urlsafe(50))"`
-- `TMDB_API_KEY` — **obrigatória** para importar o catálogo
+```bash
+POSTGRES_DB=ingressos
+POSTGRES_USER=ingressos
+POSTGRES_PASSWORD=<escolha uma>
+POSTGRES_PORT=5438
 
-O `.env` está no `.gitignore` e nunca é commitado.
+# Gere com: python -c "import secrets; print(secrets.token_urlsafe(50))"
+DJANGO_SECRET_KEY=<gere uma>
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend
 
-### 2. Suba os serviços
+TMDB_API_KEY=<sua chave do TMDb>
+
+NEXT_PUBLIC_SITE_PORT=5003
+API_BASE_URL=http://backend:8000
+```
+
+`DJANGO_SECRET_KEY` e `TMDB_API_KEY` nunca são commitados. O `.env.example` traz só os nomes.
+
+### 2. Subir os serviços
 
 ```bash
 docker compose up -d --build
 ```
 
-### 3. Aplique as migrações
+### 3. Migrações
 
 ```bash
 docker compose exec backend python manage.py migrate
 ```
 
-### 4. Importe o catálogo do TMDb
+Isso também cria a extensão `unaccent` do PostgreSQL, exigida pela busca do cabeçalho — é o que
+permite digitar "cacador" e encontrar "Caçador". Conferir:
+
+```bash
+docker compose exec db psql -U ingressos -d ingressos -c "\dx unaccent"
+```
+
+### 4. Importar o catálogo do TMDb
 
 ```bash
 docker compose exec backend python manage.py sync_tmdb --limit 20
 ```
 
-Traz título, sinopse, arte, duração, gênero, classificação indicativa brasileira e a chave do
-trailer — tudo persistido localmente. **Depois deste passo o TMDb pode ficar fora do ar sem
-afetar o carrossel.** O comando é idempotente.
+Persiste título, sinopse, arte, duração, gênero, classificação indicativa brasileira e a chave do
+trailer. **Depois deste passo o TMDb pode ficar fora do ar sem afetar a navegação nem a compra.**
+O comando é idempotente.
 
-### 5. Semeie o cenário de demonstração
+### 5. Semear o cenário de demonstração
 
 ```bash
 docker compose exec backend python manage.py seed_demo
 ```
 
-Cria os usuários, as salas e as sessões publicadas. Também idempotente.
-
-### 6. Abra
+### 6. Abrir
 
 <http://localhost:5003>
 
 ---
 
-## Credenciais de teste
+## Credenciais de seed
 
-Todas com a mesma senha: **`desafio2026`**
+Todas com a senha **`desafio2026`**:
 
 | Papel | Usuário |
 |---|---|
@@ -105,154 +121,119 @@ Todas com a mesma senha: **`desafio2026`**
 | Cliente | `cliente2` |
 | Portaria | `portaria` |
 
-> Os papéis já existem no modelo de dados, mas as telas de login e as áreas de organizador,
-> cliente e portaria ainda não foram construídas. Hoje essas contas só são utilizáveis pelo
-> Django admin (<http://localhost:8000/admin/>, com o usuário `organizador`).
+> Estas contas existem no banco desde a primeira feature, porque o modelo de usuário e os três
+> papéis precisavam ser fixados antes da primeira migração. **A tela de login ainda não existe** —
+> ver Limitações conhecidas.
 
 ---
 
 ## Testes
 
 ```bash
-docker compose exec backend pytest            # 37 testes
-docker compose exec frontend npm run test     # 34 testes
-docker compose exec frontend npm run test:e2e # percurso ponta a ponta (Playwright)
+docker compose exec backend pytest          # 63 testes
+docker compose exec frontend npm run test   # 56 testes
 ```
 
-Os testes não buscam cobertura ampla. Eles se concentram onde a
-[constitution](.specify/memory/constitution.md) exige prova e onde o erro seria caro:
-
-- **Vazamento de dado de gestão** na resposta pública (gate do Princípio IV)
-- **Elegibilidade ao destaque** — sessão passada ou em rascunho não pode destacar um filme
-- **Mapeamento do TMDb** — classificação brasileira e escolha do trailer
-- **Comportamento do carrossel** — ciclo, as três condições de pausa, movimento reduzido
-- **Desmontagem do trailer** ao trocar de painel
-
-### Verificar a resiliência ao TMDb
-
-O carrossel não pode depender da API externa. Para conferir:
+Ponta a ponta (ver a ressalva em Limitações conhecidas):
 
 ```bash
-docker compose exec backend pytest tests/test_highlights_api.py::test_responde_sem_chave_do_tmdb
+cd frontend && npx playwright test
 ```
 
----
-
-## Decisões que valem explicação
-
-**O carrossel não usa biblioteca.** Foi decisão, não teimosia. A rotação precisa pausar em três
-situações distintas — ponteiro sobre a área, foco de teclado interno e trailer tocando —, e as
-libs de carrossel expõem `pause on hover` e raramente as outras duas. Somando o controle fino de
-ARIA que seria reconstruído por cima de qualquer lib, escrever ~150 linhas próprias saiu mais
-barato. A trilha desloca por `translateX` com índice modular, o que torna a navegação circular
-trivial. O custo assumido foi escrever o gesto de toque à mão.
-
-**O trailer monta e desmonta o `<iframe>`.** Em vez de controlar o player pela API JavaScript do
-YouTube, o iframe só existe enquanto o trailer toca. Desmontar encerra a reprodução de forma
-garantida — é o mecanismo inteiro por trás de "para ao trocar de painel" e "no máximo um trailer
-por vez", sem carregar script de terceiro na abertura da home e sem estado a manter sincronizado.
-
-**Ao dar a volta, a trilha salta em vez de rebobinar.** Fingir fita infinita exigiria clonar
-slides e reposicionar o scroll no meio da transição. Para 5 painéis não compensa.
-
-**O TMDb só é acessado pelo comando de sincronização.** O endpoint que alimenta a home lê
-exclusivamente o PostgreSQL. Com o TMDb fora do ar, o carrossel continua completo; só a
-reprodução do trailer degrada, porque o vídeo é servido pelo YouTube.
-
-**`has_available_seats` é booleano, não contagem.** O carrossel só precisa saber se ainda dá
-para comprar. Expor o número de assentos vendidos seria vazar operação do organizador em uma
-resposta pública.
-
-**O modelo de usuário foi criado antes da feature de autenticação.** O Django exige que
-`AUTH_USER_MODEL` seja fixado antes da primeira migração; adiar obrigaria a recriar o banco
-depois. Só o campo `role` foi definido — as regras de permissão por endpoint ficam para a
-feature de auth.
-
-**Next.js em vez de Nuxt.** A intenção inicial era Nuxt, mas o desafio lista React como
-tecnologia obrigatória. Next.js oferece o modelo mental equivalente dentro do ecossistema
-exigido.
+Os testes obrigatórios são os que a constitution exige como prova: acesso público e ausência de
+vazamento de dado de gestão nas respostas públicas (Princípio IV), resiliência à queda do TMDb
+(Princípio VII), e a garantia de que a lista de sugestões nunca exibe o resultado de um termo já
+abandonado.
 
 ---
 
-## O que ainda não está pronto
+## O que está pronto
 
-Honestidade sobre o estado do projeto, conforme pede o desafio:
+**Carrossel de destaques** (`specs/001-movie-highlights-carousel/`) — 5 filmes em cartaz na home,
+com trailer reproduzido dentro do próprio painel e botão que leva à página de sessões do filme.
 
-- **Reserva, pagamento e ingresso** — não implementados. Os modelos `Seat`, `Reservation` e
-  `Ticket` não existem, e isso é deliberado: a constitution exige que a venda de assento nasça
-  junto com a constraint `UNIQUE(sessão, assento)` que a protege. Criar escrita de assento antes
-  disso seria pior do que não ter.
-- **Tela de portaria e validação de QR** — não implementadas.
-- **Login e áreas por papel** — os três papéis existem no modelo, mas não há telas.
-- **`has_available_seats` sempre retorna `true`** — é derivado da contagem de ingressos, que
-  hoje é zero por não haver emissão. O contrato e a interface já tratam o estado esgotado; falta
-  apenas o dado real.
-- **Página de filme em `/filmes/{slug}` é mínima** — cartaz, título, sinopse e lista de sessões.
-  O detalhe completo e o mapa de assentos pertencem à feature de reserva.
-- **`/filmes/{slug-inexistente}` responde HTTP 200 em vez de 404** — a página correta ("Filme
-  não encontrado") é exibida, mas o Next.js não consegue trocar o status depois que a
-  renderização dinâmica começou a ser transmitida. Verificado também no build de produção, não
-  é artefato do modo de desenvolvimento. Afeta apenas rastreadores, não o usuário.
-- **Deploy** — não publicado.
+**Cabeçalho global** (`specs/002-site-header-navigation/`) — faixa persistente em todas as páginas
+com a identidade **ticket.com**, que leva à home, e busca de filmes por título com sugestões
+ancoradas ao campo. A busca ignora acento e caixa, encontra por trecho do título e é operável só
+pelo teclado.
+
+---
+
+## Decisões que podem estranhar numa leitura rápida
+
+**A busca do navegador passa por um proxy do Next (`/api/busca`), não pelo Django direto.** Dentro
+do Docker Compose o front-end alcança o back-end por `http://backend:8000` — um nome que só resolve
+dentro da rede do Compose e que o navegador não consegue usar. O proxy mantém uma única verdade
+sobre onde a API está, evita CORS no caminho quente da digitação e impede que o endereço do
+back-end entre no bundle.
+
+**A busca usa a extensão `unaccent`, não uma coluna normalizada.** Guardar uma cópia normalizada
+do título criaria um segundo ponto de verdade para manter em sincronia com o TMDb. E o full-text
+do PostgreSQL não serve: ele trabalha por palavra e não encontra "matr" dentro de "Matrix", que é
+justamente o que a busca por trecho exige.
+
+**A busca devolve filmes sem sessão à venda; o carrossel não os destaca.** As duas regras divergem
+de propósito. Destaque é promessa de compra — apontar para uma página sem nada comprável seria a
+tela pela metade que a constitution proíbe. Busca é navegação: esconder um filme que existe no
+site faria a pessoa procurar pelo nome exato e ouvir "nada encontrado".
+
+**O wordmark tem `aria-label` aparentemente redundante.** Não é: o nome é dividido em dois
+elementos para o tratamento tipográfico, e o algoritmo de nome acessível insere um espaço na
+fronteira entre eles. Sem o rótulo, o leitor de tela anuncia "ticket .com".
+
+**A busca combina debounce, `AbortController` e uma guarda por número de sequência.** Os dois
+primeiros não bastam: uma resposta já decodificada pode chegar depois de uma mais nova, e a lista
+passaria a mostrar o resultado de um termo já apagado. A guarda por sequência é o que fecha essa
+janela.
+
+---
+
+## Limitações conhecidas
+
+**Não há autenticação.** O modelo de usuário e os três papéis existem no banco, mas não há tela de
+login, logout nem sessão. Por isso o ícone de conta **não** aparece no cabeçalho: o componente
+está escrito e testado (`frontend/components/header/AccountButton.tsx`), mas montá-lo hoje
+significaria entregar um link para uma rota que não existe. A decisão está registrada em
+`specs/002-site-header-navigation/plan.md`, em Complexity Tracking.
+
+**Não há seletor de localidade**, embora tenha sido pedido. O domínio não representa cidade nem
+cinema — uma sala existe sem lugar associado —, então o seletor não teria o que filtrar. Ele volta
+quando houver o conceito de praça no modelo. Registrado em
+`specs/002-site-header-navigation/spec.md`.
+
+**Não há reserva de assento, pagamento, ingresso com QR nem tela de portaria.** São o núcleo do
+desafio e ainda não foram construídos. O que existe hoje vai do catálogo até a listagem de sessões.
+
+**`/filmes/{slug-inexistente}` responde HTTP 200 em vez de 404.** A página correta — "Filme não
+encontrado" — é exibida, mas o Next.js não consegue trocar o status depois que a renderização
+dinâmica começou a ser transmitida. Verificado também no build de produção, então não é artefato
+do modo de desenvolvimento. Afeta rastreadores, não o usuário.
+
+**Os testes ponta a ponta não rodam dentro do contêiner.** A imagem do front-end é Alpine (musl) e
+os navegadores do Playwright são compilados para glibc. Rode a partir do host, com a aplicação no
+ar: `cd frontend && npm install && npx playwright install chromium && npx playwright test`.
+
+**Um teste e2e da feature 001 falha de forma intermitente** —
+`highlights.spec.ts › descobre um filme, assiste ao trailer e chega às sessões`. O teste usa
+`.first()` para achar o botão "Ver ingressos", que pega sempre o painel 0; se o carrossel
+rotacionar durante o passo do trailer, esse painel sai da viewport e o clique falha. É falha do
+teste, não do produto: verificado que ela ocorre igualmente com o cabeçalho removido. O ajuste é
+mirar o painel ativo em vez do primeiro.
 
 ---
 
 ## Uso de IA
 
-O desafio recomenda usar IA e pede que o processo seja contado. Foi usada de forma intensiva e
-deliberada.
+Este projeto foi desenvolvido com **Claude Code (Anthropic)** em um fluxo de spec-driven
+development. O que a IA fez e o que não fez:
 
-### Ferramenta
+**Com IA** — redação dos specs, planos e listas de tarefas em `specs/`; implementação do back-end
+(modelos, seletores, serializers, views, comandos de sincronização e seed) e do front-end
+(carrossel, página de filme, cabeçalho e busca); redação dos testes; este README.
 
-**Claude Code (Opus 5)**, conduzido pelo fluxo **[Spec Kit](https://github.com/github/spec-kit)**
-— `/speckit.constitution` → `/speckit.specify` → `/speckit.plan` → `/speckit.tasks` →
-`/speckit.implement`.
+**Sem IA** — a definição do domínio e do escopo; a escolha da stack; as decisões de produto que
+aparecem como "Decisões que podem estranhar" acima; a decisão de tirar o seletor de localidade do
+escopo e de deixar login para uma feature própria; e a revisão de cada saída contra a constitution
+antes do commit.
 
-### O que foi feito com IA
-
-- Redação da constitution, da especificação, do plano, da pesquisa técnica, do modelo de dados,
-  do contrato de API e da lista de 71 tarefas — todos versionados em
-  [`specs/`](specs/001-movie-highlights-carousel/) e em
-  [`.specify/memory/`](.specify/memory/constitution.md)
-- Todo o código de back-end e front-end
-- Os 71 testes automatizados
-- Este README
-
-### O que foi meu
-
-- **A leitura do desafio e a definição do escopo**: domínio cinema, TMDb em vez de Ticketmaster,
-  mapa de assentos em vez de venda por quantidade
-- **A decisão de trocar Nuxt por Next** quando a IA apontou que o PDF exige React
-- **A estratégia de versionamento**: commits divididos por contexto, direto na `main`, sem
-  branches — avaliei que PRs num projeto solo de 7 dias custam mais do que rendem
-- **A troca da porta 5000 para 5003** depois que o conflito com o AirPlay do macOS foi
-  diagnosticado
-- **A revisão e a aprovação de cada etapa** — nenhum artefato entrou no repositório sem leitura
-
-### Por que os artefatos de spec estão versionados
-
-O desafio diz que ver como a ferramenta foi conduzida conta a favor. O histórico de commits
-segue a ordem real do processo: primeiro as regras do projeto, depois o que construir, depois
-como, depois em que ordem, e só então o código. As decisões que parecem estranhas numa leitura
-rápida estão justificadas nos arquivos de `specs/`, com as alternativas que foram descartadas e
-o motivo.
-
----
-
-## Problemas comuns
-
-**A porta 5003 já está em uso** — verifique com `lsof -i :5003`. Se precisar trocar, ajuste
-`docker-compose.yml`, `.env` e o script `dev` em `frontend/package.json`.
-
-**O carrossel mostra "Nenhum filme em cartaz agora"** — não há filme com sessão publicada e
-futura. Rode `sync_tmdb` e depois `seed_demo`. Se o seed for antigo, as sessões podem ter ficado
-no passado.
-
-**`sync_tmdb` falha com "TMDB_API_KEY não está configurada"** — preencha a variável no `.env` e
-reinicie o backend com `docker compose restart backend`.
-
-**Algum filme não tem botão "Trailer"** — comportamento correto: aquele filme não tem trailer no
-TMDb. O botão é omitido em vez de aparecer desabilitado.
-
-**As imagens não carregam** — confira se `image.tmdb.org` está em `remotePatterns` no
-`frontend/next.config.ts`.
+O histórico de commits e os artefatos em `specs/` são o rastro dessas decisões.
