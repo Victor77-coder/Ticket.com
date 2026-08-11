@@ -235,8 +235,9 @@ O menor recorte que cumpre o Princípio V é **US1 + US2**: ritmo e tipografia.
 
 ## Estado final — 2026-08-11
 
-**47 de 47 concluídas.** A checagem de identidade foi executada pelo usuário em 2026-08-11, com
-as capturas versionadas em `captures/`.
+**47 de 47 concluídas.** A checagem de identidade foi executada pelo usuário em 2026-08-11 sobre uma captura da primeira
+dobra com o cabeçalho recortado. **A imagem não ficou versionada** — o veredito abaixo é o
+registro que sobrou dela.
 
 **Ela reprovou** — e reprovar era resultado previsto. Passou nos quatro critérios de presença,
 inclusive o eixo `wdth`, que era o único ponto onde a teoria podia não virar prática. Reprovou em

@@ -83,8 +83,10 @@ para uma feature futura, não alargar esta.
 
 # Resultado — 2026-08-11
 
-Captura em `specs/006-visual-identity/captures/primeira-dobra-sem-cabecalho.png`, 1440×900, com o
-cabeçalho recortado.
+Captura da primeira dobra em 1440×900 com o cabeçalho recortado, avaliada em 2026-08-11.
+
+> A imagem não foi versionada. Para refazer a checagem, capturar de novo seguindo o procedimento
+> acima — o resultado abaixo é o registro do que foi visto, não a evidência em si.
 
 ## Precisa estar presente — 4 de 4
 
