@@ -1,15 +1,17 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import type { Assento, LugarReservado, MapaSessao } from "@/lib/types";
+import type { Assento, LugarReservado, MapaSessao, Reserva } from "@/lib/types";
 
+import ReservationPanel from "./ReservationPanel";
 import SeatMap from "./SeatMap";
 import SelectionSummary from "./SelectionSummary";
 import estilos from "./seats.module.css";
 
 /**
- * Guarda a seleção e coordena mapa e resumo.
+ * Guarda a seleção, confirma a reserva e coordena mapa e resumo.
  *
  * A seleção vive só aqui, no navegador: o servidor não sabe o que alguém
  * marcou até a confirmação virar reserva. É por isso que `situacao` no
@@ -21,10 +23,30 @@ export type SeatSelectionProps = {
   mapa: MapaSessao;
 };
 
+/** Gera a chave de idempotência. `crypto.randomUUID` falta em ambiente antigo. */
+function novaChave() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export default function SeatSelection({ mapa }: SeatSelectionProps) {
+  const router = useRouter();
+
   const [selecionados, setSelecionados] = useState<LugarReservado[]>([]);
   const [ids, setIds] = useState<Set<number>>(new Set());
   const [aviso, setAviso] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [reserva, setReserva] = useState<Reserva | null>(null);
+
+  // A chave é gerada UMA VEZ por seleção, não por clique. Uma chave por
+  // clique não seria idempotência nenhuma: cada reenvio traria chave nova e
+  // criaria reserva nova, que é exatamente o que ela existe para impedir.
+  //
+  // Ela só é renovada quando a seleção recomeça do zero — depois de uma
+  // reserva criada, ou depois de um 409 que desfez a escolha.
+  const [chave, setChave] = useState(novaChave);
 
   function alternar(assento: Assento, fileira: string) {
     setAviso(null);
@@ -51,6 +73,59 @@ export default function SeatSelection({ mapa }: SeatSelectionProps) {
     setSelecionados((atual) => [...atual, { fileira, numero: assento.numero }]);
   }
 
+  async function confirmar() {
+    if (ids.size === 0) {
+      setAviso("Escolha ao menos um lugar.");
+      return;
+    }
+
+    setEnviando(true);
+    setAviso(null);
+
+    try {
+      const resposta = await fetch("/api/reservar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessao: mapa.id,
+          assentos: [...ids],
+          chave_idempotencia: chave,
+        }),
+      });
+
+      const corpo = await resposta.json().catch(() => null);
+
+      if (resposta.status === 401) {
+        // Conduzir à entrada, e voltar para este mapa ao concluir (FR-026).
+        router.push(`/entrar?next=${encodeURIComponent(`/sessoes/${mapa.id}`)}`);
+        return;
+      }
+
+      if (!resposta.ok) {
+        setAviso(corpo?.detail ?? "Não foi possível reservar agora. Tente de novo.");
+        if (resposta.status === 409) {
+          // O mapa mudou embaixo da seleção: recarregar é o que impede a
+          // pessoa de tentar de novo contra um estado que já não existe.
+          setIds(new Set());
+          setSelecionados([]);
+          setChave(novaChave());
+          router.refresh();
+        }
+        return;
+      }
+
+      setReserva(corpo as Reserva);
+    } catch {
+      setAviso("Não foi possível falar com o servidor. Tente de novo.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  if (reserva) {
+    return <ReservationPanel reserva={reserva} />;
+  }
+
   if (mapa.esgotada) {
     return (
       <div className={estilos.confirmada}>
@@ -73,8 +148,8 @@ export default function SeatSelection({ mapa }: SeatSelectionProps) {
         total={total}
         limite={mapa.limite_por_reserva}
         aviso={aviso}
-        enviando={false}
-        onConfirmar={() => undefined}
+        enviando={enviando}
+        onConfirmar={confirmar}
       />
     </>
   );
