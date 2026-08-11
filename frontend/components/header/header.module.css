@@ -297,3 +297,55 @@
     display: none;
   }
 }
+
+/* --- Menu de conta (feature 003) --- */
+
+.contaContainer {
+  position: relative;
+}
+
+.contaMenu {
+  position: absolute;
+  top: calc(100% + var(--esp-2));
+  right: 0;
+  z-index: 60;
+  min-width: 11rem;
+  padding: var(--esp-2);
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie-elevada);
+  box-shadow: var(--sombra-lg);
+}
+
+.contaMenuPapel {
+  margin: 0 0 var(--esp-2);
+  padding: var(--esp-2) var(--esp-3);
+  border-bottom: 1px solid var(--cor-borda);
+  color: var(--cor-texto-fraco);
+  font-size: var(--texto-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.contaMenuItem {
+  display: block;
+  width: 100%;
+  padding: var(--esp-3);
+  border: none;
+  border-radius: var(--raio-sm);
+  background: none;
+  color: var(--cor-texto);
+  font-size: var(--texto-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transicao-rapida);
+}
+
+.contaMenuItem:hover:not(:disabled) {
+  background: var(--cor-borda);
+}
+
+.contaMenuItem:disabled {
+  color: var(--cor-texto-fraco);
+  cursor: progress;
+}
