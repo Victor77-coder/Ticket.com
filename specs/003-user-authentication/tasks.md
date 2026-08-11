@@ -154,9 +154,9 @@ sessão e confirmar o retorno ao estado de visitante sem erro visível
 - [X] T047 [P] Atualizar `README.md`: remover "Não há autenticação" das limitações conhecidas, registrar as credenciais como utilizáveis de fato e descrever o fluxo de entrada
 - [X] T048 [P] Registrar em `README.md` a limitação do contador de tentativas viver em cache local — reiniciar o back-end zera os bloqueios (R4)
 - [X] T049 [P] Adicionar à seção de decisões do `README.md` por que o cookie é emitido pelo Next e não repassado do Django (R1)
-- [ ] T050 [P] Verificar SC-007 percorrendo entrada e saída apenas pelo teclado, corrigindo foco visível e ordem em `frontend/app/entrar/page.tsx` e `frontend/components/header/AccountMenu.tsx`
+- [X] T050 [P] Verificar SC-007 percorrendo entrada e saída apenas pelo teclado, corrigindo foco visível e ordem em `frontend/app/entrar/page.tsx` e `frontend/components/header/AccountMenu.tsx`
 - [X] T051 Executar as verificações de segurança de `specs/003-user-authentication/quickstart.md`: cookie ausente em `document.cookie`, destino de retorno externo descartado, e nenhuma credencial na resposta
-- [ ] T052 Percorrer os sete princípios da constitution contra a aplicação rodando e registrar desvios remanescentes nas limitações conhecidas do `README.md`
+- [X] T052 Percorrer os sete princípios da constitution contra a aplicação rodando e registrar desvios remanescentes nas limitações conhecidas do `README.md`
 
 ---
 
