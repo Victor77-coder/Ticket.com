@@ -15,6 +15,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.catalog.models import Movie
+from apps.catalog.selectors import HIGHLIGHTS_LIMIT
 from apps.screening.models import Room, Screening
 
 User = get_user_model()
@@ -34,10 +35,33 @@ DEMO_ROOMS = [("Sala 1", 60), ("Sala 2", 40)]
 # os filmes sejam elegíveis ao destaque (FR-002).
 SESSION_OFFSETS_HOURS = [4, 27, 51]
 
-MIN_HIGHLIGHTED_MOVIES = 5
+# Quantos filmes a demonstração coloca à venda. Doze faz a trilha Em cartaz ter
+# substância, afasta a trilha Em alta de ser quase idêntica a ela, e faz o
+# carrossel de três parecer um recorte em vez da lista inteira (R4).
+FILMES_A_VENDA = 12
 
 # Abaixo disso é curta, show ou especial — não é o que um cinema põe em cartaz.
 MIN_RUNTIME_MINUTES = 60
+
+# --- Curadoria da vitrine -------------------------------------------------
+#
+# ⚠️ A ORDEM DESTA LISTA DEFINE O CARROSSEL.
+#
+# `_seed_screenings` agenda a sessão como `agora + offset + 30min × índice`, e
+# o carrossel exibe os filmes com sessão mais próxima. Quem está primeiro aqui
+# aparece no destaque.
+#
+# Ou seja: reordenar esta lista — alfabeticamente, por exemplo — muda a vitrine
+# sem que nada quebre. É por isso que existe teste fixando a ordem
+# (`test_o_carrossel_traz_os_tres_destaques_na_ordem`).
+#
+# Toda a curadoria vive aqui, no cenário de demonstração. O carrossel continua
+# sem saber que ela existe: aplica a regra de sempre, "os N com sessão mais
+# próxima" (R1).
+DESTAQUES = ["a odisseia", "homem aranha", "minions"]
+
+# À venda, mas fora do carrossel por vir depois dos destaques.
+TAMBEM_A_VENDA = ["moana"]
 
 
 class Command(BaseCommand):
@@ -89,19 +113,83 @@ class Command(BaseCommand):
             rooms.append(room)
         return rooms
 
-    def _pick_movies(self):
-        """Escolhe os filmes que vão para a vitrine.
+    def _buscar_por_nome(self, fragmento):
+        """Encontra um filme por fragmento do título, ou None.
 
-        Com catálogo real, ordenar só por data de lançamento trouxe um show de
-        banda e um curta de 9 minutos para o carrossel. A vitrine de um cinema
-        precisa parecer um cinema — o avaliador vê a home antes de ler código
-        (Princípio V).
+        Cada palavra do fragmento é exigida separadamente, em vez de buscar a
+        expressão inteira. É o que faz "homem aranha" achar
+        "Homem-Aranha: Um Novo Dia": `unaccent` resolve acento e `icontains`
+        resolve caixa, mas **nenhum dos dois remove pontuação** — a expressão
+        literal "homem aranha" não existe dentro de "Homem-Aranha".
 
-        Critério, em ordem de preferência:
-          1. longa-metragem com arte, já lançado — o que um cinema exibe hoje
-          2. qualquer longa-metragem com arte
-          3. o que houver, para o seed nunca falhar em catálogo pequeno
+        Exigir as palavras uma a uma atravessa hífen, dois-pontos e qualquer
+        outro separador (R2, corrigido na implementação).
+
+        O desempate é obrigatório: sem ordem fixa, dois filmes casando com o
+        mesmo fragmento produziriam vitrines diferentes entre execuções.
         """
+        consulta = Movie.objects.filter(is_active=True)
+        for palavra in fragmento.split():
+            consulta = consulta.filter(title__unaccent__icontains=palavra)
+
+        candidatos = list(consulta.order_by("-release_date", "pk")[:2])
+
+        if not candidatos:
+            return None
+
+        if len(candidatos) > 1:
+            self.stdout.write(
+                self.style.WARNING(
+                    f'  "{fragmento}" casou com mais de um filme; '
+                    f"escolhido: {candidatos[0].title}"
+                )
+            )
+
+        return candidatos[0]
+
+    def _pick_movies(self):
+        """Escolhe os filmes que vão para a vitrine, **em ordem**.
+
+        ⚠️ A ordem do retorno define o carrossel — ver o comentário em
+        DESTAQUES, no topo do arquivo.
+
+        Montagem, nesta sequência:
+          1. os destaques nomeados, na ordem de DESTAQUES
+          2. os demais nomeados (à venda, mas fora do carrossel)
+          3. preenchimento até FILMES_A_VENDA pelo critério de vitrine
+
+        O preenchimento existe porque uma vitrine com quatro filmes faz o
+        carrossel de três parecer a lista inteira. Critério, em ordem de
+        preferência:
+          a. longa-metragem com arte, já lançado — o que um cinema exibe hoje
+          b. qualquer longa-metragem com arte
+          c. o que houver, para o seed nunca falhar em catálogo pequeno
+        """
+        escolhidos = []
+        vistos = set()
+        ausentes = []
+
+        for fragmento in DESTAQUES + TAMBEM_A_VENDA:
+            filme = self._buscar_por_nome(fragmento)
+            if filme is None:
+                # Ausência é aviso, não falha: o catálogo externo pode renomear
+                # ou parar de listar um filme, e um seed que quebra por isso é
+                # pior do que uma vitrine com um filme a menos (R3).
+                ausentes.append(fragmento)
+                continue
+            if filme.pk not in vistos:
+                escolhidos.append(filme)
+                vistos.add(filme.pk)
+
+        if ausentes:
+            nomes = ", ".join(f.title() for f in ausentes)
+            self.stdout.write(
+                self.style.WARNING(
+                    f"  não encontrado(s) no catálogo: {nomes} "
+                    "— rode sync_tmdb com um --limit maior"
+                )
+            )
+
         hoje = timezone.localdate()
         base = Movie.objects.filter(is_active=True).exclude(backdrop_path="")
 
@@ -109,22 +197,19 @@ class Command(BaseCommand):
             base.filter(
                 runtime_minutes__gte=MIN_RUNTIME_MINUTES,
                 release_date__lte=hoje,
-            ).order_by("-release_date"),
-            base.filter(runtime_minutes__gte=MIN_RUNTIME_MINUTES).order_by("-release_date"),
-            Movie.objects.filter(is_active=True).order_by("-release_date"),
+            ).order_by("-release_date", "pk"),
+            base.filter(runtime_minutes__gte=MIN_RUNTIME_MINUTES).order_by("-release_date", "pk"),
+            Movie.objects.filter(is_active=True).order_by("-release_date", "pk"),
         ]
-
-        escolhidos = []
-        vistos = set()
 
         for consulta in filtros:
             for filme in consulta:
+                if len(escolhidos) >= FILMES_A_VENDA:
+                    return escolhidos
                 if filme.pk in vistos:
                     continue
                 escolhidos.append(filme)
                 vistos.add(filme.pk)
-                if len(escolhidos) == MIN_HIGHLIGHTED_MOVIES:
-                    return escolhidos
 
         return escolhidos
 
@@ -149,8 +234,16 @@ class Command(BaseCommand):
         for index, movie in enumerate(movies):
             for offset_index, hours in enumerate(SESSION_OFFSETS_HOURS):
                 room = rooms[(index + offset_index) % len(rooms)]
-                # O deslocamento por filme evita colidir com a constraint
-                # UNIQUE(room, starts_at).
+
+                # ⚠️ É AQUI que a ordem da lista vira a vitrine: o índice do
+                # filme desloca o horário em 30 minutos, e o carrossel exibe
+                # os de sessão mais próxima. Primeiro na lista, primeiro no
+                # destaque.
+                #
+                # A constraint UNIQUE(sala, horário) fica protegida sem
+                # depender da sala: com 12 filmes o deslocamento máximo é de
+                # 5h30, e as faixas de horário distam 23h entre si — dois
+                # filmes nunca chegam ao mesmo instante.
                 starts_at = now + timedelta(hours=hours, minutes=30 * index)
 
                 screening, _ = Screening.objects.update_or_create(
@@ -169,9 +262,26 @@ class Command(BaseCommand):
     def _report(self, users, rooms, movies, screenings):
         self.stdout.write(self.style.SUCCESS("\nCenário de demonstração pronto.\n"))
         self.stdout.write(
-            f"  {len(movies)} filme(s) em destaque · {len(rooms)} sala(s) · "
+            f"  {len(movies)} filme(s) à venda · {len(rooms)} sala(s) · "
             f"{len(screenings)} sessão(ões) publicada(s)\n"
         )
+
+        # A vitrine precisa ser conferível sem abrir o navegador (FR-014): os
+        # primeiros da lista são os que o carrossel vai exibir, porque têm a
+        # sessão mais próxima.
+        no_carrossel = movies[:HIGHLIGHTS_LIMIT]
+        so_na_trilha = movies[HIGHLIGHTS_LIMIT:]
+
+        if no_carrossel:
+            self.stdout.write(self.style.MIGRATE_HEADING("No carrossel (sessão mais próxima):"))
+            for posicao, filme in enumerate(no_carrossel, start=1):
+                self.stdout.write(f"  {posicao}. {filme.title}")
+
+        if so_na_trilha:
+            self.stdout.write(self.style.MIGRATE_HEADING("\nTambém à venda (só na trilha):"))
+            for filme in so_na_trilha:
+                self.stdout.write(f"  · {filme.title}")
+        self.stdout.write("")
 
         self.stdout.write(self.style.MIGRATE_HEADING("Credenciais (todas com a mesma senha):"))
         self.stdout.write(f"  senha: {DEMO_PASSWORD}\n")
