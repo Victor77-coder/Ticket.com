@@ -2,12 +2,12 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Plan: `specs/005-seed-and-carousel-tuning/plan.md`
-- Spec: `specs/005-seed-and-carousel-tuning/spec.md`
-- Research: `specs/005-seed-and-carousel-tuning/research.md`
-- Data model: `specs/005-seed-and-carousel-tuning/data-model.md`
-- Contracts: `specs/005-seed-and-carousel-tuning/contracts/`
-- Quickstart: `specs/005-seed-and-carousel-tuning/quickstart.md`
+- Plan: `specs/006-visual-identity/plan.md`
+- Spec: `specs/006-visual-identity/spec.md`
+- Research: `specs/006-visual-identity/research.md`
+- Data model: `specs/006-visual-identity/data-model.md` — aqui o "modelo" é o sistema de tokens
+- Contracts: `specs/006-visual-identity/contracts/`
+- Quickstart: `specs/006-visual-identity/quickstart.md`
 
 Features anteriores, já implementadas:
 
@@ -18,8 +18,10 @@ Features anteriores, já implementadas:
 - `specs/004-home-movie-rows/` — trilhas Em cartaz, Em alta e Em breve na home (55/55 + emenda
   de 11 tarefas). A trilha Em alta exige sessão planejada desde a emenda de 2026-08-11.
 
-A feature 005 emenda a 001: o carrossel passa de 5 para 3 filmes, e o seed passa a colocar à
-venda ~12 filmes, com A Odisseia, Homem-Aranha e Minions ocupando o carrossel.
+- `specs/005-seed-and-carousel-tuning/` — carrossel de 3 e seed com 12 filmes à venda (22/22)
+
+A feature 006 é **só linguagem visual**: nenhum endpoint, migração, contrato ou regra muda, e as
+asserções de teste existentes ficam congeladas. Se uma precisar mudar, a feature saiu do escopo.
 
 Project constitution (governa todas as features): `.specify/memory/constitution.md`
 <!-- SPECKIT END -->
