@@ -60,6 +60,25 @@ class TMDBClient:
             {"page": page, "region": settings.TMDB_REGION},
         )
 
+    def trending(self, page=1):
+        """Filmes em alta da semana.
+
+        Semana e não dia: a lista diária oscila demais para uma vitrine que só
+        é sincronizada manualmente (R6).
+        """
+        return self._get("/trending/movie/week", {"page": page})
+
+    def upcoming(self, page=1):
+        """Filmes com estreia futura na região configurada.
+
+        A resposta traz também `dates.minimum` e `dates.maximum`, a janela que
+        o próprio TMDb considerou — não impomos uma segunda regra por cima.
+        """
+        return self._get(
+            "/movie/upcoming",
+            {"page": page, "region": settings.TMDB_REGION},
+        )
+
     def movie_detail(self, tmdb_id):
         """Detalhe do filme com vídeos e datas de lançamento numa só chamada.
 

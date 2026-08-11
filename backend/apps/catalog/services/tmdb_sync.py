@@ -86,10 +86,14 @@ def pick_primary_video(videos):
     return None
 
 
-def sync_movie(detail_payload):
+def sync_movie(detail_payload, *, is_trending=False, is_upcoming=False):
     """Cria ou atualiza um filme a partir do detalhe do TMDb.
 
     Idempotente por `tmdb_id`: rodar de novo atualiza, não duplica.
+
+    `is_trending` e `is_upcoming` são a classificação de catálogo que alimenta
+    as trilhas da home. O comando de sincronização zera `is_trending` em todos
+    os filmes antes de chamar esta função — ver a explicação em `sync_tmdb`.
     """
     tmdb_id = detail_payload["id"]
 
@@ -107,6 +111,14 @@ def sync_movie(detail_payload):
     movie.release_date = _parse_date(detail_payload.get("release_date"))
     movie.certification_br = extract_certification_br(detail_payload.get("release_dates"))
     movie.synced_at = timezone.now()
+
+    # A marcação é aditiva dentro de uma mesma execução: um filme presente em
+    # duas listas recebe as duas marcas, e a segunda passagem não apaga a
+    # primeira (FR-005).
+    movie.is_trending = movie.is_trending or is_trending
+    movie.is_upcoming = movie.is_upcoming or is_upcoming
+    movie.catalog_synced_at = timezone.now()
+
     movie.save()
 
     _sync_genres(movie, detail_payload.get("genres") or [])
