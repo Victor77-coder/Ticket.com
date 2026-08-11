@@ -56,7 +56,8 @@ def test_trilha_sem_filmes_e_omitida_do_array(client, make_movie, make_screening
 def test_ordem_das_trilhas_e_do_servidor(client, make_movie, make_screening):
     hoje = timezone.localdate()
     make_screening(make_movie("Comprável"))
-    make_movie("Em Alta", is_trending=True)
+    # Em alta exige sessão desde a emenda de 2026-08-11 (FR-003a).
+    make_screening(make_movie("Em Alta", is_trending=True), hours_from_now=48)
     make_movie("Em Breve", is_upcoming=True, release_date=hoje + timedelta(days=30))
 
     chaves = [r["key"] for r in client.get(reverse("catalog:home-rows")).json()["rows"]]
@@ -109,10 +110,14 @@ def test_em_cartaz_nao_tem_o_limite_de_cinco_do_carrossel(client, make_movie, ma
 
 
 @pytest.mark.django_db
-def test_em_alta_limita_em_nove(client, make_movie):
-    """FR-003, SC-002."""
+def test_em_alta_limita_em_nove(client, make_movie, make_screening):
+    """FR-003, SC-002.
+
+    Os filmes recebem sessão porque, desde a emenda de 2026-08-11, estar em
+    alta no catálogo externo não basta para entrar na trilha (FR-003a).
+    """
     for i in range(14):
-        make_movie(f"Alta {i}", is_trending=True)
+        make_screening(make_movie(f"Alta {i}", is_trending=True), hours_from_now=i + 1)
 
     trilha = _trilhas(client)["em-alta"]
 
@@ -285,3 +290,91 @@ def test_detalhe_sem_data_devolve_nulo(client, make_movie):
     filme = make_movie("Sem Data", release_date=None)
 
     assert client.get(reverse("catalog:movie-detail", args=[filme.slug])).json()["release_date"] is None
+
+
+# --- Emenda de 2026-08-11: Em alta exige sessão planejada ------------------
+# "Sessão planejada" = publicada e futura, o mesmo predicado de Em cartaz.
+
+
+@pytest.mark.django_db
+def test_em_alta_exclui_filme_sem_sessao(client, make_movie, make_screening):
+    """FR-003a: estar em alta no catálogo externo não basta."""
+    com = make_movie("Em Alta Com Sessão", is_trending=True)
+    make_screening(com)
+    make_movie("Em Alta Sem Sessão", is_trending=True)
+
+    titulos = [m["title"] for m in _trilhas(client)["em-alta"]["movies"]]
+
+    assert titulos == ["Em Alta Com Sessão"]
+
+
+@pytest.mark.django_db
+def test_em_alta_usa_o_mesmo_predicado_de_em_cartaz(client, make_movie, make_screening):
+    """Sessão em rascunho, cancelada ou passada não qualificam.
+
+    O predicado precisa ser idêntico ao de Em cartaz, não parecido: um filme
+    não pode ser comprável para uma trilha e não para a outra (R11).
+    """
+    from apps.screening.models import Screening
+
+    make_screening(make_movie("Rascunho", is_trending=True), status=Screening.Status.DRAFT)
+    make_screening(make_movie("Cancelado", is_trending=True), status=Screening.Status.CANCELLED)
+    make_screening(make_movie("Já Passou", is_trending=True), hours_from_now=-2)
+
+    assert "em-alta" not in _trilhas(client)
+
+
+@pytest.mark.django_db
+def test_limite_de_nove_e_aplicado_depois_do_filtro(client, make_movie, make_screening):
+    """FR-003b.
+
+    Se o corte viesse antes, os 12 sem sessão poderiam ocupar as 9 vagas e a
+    trilha voltaria com menos de 9 — erro silencioso, porque continuaria
+    parecendo correta.
+    """
+    for i in range(12):
+        make_movie(f"Sem Sessão {i:02d}", is_trending=True)
+    for i in range(12):
+        make_screening(make_movie(f"Com Sessão {i:02d}", is_trending=True), hours_from_now=i + 1)
+
+    trilha = _trilhas(client)["em-alta"]
+
+    assert trilha["count"] == 9
+    assert all(m["title"].startswith("Com Sessão") for m in trilha["movies"])
+
+
+@pytest.mark.django_db
+def test_em_alta_some_quando_nenhum_tem_sessao(client, make_movie):
+    """FR-006 aplicado ao caso novo."""
+    for i in range(5):
+        make_movie(f"Em Alta {i}", is_trending=True)
+
+    assert "em-alta" not in _trilhas(client)
+
+
+@pytest.mark.django_db
+def test_filme_com_varias_sessoes_aparece_uma_vez_em_alta(client, make_movie, make_screening):
+    """O join com sessões não pode duplicar o filme na trilha."""
+    filme = make_movie("Muitas Sessões", is_trending=True)
+    for horas in (5, 10, 15):
+        make_screening(filme, hours_from_now=horas)
+
+    trilha = _trilhas(client)["em-alta"]
+
+    assert trilha["count"] == 1
+    assert trilha["movies"][0]["title"] == "Muitas Sessões"
+
+
+@pytest.mark.django_db
+def test_a_regra_nao_vaza_para_em_breve(client, make_movie):
+    """FR-004: Em breve exige o OPOSTO — filmes que ainda não estão à venda.
+
+    Uma refatoração distraída em selectors.py aplicaria o filtro aos dois.
+    """
+    hoje = timezone.localdate()
+    make_movie("Estreia Sem Sessão", is_upcoming=True, release_date=hoje + timedelta(days=20))
+
+    trilhas = _trilhas(client)
+
+    assert trilhas["em-breve"]["count"] == 1
+    assert "em-alta" not in trilhas
