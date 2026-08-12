@@ -2,65 +2,63 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Plan: `specs/009-my-tickets-sharing/plan.md`
-- Spec: `specs/009-my-tickets-sharing/spec.md`
-- Research: `specs/009-my-tickets-sharing/research.md`
-- Data model: `specs/009-my-tickets-sharing/data-model.md`
-- Contracts: `specs/009-my-tickets-sharing/contracts/`
-- Quickstart: `specs/009-my-tickets-sharing/quickstart.md`
+- Plan: `specs/010-gate-validation/plan.md`
+- Spec: `specs/010-gate-validation/spec.md`
+- Research: `specs/010-gate-validation/research.md`
+- Data model: `specs/010-gate-validation/data-model.md`
+- Contracts: `specs/010-gate-validation/contracts/`
+- Quickstart: `specs/010-gate-validation/quickstart.md`
 
 Features anteriores, já implementadas:
 
 - `specs/001-movie-highlights-carousel/` — carrossel da home, catálogo TMDb, página do filme
-- `specs/002-site-header-navigation/` — cabeçalho global e busca por título (44/44)
-- `specs/003-user-authentication/` — entrada, saída e sessão para os três papéis (52/52)
+- `specs/002-site-header-navigation/` — cabeçalho global e busca por título
+- `specs/003-user-authentication/` — entrada, saída e sessão para os três papéis
+- `specs/004-home-movie-rows/` — trilhas Em cartaz, Em alta e Em breve na home
+- `specs/005-seed-and-carousel-tuning/` — carrossel de 3 e seed com 12 filmes à venda
+- `specs/006-visual-identity/` — linguagem visual e disciplina de tokens. Nenhum valor de cor,
+  espaçamento, tipografia, raio ou duração pode ficar fora dos tokens.
+- `specs/007-seat-selection/` — mapa da sala e reserva com prazo de 10 minutos
+- `specs/008-payment-ticket-issuance/` — pagamento simulado e emissão do ingresso, inseparáveis.
+  O código do QR é assinado com `TICKET_SIGNING_KEY` — segredo próprio, distinto da
+  `DJANGO_SECRET_KEY`, que nunca chega ao front-end — em `services/ingressos.py`, módulo **puro**
+  que não importa modelo (é o que torna `num_queries == 0` verificável).
+- `specs/009-my-tickets-sharing/` — área "Meus ingressos" e link de compartilhamento revogável.
+  O token do link é distinto do código do QR e os ciclos de vida são independentes.
 
-- `specs/004-home-movie-rows/` — trilhas Em cartaz, Em alta e Em breve na home (55/55 + emenda
-  de 11 tarefas). A trilha Em alta exige sessão planejada desde a emenda de 2026-08-11.
+**A feature 010 valida o ingresso na portaria e FECHA O FLUXO PONTA A PONTA.** É a etapa 5 da ordem
+obrigatória da constitution.
 
-- `specs/005-seed-and-carousel-tuning/` — carrossel de 3 e seed com 12 filmes à venda (22/22)
-- `specs/006-visual-identity/` — linguagem visual e disciplina de tokens (47/47). Nenhum valor de
-  cor, espaçamento, tipografia, raio ou duração pode ficar fora dos tokens.
+**A garantia muda de forma pela primeira vez.** 007, 008 e 009 fecharam invariantes com índices
+(`UNIQUE` absoluta, parcial, parcial). Aqui o invariante é de **transição** — "esta coluna só sai de
+nulo uma vez" —, e nenhum índice o expressa: uma `CHECK` enxerga o valor final, não a história. A
+garantia é `UPDATE ... SET used_at = now() WHERE id = ? AND used_at IS NULL`, e **o número de linhas
+afetadas é o desfecho**: 1 é válido, 0 é já utilizado.
 
-- `specs/007-seat-selection/` — mapa da sala e reserva com prazo de 10 minutos, protegida por
-  `UNIQUE(sessão, assento)` em `ReservedSeat`. A constraint é **absoluta, sem predicado**: o índice
-  parcial era impossível porque `now()` não é imutável.
+**A armadilha desta feature é o `if` mais natural que existe:**
 
-- `specs/008-payment-ticket-issuance/` — pagamento simulado e emissão do ingresso, inseparáveis
-  (mesma transação, mesma migração). Duas constraints: `UNIQUE(reserva) WHERE aprovado` (parcial —
-  o predicado é imutável, ao contrário da 007) e `UNIQUE(assento reservado)` no ingresso. O código
-  do QR é assinado com `TICKET_SIGNING_KEY` — **segredo próprio, distinto da `DJANGO_SECRET_KEY`**,
-  sem valor padrão utilizável, que nunca chega ao front-end, verificado em `services/ingressos.py`,
-  um módulo **puro** que não importa modelo (é o que torna `num_queries == 0` verificável).
+    if ingresso.used_at is not None: return JA_UTILIZADO
+    ingresso.used_at = timezone.now(); ingresso.save()
 
-**A feature 009 dá endereço permanente ao ingresso e um link para mostrá-lo a outra pessoa.** Duas
-decisões estruturam tudo:
+É leitura seguida de escrita. Passa em todo teste de uma thread só, **lê exatamente como a regra da
+spec**, e — ao contrário das três features anteriores — **o banco não reclama**, porque não há
+constraint para recusar. A única coisa entre o projeto e uma portaria furada é o teste de
+concorrência, que por isso vem antes do serviço. O desfecho DEVE vir do `rowcount`, nunca de um `if`
+sobre o objeto lido.
 
-1. **O token do link é distinto do código do QR**, e os ciclos de vida são independentes: revogar um
-   convite não pode queimar uma entrada paga. `TicketShareLink` não conhece a chave de assinatura, e
-   `services/ingressos.py` não conhece a existência de link nenhum. Teste obrigatório compara o
-   código antes e depois de revogar.
-2. **A página compartilhada é pública e mostra APENAS filme, sessão, sala, lugar e QR.** É servida
-   pelo `TicketSerializer` da 008 **sem alteração** — o risco não é o que ele expõe hoje, é a pressão
-   de crescimento, e por isso os campos da área do dono vão para um serializer separado. Teste de
-   não vazamento inspeciona a resposta inteira e é requisito, não diferencial.
+**Ordem do pipeline** (só o último passo escreve): assinatura → ingresso existe → payload bate com o
+banco → **sessão da porta** → `UPDATE` condicional. "Sessão errada" vem antes de "já utilizado" e
+**não escreve** — o ingresso continua valendo na porta certa.
 
-A constraint é `UNIQUE(ingresso) WHERE revogado_em IS NULL` — parcial, terceiro capítulo da mesma
-história: 007 absoluta porque `now()` não é imutável, 008 e 009 parciais porque os predicados são.
-Preservar os links revogados é o que faz "revogado nunca volta a valer" ser estrutura, não sorte.
+**"Sessão errada" só existe porque a portaria declara a sessão da porta.** Inferir a sessão só pelo
+código torna o desfecho impossível: comparar a sessão do ingresso com ela mesma sempre dá igual.
 
-**Armadilha herdada desta feature**: toda consulta de sessão da 001 à 008 passa por `sellable()`
-(`published()` E `starts_at > now()`). É o filtro certo para **estoque** e errado para **histórico** —
-usá-lo aqui esvaziaria para sempre o grupo "já aconteceram" e faria sumir o ingresso da sessão
-cancelada, que é justamente sobre o qual o cliente precisa de explicação. Nenhuma constraint pega, e a
-linha errada parece mais idiomática que a certa.
+**A armadilha da 009 volta**: `sellable()` (= `published()` E `starts_at > now()`) esconde a sessão
+**em andamento**, que é exatamente a que a porta está recebendo. Regra: `sellable()` responde "dá
+para comprar?", e nenhuma outra pergunta.
 
-**Trade-off registrado**: o token do link fica em **texto claro** no banco, porque FR-028/FR-035
-exigem que o dono recopie o link depois e hash torna isso impossível. Mitigado com 256 bits,
-revogação imediata, `noindex` e `no-referrer`. Vai para o README pelo Princípio VI.
-
-**Nada de estado "já utilizado" na 009** — a transição e a garantia de validação única nascem juntas
-na feature da portaria.
+**O campo de uso NÃO pode entrar em `TicketSerializer` nem `MeuIngressoSerializer`** — uma linha, e
+"utilizado" aparece na página compartilhada **pública** da 009.
 
 Project constitution (governa todas as features): `.specify/memory/constitution.md`
 <!-- SPECKIT END -->

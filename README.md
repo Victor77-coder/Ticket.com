@@ -1,7 +1,8 @@
 # Plataforma de Ingressos de Cinema
 
-Venda e validação de ingressos de cinema — catálogo vindo do TMDb, sessões, e o caminho até a
-compra. Resposta ao Desafio Elite Dev 2026 (Verzel).
+Venda e validação de ingressos de cinema — catálogo vindo do TMDb, sessões, mapa de assentos,
+pagamento simulado, ingresso com QR assinado e validação na portaria. **O fluxo ponta a ponta está
+fechado.** Resposta ao Desafio Elite Dev 2026 (Verzel).
 
 O projeto é conduzido por especificação: cada feature nasce de um spec, um plano e uma lista de
 tarefas versionados em [`specs/`](./specs/), sob as regras de
@@ -195,7 +196,7 @@ verificada **sem nenhuma consulta ao banco** (Princípio III), a ausência de va
 ingresso compartilhado, inspecionada por valor na resposta inteira (Princípio III), e a corrida de
 geração de link, que produz um único link ativo e **falha** sem o índice parcial.
 
-Três testes foram verificados **quebrando o código de propósito**, porque uma prova que passa sem a
+Seis verificações foram feitas **quebrando o código de propósito**, porque uma prova que passa sem a
 garantia que ela protege é pior do que prova nenhuma:
 
 | Garantia removida | O que passa a acontecer | Teste que falha |
@@ -203,6 +204,9 @@ garantia que ela protege é pior do que prova nenhuma:
 | `condition` do índice de link ativo | 5 pedidos simultâneos criam **5** credenciais ativas | `test_share_link_concurrency.py` |
 | campo novo no serializer público | o campo aparece na página compartilhada | `test_share_link_leakage.py` |
 | `sellable()` na consulta de ingressos | somem o histórico e o ingresso de sessão cancelada | `test_my_tickets_api.py` |
+| escrita condicional → `if` + `save()` na portaria | **quatro** pessoas entram com o mesmo ingresso | `test_gate_concurrency.py` |
+| `sellable()` na lista de sessões da portaria | some a sessão **em andamento**, que é a que a porta recebe | `test_gate_api.py` |
+| campo de uso no serializer do ingresso | "utilizado" aparece na página compartilhada pública | `test_share_link_leakage.py` |
 
 > Os testes ponta a ponta de pagamento **compram de verdade**, e lugar pago não volta ao estoque.
 > Rodar a suíte muitas vezes consome a grade semeada; `seed_demo` devolve o cenário ao início.
@@ -292,6 +296,40 @@ Um ingresso tem **no máximo um link ativo**, e a garantia é do PostgreSQL: ín
 `UNIQUE(ingresso) WHERE revogado_em IS NULL`. `backend/tests/test_share_link_concurrency.py` prova
 com threads, e está verificado que ele **falha** sem a constraint — sem ela, cinco pedidos
 simultâneos criam cinco credenciais ativas, e o dono revogaria uma achando que revogou tudo.
+
+**Validação na portaria** (`specs/010-gate-validation/`) — **é esta feature que fecha o fluxo ponta
+a ponta**: catálogo → sessão → assento → pagamento → ingresso → **entrada**.
+
+O operador entra com a conta `portaria`, escolhe **qual sessão aquela porta está recebendo** e
+valida — pela câmera ou digitando o código escrito no ingresso. Cada apresentação produz um de
+**quatro desfechos**, distinguíveis por símbolo e título antes de qualquer cor: **pode entrar**,
+**já foi usado** (com a hora do primeiro uso), **ingresso de outra sessão** (com a sessão a que ele
+pertence, para o operador orientar a pessoa) e **não reconhecido**.
+
+**A escolha da sessão da porta não é conveniência de interface.** Sem ela o desfecho "sessão errada"
+seria **impossível**: o código carrega a sessão a que o ingresso pertence, e comparar esse valor com
+ele mesmo sempre dá igual. Entregar três desfechos onde a constitution exige quatro seria tela pela
+metade.
+
+Um ingresso legítimo apresentado na porta errada **não é consumido** — continua valendo na porta
+certa. E "sessão errada" vem **antes** de "já utilizado" na ordem de decisão, porque é essa a
+informação que muda o que o operador faz.
+
+Um ingresso nunca é validado duas vezes, e **aqui a garantia muda de forma**: as três features
+anteriores fecharam seus invariantes com índices `UNIQUE`. Este invariante é de **transição** —
+"esta coluna só sai de nulo uma vez" —, e nenhum índice o expressa: uma `CHECK` enxerga o valor
+final, não a história. A garantia é a forma da escrita,
+`UPDATE ... WHERE used_at IS NULL`, e **o número de linhas afetadas é o desfecho**. Continua sendo o
+banco decidindo: o segundo `UPDATE` bloqueia, reavalia o predicado contra a versão nova e afeta zero
+linhas.
+
+`backend/tests/test_gate_concurrency.py` prova com threads, e está verificado que ele **falha**
+quando a escrita condicional é trocada pelo `if` natural — com **quatro** validações resultando em
+"pode entrar". Sem constraint atrás dele, este teste é a única defesa da garantia, e por isso foi
+escrito antes do serviço.
+
+O código forjado é rejeitado **sem nenhuma consulta ao registro de ingressos**, reusando a
+verificação que a feature de pagamento já deixou pronta em módulo puro.
 
 ---
 
@@ -478,11 +516,34 @@ cinema — uma sala existe sem lugar associado —, então o seletor não teria 
 quando houver o conceito de praça no modelo. Registrado em
 `specs/002-site-header-navigation/spec.md`.
 
-**Não há tela de portaria.** O que existe hoje vai do catálogo até o ingresso emitido, alcançável
-em "Meus ingressos" e compartilhável por link. A validação na entrada é a próxima feature.
+**A leitura do QR pela câmera é verificada à mão.** Apontar uma câmera para um código real exige
+hardware. O automatizado cobre o resto do caminho: o mesmo código, entregue por digitação, produz o
+mesmo desfecho pelo mesmo caminho de servidor, e o percurso ponta a ponta da portaria roda inteiro
+pela via digitada. A leitura em si está no percurso 5 do
+`specs/010-gate-validation/quickstart.md`.
 
-**O ingresso não tem estado "já utilizado", e a ausência é deliberada.** A transição para utilizado
-e a garantia de que um ingresso não é validado duas vezes nascem **juntas** na feature da portaria
+**A câmera da portaria só funciona em contexto seguro.** `getUserMedia` exige `https` ou
+`localhost`. Abrindo `http://localhost:5003/portaria` na própria máquina, a câmera funciona. Abrindo
+**pelo IP da rede local** — que é o gesto natural para testar com o celular — ela **não** funciona, e
+nenhuma configuração da aplicação muda isso.
+
+O que torna isso aceitável em vez de um buraco: a constitution já exige que a digitação manual esteja
+"sempre disponível". A exigência que parecia redundante é justamente a que mantém a portaria
+funcionando no cenário mais provável de demonstração. O campo de digitação fica visível o tempo todo,
+lado a lado com a câmera — nunca escondido atrás da falha dela.
+
+**O cliente não vê o estado de uso do ingresso.** O campo existe no modelo desde a feature da
+portaria, mas "Meus ingressos" e a página compartilhada continuam exatamente como a feature anterior
+as entregou. Exibir "utilizado" ao cliente é decisão de produto que não era preciso tomar para fechar
+o fluxo — e a página compartilhada é **pública**, então o campo lá teria consequência real.
+`test_share_link_leakage.py` lista o campo entre os proibidos.
+
+**Não há registro de qual operador validou.** Seria auditoria, e nenhum dos quatro desfechos depende
+disso. Contador de leituras e telemetria também estão fora: contar quantas vezes um link foi aberto é
+informação sobre quem recebeu o ingresso.
+
+**Não há validação offline.** Validar sem rede exigiria decidir o uso no aparelho e reconciliar
+depois — e reconciliação é exatamente onde a validação única se perde.
 — mesma disciplina que fez a 007 criar a ocupação de assento com sua constraint na mesma migração,
 e a 008 criar pagamento e emissão na mesma transação. Exibir agora um selo que nada escreve seria
 tela pela metade, que o Princípio V proíbe.
