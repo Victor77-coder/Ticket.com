@@ -46,6 +46,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--esp-4);
+  min-width: 0;
 }
 
 .titulo {
@@ -78,80 +79,217 @@
   color: var(--cor-texto);
 }
 
-.sinopse {
-  margin: 0;
-  max-width: 62ch;
-  color: var(--cor-texto-suave);
+.corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+  margin-top: var(--esp-2);
 }
 
-.subtitulo {
-  margin: var(--esp-4) 0 var(--esp-3);
-  font-size: var(--texto-lg);
+/* --- Seções: a ativa é peso + sublinhado, não só cor (FR-005) --- */
+
+.abas {
+  display: flex;
+  gap: var(--esp-5);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.aba {
+  margin: 0;
+  padding: var(--esp-2) 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--cor-texto-fraco);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  cursor: pointer;
+}
+
+.abaAtiva {
+  color: var(--cor-texto);
+  font-weight: var(--peso-forte);
+  border-bottom-color: var(--cor-texto);
+}
+
+/* --- Grade de sessões --- */
+
+.grade {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+}
+
+.dias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+}
+
+.dia {
+  margin: 0;
+  padding: var(--esp-2) var(--esp-3);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  cursor: pointer;
+}
+
+.diaAtivo {
+  border-color: var(--cor-borda-forte);
+  border-width: 2px;
+  color: var(--cor-texto);
   font-weight: var(--peso-forte);
 }
 
-.sessoes {
+.sala {
   display: flex;
   flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.salaNome {
+  margin: 0;
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-forte);
+  color: var(--cor-texto-suave);
+}
+
+.horarios {
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--esp-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.sessao {
-  display: flex;
+.horario {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--esp-4);
-  padding: var(--esp-4);
-  border: 1px solid var(--cor-borda);
+  justify-content: center;
+  min-width: 4.5rem;
+  padding: var(--esp-2) var(--esp-3);
+  border: 1px solid var(--cor-borda-forte);
   border-radius: var(--raio-md);
   background: var(--cor-superficie);
-  color: inherit;
+  color: var(--cor-texto);
+  font-weight: var(--peso-medio);
+  font-variant-numeric: tabular-nums;
   text-decoration: none;
-  transition:
-    border-color var(--transicao-rapida),
-    background-color var(--transicao-rapida);
 }
 
-.sessao:hover {
-  border-color: var(--cor-destaque);
+.horario:hover {
   background: var(--cor-superficie-elevada);
 }
 
-.sessaoHorario {
-  display: block;
-  font-weight: var(--peso-medio);
-  text-transform: capitalize;
-}
-
-.sessaoSala {
-  display: block;
-  font-size: var(--texto-sm);
-  color: var(--cor-texto-fraco);
-}
-
-.sessaoDireita {
-  display: flex;
+.horarioEsgotado {
+  display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--esp-4);
-}
-
-.sessaoPreco {
-  font-weight: var(--peso-medio);
+  justify-content: center;
+  min-width: 4.5rem;
+  padding: var(--esp-2) var(--esp-3);
+  border: 1px dashed var(--cor-borda);
+  border-radius: var(--raio-md);
+  color: var(--cor-texto-fraco);
+  font-size: var(--texto-xs);
   font-variant-numeric: tabular-nums;
 }
 
-/* Disponível e esgotada se distinguem por texto, não apenas por cor. */
-.sessaoStatus {
+.horarioHora {
   font-size: var(--texto-sm);
-  color: var(--cor-sucesso);
+  font-weight: var(--peso-medio);
 }
 
-.sessaoEsgotada {
-  font-size: var(--texto-sm);
+/* --- Sobre --- */
+
+.sobre {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.sinopse {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--cor-texto-suave);
+}
+
+.ficha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-5);
+  margin: 0;
+}
+
+.ficha div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+}
+
+.ficha dt {
+  font-size: var(--texto-xs);
   color: var(--cor-texto-fraco);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ficha dd {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-texto);
+}
+
+/* --- Trailers --- */
+
+.listaTrailers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.itemTrailer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.trailerNome {
+  margin: 0;
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-forte);
+}
+
+.reproduzir {
+  align-self: flex-start;
+  padding: var(--esp-3) var(--esp-5);
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font-weight: var(--peso-forte);
+  cursor: pointer;
+}
+
+.reproduzir:hover {
+  background: var(--cor-superficie-elevada);
+}
+
+.palcoTrailer {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--raio-lg);
+  background: var(--cor-fundo-video);
 }
 
 .vazio {
@@ -160,6 +298,18 @@
   border: 1px dashed var(--cor-borda-forte);
   border-radius: var(--raio-md);
   color: var(--cor-texto-suave);
+}
+
+.vazioTexto {
+  margin: 0;
+  color: var(--cor-texto-suave);
+}
+
+.estreia {
+  margin: 0 0 var(--esp-2);
+  font-size: var(--texto-md);
+  font-weight: var(--peso-forte);
+  color: var(--cor-texto);
 }
 
 .erro {
@@ -189,18 +339,4 @@
   .cartaz {
     max-width: 14rem;
   }
-}
-
-.vazioTexto {
-  margin: 0;
-  color: var(--cor-texto-suave);
-}
-
-/* A estreia é a informação principal do estado vazio: quem chegou por "Em
- * breve" veio justamente saber quando. */
-.estreia {
-  margin: 0 0 var(--esp-2);
-  font-size: var(--texto-md);
-  font-weight: var(--peso-forte);
-  color: var(--cor-texto);
 }
