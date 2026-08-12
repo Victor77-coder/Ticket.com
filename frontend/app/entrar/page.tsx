@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { destinoAposEntrada } from "@/lib/papeis";
 import { caminhoDeRetornoSeguro, getSessao } from "@/lib/session";
 import styles from "./entrar.module.css";
 import { LoginForm } from "./LoginForm";
@@ -21,10 +22,12 @@ export default async function EntrarPage({
   // formulário — um destino externo aqui seria redirecionamento aberto.
   const caminhoDeRetorno = caminhoDeRetornoSeguro(next);
 
-  // FR-008: quem já tem sessão não vê o formulário de novo.
+  // FR-008: quem já tem sessão não vê o formulário de novo — e pousa pela
+  // mesma regra de quem acabou de entrar, senão um usuário de portaria que
+  // abrisse `/entrar` por engano seria despejado no catálogo de filmes.
   const sessao = await getSessao();
   if (sessao) {
-    redirect(caminhoDeRetorno);
+    redirect(destinoAposEntrada(sessao.papel, caminhoDeRetorno));
   }
 
   return (

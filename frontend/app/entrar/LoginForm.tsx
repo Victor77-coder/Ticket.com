@@ -3,6 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { destinoAposEntrada } from "@/lib/papeis";
+import type { Papel } from "@/lib/types";
+
 import styles from "./entrar.module.css";
 
 type Props = {
@@ -63,9 +66,25 @@ export function LoginForm({ caminhoDeRetorno }: Props) {
         return;
       }
 
+      // O PAPEL DECIDE ONDE A PESSOA POUSA, quando ela não pediu um destino.
+      //
+      // A portaria tem UMA tela e não navega pelo site: entrar e cair no
+      // catálogo de filmes é cair no lugar errado, e daria a impressão de que
+      // a conta dela não leva a nada. O cliente continua na home, porque ele
+      // entra para COMPRAR — mandá-lo direto para "Meus ingressos" faria um
+      // cliente novo aterrissar no estado vazio.
+      //
+      // Um destino pedido explicitamente vence: quem foi conduzido à entrada
+      // ao tentar abrir uma página quer voltar àquela página.
+      const corpo = await resposta.json().catch(() => null);
+      const papel = corpo?.user?.papel as Papel | undefined;
+      const destino = papel
+        ? destinoAposEntrada(papel, caminhoDeRetorno)
+        : caminhoDeRetorno;
+
       // `refresh` faz o cabeçalho reler a sessão no servidor antes da
       // navegação, senão o nome só apareceria depois de um recarregamento.
-      router.replace(caminhoDeRetorno);
+      router.replace(destino);
       router.refresh();
     } catch {
       setErroGeral("Não foi possível falar com o servidor. Verifique sua conexão.");

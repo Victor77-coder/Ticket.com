@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { CASA_DO_PAPEL } from "@/lib/papeis";
 import type { Sessao } from "@/lib/types";
 import { AccountButton } from "./AccountButton";
 import styles from "./header.module.css";
@@ -12,20 +13,6 @@ type Props = {
   sessao: Sessao | null;
   caminhoEntrada: string;
 };
-
-/**
- * Onde cada papel trabalha.
- *
- * `organizer` está ausente de propósito: o painel do organizador ainda não
- * existe, e apontar para uma tela que recusa por papel seria pior do que não
- * ter o item. Quando ele existir, entra aqui — e é por isso que isto é uma
- * tabela e não dois `if`.
- */
-const DESTINO_DO_PAPEL: Partial<Record<Sessao["papel"], { href: string; rotulo: string }>> =
-  {
-    customer: { href: "/meus-ingressos", rotulo: "Meus ingressos" },
-    gate: { href: "/portaria", rotulo: "Validar ingressos" },
-  };
 
 /**
  * Ilha cliente que dá dono ao `onAbrirConta` do `AccountButton`.
@@ -110,14 +97,14 @@ export function AccountMenu({ sessao, caminhoEntrada }: Props) {
             * cabeçalho: o destino MUDA por papel, e um item de navegação
             * global que troca de rótulo conforme quem olha seria mais
             * confuso do que útil. */}
-          {DESTINO_DO_PAPEL[sessao.papel] && (
+          {CASA_DO_PAPEL[sessao.papel] && (
             <Link
-              href={DESTINO_DO_PAPEL[sessao.papel]!.href}
+              href={CASA_DO_PAPEL[sessao.papel]!.href}
               role="menuitem"
               className={styles.contaMenuItem}
               onClick={() => setAberto(false)}
             >
-              {DESTINO_DO_PAPEL[sessao.papel]!.rotulo}
+              {CASA_DO_PAPEL[sessao.papel]!.rotulo}
             </Link>
           )}
 

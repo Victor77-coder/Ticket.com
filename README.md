@@ -300,10 +300,18 @@ simultâneos criam cinco credenciais ativas, e o dono revogaria uma achando que 
 **Validação na portaria** (`specs/010-gate-validation/`) — **é esta feature que fecha o fluxo ponta
 a ponta**: catálogo → sessão → assento → pagamento → ingresso → **entrada**.
 
-O operador entra com a conta `portaria` e chega à tela pelo **menu da conta**, no cabeçalho —
-"Validar ingressos". Cada papel tem ali o seu destino de trabalho: cliente vai para "Meus
-ingressos", portaria para a validação. O organizador não tem item porque o painel dele ainda não
-existe, e apontar para uma tela que recusa por papel seria pior do que não ter o item.
+O operador entra com a conta `portaria` e **já pousa na tela de validação** — ela tem uma tela só e
+não navega pelo site, então cair no catálogo de filmes seria cair no lugar errado. Depois disso, o
+**menu da conta** o traz de volta a qualquer momento ("Validar ingressos").
+
+Cada papel tem ali o seu destino de trabalho: cliente vai para "Meus ingressos", portaria para a
+validação. O cliente, porém, **pousa na home** ao entrar — ele entra para comprar, e mandá-lo direto
+para a lista faria um cliente novo aterrissar no estado vazio. O organizador não tem item porque o
+painel dele ainda não existe, e apontar para uma tela que recusa por papel seria pior do que não ter
+o item.
+
+Um destino pedido explicitamente sempre vence: quem foi conduzido à entrada ao tentar abrir uma
+página volta àquela página.
 
 Na tela, o operador escolhe **qual sessão aquela porta está recebendo** e
 valida — pela câmera ou digitando o código escrito no ingresso. Cada apresentação produz um de

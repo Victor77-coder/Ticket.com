@@ -126,14 +126,10 @@ test("comprar → escolher a porta → válido → já utilizado → inválido",
   await entrar(page, "cliente1");
   const { codigo } = await comprarIngressoDeHoje(page, request);
 
+  // A ENTRADA JÁ POUSA NA TELA DE TRABALHO. A portaria tem uma tela só e não
+  // navega pelo site — entrar e cair no catálogo de filmes seria cair no lugar
+  // errado. Nenhum `goto` aqui: se o pouso quebrar, este teste quebra.
   await entrar(page, "portaria");
-
-  // PELO MENU DA CONTA, e não por `goto`: é assim que o porteiro chega. Se
-  // este caminho não existir, a tela só é alcançável digitando o endereço — e
-  // uma tela que depende de endereço decorado é uma tela que, na prática, não
-  // existe.
-  await page.locator("header").getByRole("button").first().click();
-  await page.getByRole("menuitem", { name: "Validar ingressos" }).click();
   await expect(page).toHaveURL(/\/portaria$/);
 
   // --- A sessão da porta vem ANTES de qualquer leitura ---
@@ -224,6 +220,18 @@ test("a tela cabe em 320px e o desfecho continua legível", async ({ page }) => 
     (el) => parseFloat(getComputedStyle(el).fontSize),
   );
   expect(tamanho).toBeGreaterThanOrEqual(24);
+});
+
+test("o menu da conta também leva à validação", async ({ page }) => {
+  // O pouso resolve a primeira vez. O item do menu é o que devolve o porteiro
+  // à tela dele depois de ele ter navegado para qualquer outro lugar.
+  await entrar(page, "portaria");
+  await page.goto("/");
+
+  await page.locator("header").getByRole("button").first().click();
+  await page.getByRole("menuitem", { name: "Validar ingressos" }).click();
+
+  await expect(page).toHaveURL(/\/portaria$/);
 });
 
 test("papel errado lê a explicação e não é mandado à entrada", async ({ page }) => {

@@ -102,6 +102,51 @@ describe("formulário de entrada", () => {
     expect(refresh).toHaveBeenCalled();
   });
 
+  it("leva a portaria direto à tela de validação, sem destino pedido", async () => {
+    // A portaria tem UMA tela e não navega pelo site. Entrar e cair no
+    // catálogo de filmes é cair no lugar errado, e dá a impressão de que a
+    // conta não leva a nada.
+    const usuario = userEvent.setup();
+    mockFetch({ ok: true, body: { user: { nome: "Olívia", papel: "gate" } } });
+    render(<LoginForm caminhoDeRetorno="/" />);
+
+    await usuario.type(screen.getByLabelText("Usuário"), "portaria");
+    await usuario.type(screen.getByLabelText("Senha"), "desafio2026");
+    await usuario.click(screen.getByRole("button", { name: "Entrar" }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/portaria"));
+  });
+
+  it("deixa o cliente na home, e não em Meus ingressos", async () => {
+    // O cliente entra para COMPRAR: mandá-lo direto para a lista faria um
+    // cliente novo aterrissar no estado vazio.
+    const usuario = userEvent.setup();
+    mockFetch({ ok: true, body: { user: { nome: "Ana", papel: "customer" } } });
+    render(<LoginForm caminhoDeRetorno="/" />);
+
+    await usuario.type(screen.getByLabelText("Usuário"), "cliente1");
+    await usuario.type(screen.getByLabelText("Senha"), "desafio2026");
+    await usuario.click(screen.getByRole("button", { name: "Entrar" }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
+  });
+
+  it("um destino pedido vence o pouso do papel", async () => {
+    // Quem foi conduzido à entrada ao tentar abrir uma página quer voltar
+    // àquela página — o retorno seguro da 003 continua valendo.
+    const usuario = userEvent.setup();
+    mockFetch({ ok: true, body: { user: { nome: "Olívia", papel: "gate" } } });
+    render(<LoginForm caminhoDeRetorno="/filmes/duna-parte-dois" />);
+
+    await usuario.type(screen.getByLabelText("Usuário"), "portaria");
+    await usuario.type(screen.getByLabelText("Senha"), "desafio2026");
+    await usuario.click(screen.getByRole("button", { name: "Entrar" }));
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith("/filmes/duna-parte-dois"),
+    );
+  });
+
   it("mostra a mensagem do servidor quando a credencial é recusada", async () => {
     const usuario = userEvent.setup();
     mockFetch({ ok: false, status: 401, body: { detail: "Usuário ou senha incorretos." } });
