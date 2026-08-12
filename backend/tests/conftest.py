@@ -243,3 +243,44 @@ def make_user(db):
         return user
 
     return _make
+
+
+# --- Papéis da programação (feature 013) ----------------------------------
+#
+# Os três papéis como fixtures nomeadas, porque a feature 013 testa o MESMO
+# endpoint com os três: organizador entra, cliente e portaria recebem `403`.
+# Uma tupla de papéis parametrizada no teste esconderia qual deles é o que
+# pode.
+
+
+@pytest.fixture
+def organizador(make_user):
+    from django.contrib.auth import get_user_model
+
+    return make_user(role=get_user_model().Role.ORGANIZER, username="organizador")
+
+
+@pytest.fixture
+def comprador(make_user):
+    from django.contrib.auth import get_user_model
+
+    return make_user(role=get_user_model().Role.CUSTOMER, username="comprador")
+
+
+@pytest.fixture
+def porteiro_de_programacao(make_user):
+    """Portaria, para os testes de acesso cruzado da programação.
+
+    Nome próprio para não colidir com a fixture `porteiro` que os testes da
+    010 já definem localmente.
+    """
+    from django.contrib.auth import get_user_model
+
+    return make_user(role=get_user_model().Role.GATE, username="portaria-programacao")
+
+
+@pytest.fixture
+def painel(client, organizador):
+    """Um cliente HTTP já autenticado como organizador."""
+    client.force_login(organizador)
+    return client
