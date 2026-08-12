@@ -1,0 +1,99 @@
+/* O ingresso emitido, com o QR e o código legível.
+ *
+ * Disciplina de tokens da 006 (FR-051).
+ *
+ * O QR tem fundo claro fixo e é a única superfície da interface que não segue
+ * a paleta escura: leitor de QR precisa de contraste entre módulo escuro e
+ * fundo claro, e invertê-lo para combinar com o tema quebraria a leitura na
+ * catraca. É decisão, não descuido — e por isso a cor vem de um token novo em
+ * vez de um literal aqui.
+ */
+
+.ingresso {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--esp-5);
+  align-items: center;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  padding: var(--esp-5);
+}
+
+@media (max-width: 34rem) {
+  .ingresso {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dados {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  min-width: 0;
+}
+
+.contagem {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-fraco);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.filme {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-forte);
+  line-height: var(--altura-linha-apertada);
+}
+
+.detalhe {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.lugar {
+  color: var(--cor-destaque);
+  font-weight: var(--peso-forte);
+}
+
+/* --- O código --- */
+
+.codigo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-2);
+  min-width: 0;
+}
+
+.qr {
+  display: block;
+  width: 10rem;
+  height: 10rem;
+  background: var(--cor-fundo-qr);
+  border-radius: var(--raio-sm);
+  padding: var(--esp-2);
+}
+
+.codigoTexto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-1);
+  max-width: 14rem;
+}
+
+.codigoRotulo {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-fraco);
+}
+
+/* O código inteiro fica visível, não truncado: é ele que a portaria digita
+ * quando a câmera falha, e um código cortado não serve para digitar. */
+.codigoValor {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-suave);
+  word-break: break-all;
+  text-align: center;
+  line-height: var(--altura-linha-base);
+}

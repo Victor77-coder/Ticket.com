@@ -34,6 +34,16 @@
    * a barra do vídeo precisa desaparecer contra ele. */
   --cor-fundo-video: #000;
 
+  /* Fundo do QR do ingresso — branco real, e a ÚNICA superfície da interface
+   * que não segue a paleta escura.
+   *
+   * Não é descuido nem exceção estética: leitor de QR depende de contraste
+   * entre módulo escuro e fundo claro, e inverter para combinar com o tema
+   * faria a catraca falhar de ler. A regra do Princípio V continua valendo —
+   * o valor está aqui, num token com motivo escrito, e não solto no
+   * componente. */
+  --cor-fundo-qr: #ffffff;
+
   /* Vestígio do laranja nos fundos de substituição. Antes eram dois valores
    * quase iguais (0.22 e 0.18) em arquivos diferentes — a diferença não era
    * decisão, era deriva. */
@@ -260,7 +270,19 @@ img {
   display: block;
 }
 
-button {
+/* `input` entrou aqui na 008, junto de `button`, e pelo mesmo motivo: campos
+ * de formulário NÃO herdam a fonte do documento — o navegador aplica a fonte
+ * do sistema. Sem esta linha, o formulário de cartão apareceria em Arial no
+ * meio de uma interface em Archivo, que é um valor de tipografia fora dos
+ * tokens chegando à tela sem nunca aparecer num arquivo CSS.
+ *
+ * Fica no reset, e não no módulo do componente, porque é vocabulário do
+ * sistema: o próximo formulário do projeto não deve precisar redescobrir isto.
+ */
+button,
+input,
+select,
+textarea {
   font: inherit;
   color: inherit;
 }

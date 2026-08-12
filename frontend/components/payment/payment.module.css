@@ -1,0 +1,148 @@
+/* Resumo da compra e formulário de cartão.
+ *
+ * Disciplina de tokens da 006 (FR-051).
+ */
+
+/* --- Resumo --- */
+
+.resumo {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  padding: var(--esp-5);
+}
+
+.resumoTitulo {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-forte);
+  line-height: var(--altura-linha-apertada);
+  margin-bottom: var(--esp-4);
+}
+
+.linhas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  margin-bottom: var(--esp-4);
+}
+
+.linha {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  font-size: var(--texto-sm);
+}
+
+.linha dt {
+  color: var(--cor-texto-fraco);
+}
+
+.linha dd {
+  color: var(--cor-texto);
+  text-align: right;
+}
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 1px solid var(--cor-borda);
+  padding-top: var(--esp-4);
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.total strong {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-forte);
+  color: var(--cor-texto);
+}
+
+/* --- Formulário --- */
+
+.formulario {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  padding: var(--esp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.formularioTitulo {
+  font-size: var(--texto-md);
+  font-weight: var(--peso-forte);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.campo label {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-suave);
+  font-weight: var(--peso-medio);
+}
+
+.campo input {
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-md);
+  color: var(--cor-texto);
+  font-size: var(--texto-md);
+  padding: var(--esp-3);
+  transition:
+    border-color var(--transicao-rapida),
+    background-color var(--transicao-rapida);
+}
+
+.campo input::placeholder {
+  color: var(--cor-texto-fraco);
+}
+
+.campo input:focus-visible {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 2px;
+  border-color: var(--cor-destaque);
+}
+
+.campo input:disabled {
+  color: var(--cor-texto-fraco);
+  background: var(--cor-superficie-elevada);
+}
+
+.dupla {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--esp-4);
+}
+
+.pagar {
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+  border: none;
+  border-radius: var(--raio-pilula);
+  font-size: var(--texto-md);
+  font-weight: var(--peso-forte);
+  padding: var(--esp-3) var(--esp-5);
+  cursor: pointer;
+  transition: background-color var(--transicao-rapida);
+}
+
+.pagar:hover:not(:disabled) {
+  background: var(--cor-destaque-forte);
+}
+
+.pagar:focus-visible {
+  outline: 2px solid var(--cor-destaque-forte);
+  outline-offset: 3px;
+}
+
+.pagar:disabled {
+  background: var(--cor-borda-forte);
+  color: var(--cor-texto-fraco);
+  cursor: progress;
+}

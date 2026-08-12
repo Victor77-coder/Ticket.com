@@ -1,0 +1,165 @@
+/* A tela de pagamento e a confirmação com os ingressos.
+ *
+ * Disciplina de tokens da 006: nenhum valor de cor, espaçamento, tipografia,
+ * raio ou duração aparece literal aqui. Geometria própria do componente —
+ * larguras de coluna, proporção do QR — pode ser local, porque é geometria
+ * deste layout e não vocabulário do sistema.
+ */
+
+.pagina {
+  max-width: var(--largura-conteudo);
+  margin: 0 auto;
+  padding: var(--ritmo-secao) var(--esp-4) var(--ritmo-dobra);
+}
+
+.titulo {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-forte);
+  line-height: var(--altura-linha-apertada);
+  margin-bottom: var(--esp-2);
+}
+
+/* --- Prazo --- */
+
+.prazo {
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+  margin-bottom: var(--esp-6);
+}
+
+/* --- Colunas --- */
+
+.colunas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: var(--esp-6);
+  align-items: start;
+}
+
+.coluna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+@media (max-width: 52rem) {
+  .colunas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Recusa de cobrança e erro de preenchimento ---
+ *
+ * Deliberadamente diferentes: numa a pessoa TROCA de cartão, na outra CORRIGE
+ * o que digitou. Se as duas caixas fossem iguais, a distinção que o servidor
+ * faz entre 402 e 400 morreria na apresentação (FR-010).
+ */
+
+.recusa,
+.erroForma {
+  border-radius: var(--raio-md);
+  padding: var(--esp-3) var(--esp-4);
+  font-size: var(--texto-sm);
+  line-height: var(--altura-linha-base);
+}
+
+.recusa {
+  background: var(--cor-erro-fraca);
+  border-left: 3px solid var(--cor-erro);
+  color: var(--cor-texto);
+}
+
+.erroForma {
+  background: var(--cor-realce-sutil);
+  border-left: 3px solid var(--cor-alerta);
+  color: var(--cor-texto-suave);
+}
+
+.nota {
+  color: var(--cor-texto-fraco);
+  font-size: var(--texto-xs);
+}
+
+/* --- Estados sem formulário (vencida, falha de leitura) --- */
+
+.aviso {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  padding: var(--esp-7) var(--esp-5);
+  text-align: center;
+  max-width: 34rem;
+  margin: 0 auto;
+}
+
+.aviso h1 {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-forte);
+  margin-bottom: var(--esp-3);
+}
+
+.aviso p {
+  color: var(--cor-texto-suave);
+  line-height: var(--altura-linha-base);
+  margin-bottom: var(--esp-5);
+}
+
+.voltar {
+  display: inline-block;
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+  font-weight: var(--peso-forte);
+  font-size: var(--texto-sm);
+  border-radius: var(--raio-pilula);
+  padding: var(--esp-3) var(--esp-5);
+  text-decoration: none;
+  transition: background-color var(--transicao-rapida);
+}
+
+.voltar:hover {
+  background: var(--cor-destaque-forte);
+}
+
+/* --- Ingressos emitidos --- */
+
+.emitidos {
+  max-width: 46rem;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.selo {
+  display: inline-block;
+  background: var(--cor-destaque-fraca);
+  color: var(--cor-sucesso);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-forte);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: var(--raio-pilula);
+  padding: var(--esp-1) var(--esp-3);
+  margin-bottom: var(--esp-4);
+}
+
+.tituloEmitidos {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-forte);
+  line-height: var(--altura-linha-apertada);
+  margin-bottom: var(--esp-2);
+}
+
+.subtitulo {
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+  line-height: var(--altura-linha-base);
+  margin-bottom: var(--esp-6);
+}
+
+.listaIngressos {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  margin-bottom: var(--esp-6);
+  text-align: left;
+}
