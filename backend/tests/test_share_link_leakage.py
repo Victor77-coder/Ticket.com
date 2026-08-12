@@ -125,6 +125,14 @@ def test_resposta_publica_nao_contem_nenhum_valor_proibido(client, compra_de_tre
         # Estado da compra, não do ingresso
         "prazo da reserva": "expira_em",
         "situação da reserva": "situacao",
+        # Estado de USO, criado pela 010. O campo existe no modelo desde a
+        # feature da portaria, e acrescentá-lo ao serializer é UMA LINHA — a
+        # partir daí "utilizado" apareceria nesta página, que é PÚBLICA.
+        # Verificado em T072: com o campo no `TicketSerializer`, o teste de
+        # campos autorizados falha. Esta entrada é a segunda linha de defesa,
+        # para o caso de alguém alargar aquela lista em vez de recuar.
+        "estado de uso": "utilizado_em",
+        "estado de uso (coluna)": "used_at",
         # Dado de gestão (a 007 já proíbe no mapa público)
         "capacidade da sala": "capacidade",
         "status da sessão": "published",
