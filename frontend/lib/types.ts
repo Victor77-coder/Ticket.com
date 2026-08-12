@@ -5,6 +5,18 @@ export type Trailer = {
   external_key: string;
 };
 
+/**
+ * Trailer na página do filme. Distinto do `Trailer` da home de propósito:
+ * `kind` e `name` já existem no modelo, mas o carrossel **não** os recebe
+ * (contrato da 001). Reaproveitar um tipo só vazaria o campo para a vitrine.
+ */
+export type TrailerDoFilme = {
+  provider: "youtube" | string;
+  external_key: string;
+  kind: "trailer" | "teaser";
+  name: string;
+};
+
 export type Highlight = {
   id: number;
   slug: string;
@@ -48,6 +60,8 @@ export type MovieDetail = {
   runtime_minutes: number | null;
   genres: string[];
   screenings: Screening[];
+  /** Lista, nunca omitida, nunca `null`. Vazia = seção Trailers explica. */
+  trailers: TrailerDoFilme[];
 };
 
 /** Derivado de specs/002-site-header-navigation/contracts/search-api.md */

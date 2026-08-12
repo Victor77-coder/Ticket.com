@@ -203,6 +203,13 @@ def get_movie_by_slug(slug):
 
     return (
         Movie.objects.filter(is_active=True, slug=slug)
-        .prefetch_related("genres", Prefetch("screenings", queryset=sellable))
+        .prefetch_related(
+            "genres",
+            Prefetch("screenings", queryset=sellable),
+            Prefetch(
+                "trailers",
+                queryset=Trailer.objects.order_by("-is_primary", "-published_at", "pk"),
+            ),
+        )
         .first()
     )

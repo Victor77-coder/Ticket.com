@@ -87,6 +87,20 @@ class ScreeningSerializer(serializers.Serializer):
     has_available_seats = serializers.BooleanField()
 
 
+class MovieDetailTrailerSerializer(serializers.Serializer):
+    """Trailer na página do filme.
+
+    Distinto de `TrailerSerializer` de propósito: `kind` e `name` já existem
+    no modelo, mas o carrossel **não** os recebe. Enriquecer o serializer da
+    home vazaria o contrato da 001 (012 / R2).
+    """
+
+    provider = serializers.CharField()
+    external_key = serializers.CharField()
+    kind = serializers.CharField()
+    name = serializers.CharField()
+
+
 class MovieDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     slug = serializers.CharField()
@@ -100,12 +114,25 @@ class MovieDetailSerializer(serializers.Serializer):
     release_date = serializers.DateField(allow_null=True)
     genres = serializers.SerializerMethodField()
     screenings = serializers.SerializerMethodField()
+    trailers = serializers.SerializerMethodField()
 
     def get_genres(self, movie):
         return [genre.name for genre in movie.genres.all()]
 
     def get_screenings(self, movie):
         return ScreeningSerializer(movie.screenings.all(), many=True).data
+
+    def get_trailers(self, movie):
+        """Lista, nunca nula. Primário primeiro; depois published_at, pk."""
+        trailers = list(movie.trailers.all())
+        trailers.sort(
+            key=lambda trailer: (
+                not trailer.is_primary,
+                -(trailer.published_at.timestamp() if trailer.published_at else 0),
+                trailer.pk,
+            )
+        )
+        return MovieDetailTrailerSerializer(trailers, many=True).data
 
 
 class MovieCardSerializer(serializers.Serializer):
