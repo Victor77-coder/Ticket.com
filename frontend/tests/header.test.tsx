@@ -114,3 +114,23 @@ describe("cabeçalho de um papel de tela única", () => {
     expect(screen.getByRole("link", { name: /ticket\.com/i })).toHaveAttribute("href", "/");
   });
 });
+
+describe("a marca no cabeçalho (feature 011)", () => {
+  it("o nome sai na família da marca, não na da interface", () => {
+    // `--fonte-marca` tem exatamente um consumidor. Se o nome voltar a usar a
+    // família da interface, a marca perde o tratamento que a distingue do
+    // texto comum — que é metade do que a 011 entrega.
+    render(<SiteHeader />);
+
+    const marca = screen.getByRole("link", { name: /ticket\.com/i });
+    expect(marca).toHaveClass(/marca/);
+  });
+
+  it("o desenho acompanha o nome", () => {
+    const { container } = render(<SiteHeader />);
+
+    const marca = screen.getByRole("link", { name: /ticket\.com/i });
+    expect(marca.querySelector("svg")).toBeInTheDocument();
+    expect(container).toBeTruthy();
+  });
+});
