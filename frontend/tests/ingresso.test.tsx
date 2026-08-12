@@ -121,4 +121,25 @@ describe("uma reserva de três lugares", () => {
       expect(screen.getByText(codigo)).toBeInTheDocument();
     }
   });
+
+  // --- A alteração da 009: `indice` e `total` viraram opcionais ------------
+
+  it("sem indice e total, continua completo e não anuncia posição", () => {
+    // O mesmo cartão serve à página compartilhada, onde há UM ingresso e não
+    // existe "1 de 1" para anunciar. A alteração é aditiva: tudo o que o
+    // cartão mostrava continua aqui.
+    render(
+      <ul>
+        <Ingresso ingresso={criarIngresso()} />
+      </ul>,
+    );
+
+    expect(screen.getByText("A Odisseia")).toBeInTheDocument();
+    expect(screen.getByText(/Sala 1/)).toBeInTheDocument();
+    expect(screen.getByText("A3")).toBeInTheDocument();
+    expect(screen.getByRole("img")).toBeInTheDocument();
+    expect(screen.getByText(CODIGO)).toBeInTheDocument();
+
+    expect(screen.queryByText(/Ingresso \d+ de \d+/)).not.toBeInTheDocument();
+  });
 });

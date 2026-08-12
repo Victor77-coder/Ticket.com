@@ -310,3 +310,74 @@ def test_o_codigo_emitido_de_verdade_e_verificavel(
 
     assert conteudo["screening"] == sessao.pk
     assert Ticket.objects.filter(public_id=conteudo["ticket"]).exists()
+
+
+# --- Feature 009: os dois segredos são independentes -----------------------
+
+
+@pytest.mark.django_db
+def test_revogar_o_link_nao_altera_o_codigo_do_ingresso(
+    make_movie, make_screening, seats, make_tickets, make_user, client
+):
+    """SC-010, FR-033 — revogar um convite não pode queimar uma entrada paga.
+
+    Este é o teste que pega o dia em que alguém "simplificar" fundindo o token
+    do link com o código do QR. A fusão é tentadora — são dois valores opacos
+    associados ao mesmo ingresso — e é erro de projeto: os dois têm ciclos de
+    vida OPOSTOS. O link é revogável por desenho; o ingresso não pode deixar
+    de valer na catraca porque o dono se arrependeu de um compartilhamento.
+
+    A independência é estrutural: o código é derivado de `public_id` + sessão
+    em `services/ingressos.py`, um módulo que não sabe que link existe. O
+    teste existe para que a estrutura não possa ser desfeita em silêncio.
+    """
+    from apps.screening.services import compartilhamento
+
+    sessao = make_screening(make_movie("A Odisseia"))
+    cliente = make_user(username="dona-do-link")
+    lugar = sessao.room.seats.filter(kind="common").first()
+    ingresso = make_tickets(sessao, cliente, [lugar], minutes_left=10)[0]
+
+    client.force_login(cliente)
+    url_detalhe = reverse("screening:ticket-detail", args=[ingresso.public_id])
+
+    codigo_antes = client.get(url_detalhe).json()["codigo"]
+
+    compartilhamento.gerar_link(ingresso)
+    compartilhamento.revogar_link(ingresso)
+    compartilhamento.gerar_link(ingresso)
+    compartilhamento.revogar_link(ingresso)
+
+    codigo_depois = client.get(url_detalhe).json()["codigo"]
+
+    # Byte a byte. Não "ainda verifica" — o MESMO código: quem imprimiu o QR
+    # ontem precisa que o papel continue valendo.
+    assert codigo_depois == codigo_antes
+
+    # E continua verificando, que é a outra metade da afirmação.
+    conteudo = ingressos.verificar_codigo(codigo_depois)
+    assert conteudo["ticket"] == ingresso.public_id
+    assert conteudo["screening"] == sessao.pk
+
+
+@pytest.mark.django_db
+def test_token_do_link_nao_e_verificavel_como_codigo_de_ingresso(
+    make_movie, make_screening, seats, make_tickets, make_user
+):
+    """FR-026 — o token não é assinado por este servidor, e não deve ser.
+
+    Se um dia `verificar_codigo` aceitar um token de link, os dois segredos
+    viraram um só por algum caminho — e revogar um link passaria a produzir
+    efeito na portaria.
+    """
+    from apps.screening.services import compartilhamento
+
+    sessao = make_screening(make_movie("A Odisseia"))
+    cliente = make_user(username="dona-do-token")
+    lugar = sessao.room.seats.filter(kind="common").first()
+    ingresso = make_tickets(sessao, cliente, [lugar], minutes_left=10)[0]
+
+    link, _ = compartilhamento.gerar_link(ingresso)
+
+    with pytest.raises(ingressos.CodigoInvalido):
+        ingressos.verificar_codigo(link.token)

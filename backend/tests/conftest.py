@@ -152,6 +152,79 @@ def make_paid_reservation(make_reservation):
 
 
 @pytest.fixture
+def make_tickets(make_paid_reservation):
+    """Emite ingressos para uma reserva paga, sem passar pelo serviço.
+
+    Um ingresso por lugar, como a 008 exige. `Payment` entra junto porque
+    `Ticket.payment` é obrigatório — e é obrigatório justamente porque não
+    pode existir ingresso sem pagamento aprovado.
+    """
+
+    def _make(screening, customer, seats_list, minutes_left=-1):
+        from decimal import Decimal
+
+        from apps.screening.models import Payment, Ticket
+
+        reserva = make_paid_reservation(
+            screening, customer, seats_list, minutes_left=minutes_left
+        )
+        pagamento = Payment.objects.create(
+            reservation=reserva,
+            status=Payment.Status.APPROVED,
+            amount=Decimal(screening.price) * len(seats_list),
+            card_last4="4242",
+            card_brand="visa",
+        )
+        return Ticket.objects.bulk_create(
+            [
+                Ticket(reserved_seat=ocupacao, payment=pagamento)
+                for ocupacao in reserva.seats.all()
+            ]
+        )
+
+    return _make
+
+
+@pytest.fixture
+def tres_cenarios(db, make_movie, make_screening, make_seats, make_tickets, make_user):
+    """Um cliente com ingressos em TRÊS sessões: futura, iniciada e cancelada.
+
+    É o cenário que os testes da armadilha R10 consomem, e a razão de ele
+    existir como fixture: `sellable()` — o filtro que toda consulta de sessão
+    do projeto usa desde a 001 — exclui as duas últimas. Usá-lo na lista de
+    ingressos esvaziaria o grupo dos passados para sempre e faria sumir
+    justamente o ingresso sobre o qual o cliente precisa de explicação.
+
+    Cada sessão tem sala própria: `UNIQUE(sala, início)` impede duas sessões
+    no mesmo horário e sala, e a ocupação de assento é por sessão.
+    """
+    from apps.screening.models import Room, Screening
+
+    cliente = make_user(username="dono")
+    cenario = {"cliente": cliente}
+
+    for chave, horas, situacao in (
+        ("futura", 48, Screening.Status.PUBLISHED),
+        ("iniciada", -3, Screening.Status.PUBLISHED),
+        ("cancelada", 72, Screening.Status.CANCELLED),
+    ):
+        sala = Room.objects.create(name=f"Sala {chave}", capacity=20)
+        lugares = make_seats(sala, acessiveis=0)
+        sessao = make_screening(
+            make_movie(title=f"Filme {chave}"),
+            hours_from_now=horas,
+            status=situacao,
+            room_obj=sala,
+        )
+        cenario[chave] = {
+            "sessao": sessao,
+            "ingressos": make_tickets(sessao, cliente, lugares[:1]),
+        }
+
+    return cenario
+
+
+@pytest.fixture
 def make_user(db):
     """Usuário com papel, para os testes de autorização."""
     from django.contrib.auth import get_user_model
