@@ -1,0 +1,172 @@
+/* Câmera e desfecho da portaria.
+ *
+ * Disciplina de tokens da 006 (FR-049).
+ *
+ * O DESFECHO PRECISA SER LIDO A UM BRAÇO DE DISTÂNCIA (FR-019): o operador
+ * segura o celular da pessoa com uma mão e olha a tela dele de longe. Daí o
+ * símbolo enorme e o título no maior degrau tipográfico da tela.
+ *
+ * E OS QUATRO SE DISTINGUEM SEM COR. O sinal principal é símbolo + título; a
+ * cor é o quarto sinal, depois da disposição. É por isso que "já utilizado" e
+ * "sessão errada" podem compartilhar o alerta: para o operador as duas dizem
+ * "não entra por aqui, e não é fraude", e a distinção entre elas já está no
+ * símbolo e no texto.
+ */
+
+/* --- Câmera --- */
+
+.camera {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.video {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--cor-fundo-video);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+}
+
+/* O canvas existe só para o decodificador ler os pixels. */
+.canvasOculto {
+  display: none;
+}
+
+.cameraDica {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.cameraIndisponivel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  padding: var(--esp-5);
+}
+
+.cameraTitulo {
+  font-size: var(--texto-md);
+  font-weight: var(--peso-forte);
+  color: var(--cor-alerta);
+}
+
+.cameraTexto {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+  line-height: var(--altura-linha-base);
+}
+
+/* --- Desfecho --- */
+
+.desfecho {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  border-radius: var(--raio-lg);
+  padding: var(--esp-6) var(--esp-5);
+  /* A faixa lateral é o terceiro sinal, antes da cor: mesmo em escala de
+   * cinza a espessura e a posição já separam os desfechos do resto da tela. */
+  border-left: var(--esp-2) solid var(--cor-borda-forte);
+  background: var(--cor-superficie);
+}
+
+.simbolo {
+  font-size: var(--texto-display);
+  line-height: 1;
+  font-weight: var(--peso-display);
+}
+
+.titulo {
+  font-size: var(--texto-2xl);
+  font-weight: var(--peso-display);
+  line-height: var(--altura-linha-apertada);
+  font-variation-settings: "wdth" var(--largura-display);
+}
+
+.frase {
+  font-size: var(--texto-md);
+  color: var(--cor-texto-suave);
+  line-height: var(--altura-linha-base);
+  max-width: 56ch;
+}
+
+/* As quatro variações. A cor é o ÚLTIMO sinal, nunca o único. */
+
+.valido {
+  border-left-color: var(--cor-sucesso);
+}
+
+.valido .simbolo,
+.valido .titulo {
+  color: var(--cor-sucesso);
+}
+
+.usado {
+  border-left-color: var(--cor-alerta);
+}
+
+.usado .simbolo,
+.usado .titulo {
+  color: var(--cor-alerta);
+}
+
+.outraSessao {
+  border-left-color: var(--cor-alerta);
+}
+
+.outraSessao .simbolo,
+.outraSessao .titulo {
+  color: var(--cor-alerta);
+}
+
+.invalido {
+  border-left-color: var(--cor-erro);
+}
+
+.invalido .simbolo,
+.invalido .titulo {
+  color: var(--cor-erro);
+}
+
+/* --- Detalhes do ingresso --- */
+
+.detalhes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  margin-top: var(--esp-2);
+}
+
+.linha {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr);
+  gap: var(--esp-3);
+  font-size: var(--texto-sm);
+}
+
+.linha dt {
+  color: var(--cor-texto-fraco);
+}
+
+.linha dd {
+  color: var(--cor-texto);
+  font-weight: var(--peso-medio);
+}
+
+.lugar {
+  color: var(--cor-destaque);
+  font-weight: var(--peso-forte);
+}
+
+@media (max-width: 34rem) {
+  .linha {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}

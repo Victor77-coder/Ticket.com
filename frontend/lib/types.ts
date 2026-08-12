@@ -273,6 +273,51 @@ export type ListaDeIngressos = {
   passados: MeuIngresso[];
 };
 
+/**
+ * Uma sessão que a portaria pode receber — a "sessão da porta".
+ *
+ * Filme, horário e sala: o que o operador precisa para reconhecer onde está.
+ * Nada de preço, capacidade ou status — a portaria não gerencia nada.
+ */
+export type SessaoDaPorta = {
+  id: number;
+  filme: string;
+  inicio: string;
+  sala: string;
+};
+
+/**
+ * O desfecho de uma apresentação de código na portaria.
+ *
+ * `situacao` é um valor FIXO, e é por ele que a tela escolhe símbolo, título e
+ * destaque — **nunca** interpretando `detail`, que é apresentação e muda numa
+ * revisão de redação.
+ *
+ * `invalido` vem sem nenhum campo além de `situacao` e `detail`, e a ausência é
+ * requisito: qualquer detalhe a mais entregaria a quem tenta adivinhar a
+ * informação que o desfecho existe para negar.
+ */
+export type Desfecho = {
+  situacao: "valido" | "invalido" | "ja_utilizado" | "sessao_errada";
+  detail: string;
+  /** Em `valido` e `ja_utilizado`. */
+  ingresso?: {
+    filme: string;
+    sessao: string;
+    sala: string;
+    assento: LugarReservado;
+  };
+  /** Só em `ja_utilizado` — é o que permite julgar quem está apresentando. */
+  utilizado_em?: string;
+  /** Só em `sessao_errada` — é o que permite orientar a pessoa. */
+  sessao_do_ingresso?: {
+    filme: string;
+    inicio: string;
+    sala: string;
+    cancelada: boolean;
+  };
+};
+
 /** O corpo do `201` do pagamento aprovado. */
 export type PagamentoAprovado = {
   situacao: "paga";

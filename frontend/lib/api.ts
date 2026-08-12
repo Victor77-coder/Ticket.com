@@ -13,6 +13,8 @@ import type {
   Ingresso,
   LinkDeCompartilhamento,
   ListaDeIngressos,
+  Desfecho,
+  SessaoDaPorta,
   LoginResponse,
   MapaSessao,
   MeuIngresso,
@@ -268,6 +270,33 @@ export function deleteLink(
   return pedir<LinkDeCompartilhamento>(
     `/api/v1/ingressos/${encodeURIComponent(id)}/link/`,
     { method: "DELETE" },
+    sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {},
+  );
+}
+
+/** As sessões que este posto de portaria pode receber hoje. */
+export function fetchSessoesDaPortaria(
+  sessionKey: string | undefined,
+): Promise<ApiResultComStatus<{ sessoes: SessaoDaPorta[] }>> {
+  return getJson<{ sessoes: SessaoDaPorta[] }>(
+    "/api/v1/portaria/sessoes/",
+    sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {},
+  );
+}
+
+/**
+ * Valida um código contra a sessão da porta. Só o Route Handler chama isto.
+ *
+ * Os QUATRO desfechos voltam com `200` — nenhum deles é erro da requisição. A
+ * portaria perguntou "posso deixar entrar?" e recebeu resposta.
+ */
+export function postValidacao(
+  sessionKey: string | undefined,
+  corpo: { codigo: string; sessao: number },
+): Promise<ApiResultComStatus<Desfecho>> {
+  return postJson<Desfecho>(
+    "/api/v1/portaria/validar/",
+    corpo,
     sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {},
   );
 }

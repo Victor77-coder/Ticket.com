@@ -1,0 +1,251 @@
+/* A tela de portaria — escolha da sessão, leitura e desfecho.
+ *
+ * Disciplina de tokens da 006 (FR-049).
+ *
+ * A tela é usada EM PÉ, NA FILA, com uma mão no celular da pessoa. Daí duas
+ * decisões de layout que não são estéticas: alvos de toque grandes na escolha
+ * da sessão, e o desfecho ocupando a largura toda logo abaixo das entradas —
+ * ele precisa ser visto sem procurar.
+ */
+
+.pagina {
+  max-width: var(--largura-conteudo);
+  margin: 0 auto;
+  padding: var(--ritmo-secao) var(--esp-5) var(--ritmo-dobra);
+}
+
+.titulo {
+  font-size: var(--texto-2xl);
+  font-weight: var(--peso-display);
+  line-height: var(--altura-linha-apertada);
+  font-variation-settings: "wdth" var(--largura-display);
+}
+
+.subtitulo {
+  font-size: var(--texto-md);
+  color: var(--cor-texto-suave);
+  line-height: var(--altura-linha-base);
+  max-width: 56ch;
+  margin-top: var(--esp-2);
+}
+
+/* --- Escolha da sessão da porta --- */
+
+.escolha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+}
+
+.listaDeSessoes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  list-style: none;
+}
+
+/* Alvo grande: quem opera está de pé, com o celular de outra pessoa na mão. */
+.opcaoDeSessao {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--esp-4);
+  text-align: left;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  padding: var(--esp-4) var(--esp-5);
+  transition: border-color var(--transicao-rapida), background var(--transicao-rapida);
+}
+
+.opcaoDeSessao:hover,
+.opcaoDeSessao:focus-visible {
+  background: var(--cor-superficie-elevada);
+  border-color: var(--cor-destaque);
+}
+
+.opcaoHorario {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-display);
+  color: var(--cor-destaque);
+}
+
+.opcaoFilme {
+  font-size: var(--texto-md);
+  font-weight: var(--peso-forte);
+}
+
+.opcaoSala {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+/* --- O posto em operação --- */
+
+.posto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+}
+
+.cabecalhoDoPosto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  border-bottom: 1px solid var(--cor-borda);
+  padding-bottom: var(--esp-4);
+}
+
+.rotuloDaPorta {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-fraco);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sessaoDaPorta {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-forte);
+  line-height: var(--altura-linha-apertada);
+}
+
+.sessaoDetalhe {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.trocar {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  color: var(--cor-texto-suave);
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-pilula);
+  padding: var(--esp-2) var(--esp-4);
+  transition: color var(--transicao-rapida), background var(--transicao-rapida);
+}
+
+.trocar:hover,
+.trocar:focus-visible {
+  color: var(--cor-texto);
+  background: var(--cor-realce-sutil);
+}
+
+.entradas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--esp-5);
+  align-items: start;
+}
+
+@media (max-width: 48rem) {
+  .entradas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Digitação manual --- */
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.rotulo {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-forte);
+}
+
+/* `textarea` e não `input`: o código é longo, e um campo de uma linha
+ * esconderia o meio dele justamente quando o operador precisa conferir se
+ * colou inteiro. */
+.campo {
+  width: 100%;
+  font-size: var(--texto-sm);
+  color: var(--cor-texto);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-md);
+  padding: var(--esp-3);
+  resize: vertical;
+  word-break: break-all;
+}
+
+.campo:focus-visible {
+  border-color: var(--cor-destaque);
+}
+
+.botao {
+  align-self: flex-start;
+  font-size: var(--texto-md);
+  font-weight: var(--peso-forte);
+  color: var(--cor-sobre-destaque);
+  background: var(--cor-destaque);
+  border-radius: var(--raio-pilula);
+  padding: var(--esp-3) var(--esp-6);
+  transition: background var(--transicao-rapida);
+}
+
+.botao:hover:not(:disabled),
+.botao:focus-visible:not(:disabled) {
+  background: var(--cor-destaque-forte);
+}
+
+.botao:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Aviso de PREENCHIMENTO — visualmente distinto do desfecho "inválido",
+ * porque nada foi apresentado e não há o que julgar. */
+.preenchimento {
+  font-size: var(--texto-sm);
+  color: var(--cor-alerta);
+  border-left: 3px solid var(--cor-alerta);
+  padding-left: var(--esp-3);
+}
+
+/* --- Avisos de página --- */
+
+.aviso {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  padding: var(--esp-7) var(--esp-5);
+}
+
+.avisoTitulo {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-forte);
+  line-height: var(--altura-linha-apertada);
+}
+
+.avisoTexto {
+  font-size: var(--texto-md);
+  color: var(--cor-texto-suave);
+  line-height: var(--altura-linha-base);
+  max-width: 56ch;
+}
+
+.acao {
+  margin-top: var(--esp-2);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-forte);
+  color: var(--cor-sobre-destaque);
+  background: var(--cor-destaque);
+  padding: var(--esp-3) var(--esp-5);
+  border-radius: var(--raio-pilula);
+}
+
+@media (max-width: 34rem) {
+  .pagina {
+    padding: var(--esp-6) var(--esp-4) var(--ritmo-secao);
+  }
+}
