@@ -3,7 +3,16 @@
 Ficam fora das views para serem testáveis sem HTTP.
 """
 
-from django.db.models import Case, IntegerField, Min, Prefetch, Q, Value, When
+from django.db.models import (
+    Case,
+    Count,
+    IntegerField,
+    Min,
+    Prefetch,
+    Q,
+    Value,
+    When,
+)
 from django.utils import timezone
 
 from apps.catalog.models import Movie, Trailer
@@ -212,4 +221,33 @@ def get_movie_by_slug(slug):
             ),
         )
         .first()
+    )
+
+
+# --- Catálogo do painel (feature 013) -------------------------------------
+
+
+def catalogo_do_painel():
+    """Os filmes locais, para o organizador escolher sem passar pelo TMDb.
+
+    FILTRO NENHUM ALÉM DE `is_active`, e a ausência é deliberada: as consultas
+    acima servem VITRINE — "em cartaz" exige sessão vendável, "em alta" e "em
+    breve" exigem a marca da sincronização. Aqui a pergunta é outra: "para qual
+    filme eu posso programar uma sessão?", e a resposta é qualquer um que
+    exista. Reusar um filtro de vitrine esconderia do organizador justamente o
+    filme que ainda não tem grade — que é o que ele veio programar.
+
+    `sessoes` conta as NÃO canceladas, agregado numa consulta. Contar por linha
+    seria uma consulta por filme numa tela que lista o catálogo inteiro.
+    """
+    return (
+        Movie.objects.filter(is_active=True)
+        .annotate(
+            sessoes=Count(
+                "screenings",
+                filter=~Q(screenings__status=Screening.Status.CANCELLED),
+                distinct=True,
+            )
+        )
+        .order_by("title")
     )

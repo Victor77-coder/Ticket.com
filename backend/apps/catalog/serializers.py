@@ -7,6 +7,7 @@ usuário. `contracts/highlights-api.md` lista as proibições e
 `tests/test_highlights_api.py` as verifica.
 """
 
+from django.conf import settings
 from rest_framework import serializers
 
 
@@ -159,3 +160,77 @@ class MovieCardSerializer(serializers.Serializer):
 
     def get_movie_path(self, movie):
         return f"/filmes/{movie.slug}"
+
+
+# --- Painel do organizador (feature 013) ----------------------------------
+#
+# ⚠️ O AVISO DO TOPO CONTINUA VALENDO PARA TUDO ACIMA. Os serializers daqui para
+# baixo servem a área de programação, e são os únicos deste arquivo autorizados
+# a expor `tmdb_id` — que é a chave da importação e não tem uso nenhum numa
+# resposta pública.
+#
+# A pressão de crescimento tem direção: campo de gestão nasce aqui embaixo,
+# nunca migra para cima. `tests/test_highlights_api.py`, `test_home_rows_api.py`
+# e `test_search_api.py` são a guarda do outro lado.
+
+
+class FilmeDoPainelSerializer(serializers.Serializer):
+    """Um filme do catálogo local, como o painel precisa dele.
+
+    `sessoes` vem da anotação de `catalogo_do_painel` — nunca de
+    `movie.screenings.count()`, que seria uma consulta por linha numa tela que
+    lista o catálogo inteiro.
+    """
+
+    id = serializers.IntegerField()
+    tmdb_id = serializers.IntegerField()
+    titulo = serializers.CharField(source="title")
+    ano = serializers.SerializerMethodField()
+    poster_url = serializers.CharField(allow_null=True)
+    duracao_min = serializers.IntegerField(source="runtime_minutes", allow_null=True)
+    sessoes = serializers.IntegerField(default=0)
+
+    def get_ano(self, movie):
+        return movie.release_date.year if movie.release_date else None
+
+
+class ResultadoTmdbSerializer(serializers.Serializer):
+    """Um resultado da busca no TMDb, ainda não persistido.
+
+    NÃO É UM `Movie`: vem do payload do TMDb, e por isso lê chaves de
+    dicionário. Reaproveitar `FilmeDoPainelSerializer` obrigaria a inventar um
+    `id` local para um filme que talvez nunca seja importado.
+
+    `ja_no_catalogo` é resolvido por UMA consulta `__in` sobre a página inteira
+    de resultados, e chega pelo contexto — uma consulta por linha aqui seria
+    vinte consultas para uma busca.
+    """
+
+    tmdb_id = serializers.IntegerField(source="id")
+    titulo = serializers.SerializerMethodField()
+    ano = serializers.SerializerMethodField()
+    poster_url = serializers.SerializerMethodField()
+    ja_no_catalogo = serializers.SerializerMethodField()
+
+    def get_titulo(self, item):
+        return item.get("title") or item.get("original_title") or ""
+
+    def get_ano(self, item):
+        data = item.get("release_date") or ""
+        return int(data[:4]) if data[:4].isdigit() else None
+
+    def get_poster_url(self, item):
+        caminho = item.get("poster_path")
+        return f"{settings.TMDB_IMAGE_BASE_URL}/w500{caminho}" if caminho else None
+
+    def get_ja_no_catalogo(self, item):
+        return item.get("id") in self.context.get("ja_no_catalogo", set())
+
+
+class ImportacaoInputSerializer(serializers.Serializer):
+    tmdb_id = serializers.IntegerField(
+        error_messages={
+            "required": "Escolha um filme da busca.",
+            "invalid": "Escolha um filme da busca.",
+        }
+    )

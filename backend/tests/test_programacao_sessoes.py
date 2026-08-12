@@ -132,3 +132,164 @@ def test_a_grade_nao_expoe_o_comprador(
     make_reservation(sessao, cliente, lugares[:1])
 
     assert "fulano" not in painel.get(GRADE).content.decode()
+
+
+# --- Criar (US2) ----------------------------------------------------------
+
+
+def _corpo(filme, sala, horas=6, preco="32.00", publicar=True):
+    return {
+        "filme": filme.pk,
+        "sala": sala.pk,
+        "inicio": _horario(horas),
+        "preco": preco,
+        "publicar": publicar,
+    }
+
+
+@pytest.mark.django_db
+def test_publica_uma_sessao_e_ela_entra_na_grade(painel, make_movie, make_seats, room):
+    """US2 cenário 1 — a primeira grade com origem diferente do seed."""
+    make_seats(room)
+    filme = make_movie(title="A Odisseia")
+
+    resposta = painel.post(
+        GRADE, data=_corpo(filme, room), content_type="application/json"
+    )
+
+    assert resposta.status_code == 201
+    linha = resposta.json()
+    assert linha["estado"] == "published"
+    assert linha["a_venda"] is True
+    # A resposta de criar é uma LINHA DA GRADE: mesmos campos, mesmo formato.
+    # Serializar o objeto cru devolveria ocupação e lugares faltando.
+    assert linha["ocupacao"] == 0
+    assert linha["sala"]["lugares"] == room.seats.count()
+
+    assert painel.get(GRADE).json()["count"] == 1
+
+
+@pytest.mark.django_db
+def test_a_sessao_publicada_aparece_para_o_cliente(client, painel, make_movie, make_seats, room):
+    """SC-002 — sem passo intermediário nenhum entre publicar e vender.
+
+    O caminho do cliente é o mapa de assentos: se ele abre, a sessão está à
+    venda de verdade. É a prova de que o painel não criou uma segunda noção de
+    visibilidade.
+    """
+    make_seats(room)
+    resposta = painel.post(
+        GRADE, data=_corpo(make_movie(), room), content_type="application/json"
+    )
+    sessao_id = resposta.json()["id"]
+
+    mapa = client.get(f"/api/v1/sessoes/{sessao_id}/mapa/")
+
+    assert mapa.status_code == 200
+    assert mapa.json()["id"] == sessao_id
+
+
+@pytest.mark.django_db
+def test_rascunho_nao_aparece_para_o_cliente(client, painel, make_movie, make_seats, room):
+    """FR-032 — e sem filtro novo: `sellable()` já o exclui desde a 007."""
+    make_seats(room)
+    resposta = painel.post(
+        GRADE,
+        data=_corpo(make_movie(), room, publicar=False),
+        content_type="application/json",
+    )
+
+    assert resposta.json()["estado"] == "draft"
+    assert client.get(f"/api/v1/sessoes/{resposta.json()['id']}/mapa/").status_code == 404
+
+
+@pytest.mark.django_db
+def test_conflito_de_sala_e_horario_recusa_com_a_frase(painel, make_movie, make_seats, room):
+    """US2 cenário 3 — a frase nomeia a sala e o horário, e nada é gravado."""
+    make_seats(room)
+    filme = make_movie()
+    corpo = _corpo(filme, room)
+
+    assert painel.post(GRADE, data=corpo, content_type="application/json").status_code == 201
+    repetida = painel.post(GRADE, data=corpo, content_type="application/json")
+
+    assert repetida.status_code == 409
+    assert room.name in repetida.json()["detail"]
+    assert "Escolha outro horário ou outra sala" in repetida.json()["detail"]
+    assert painel.get(GRADE).json()["count"] == 1
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("preco", ["0.00", "-5.00", None])
+def test_preco_ausente_zero_ou_negativo_e_recusado(painel, make_movie, make_seats, room, preco):
+    """FR-027 — os três são o mesmo problema: não há preço."""
+    make_seats(room)
+    corpo = _corpo(make_movie(), room, preco=preco)
+    if preco is None:
+        corpo.pop("preco")
+
+    resposta = painel.post(GRADE, data=corpo, content_type="application/json")
+
+    assert resposta.status_code == 400
+    assert "preço maior que zero" in str(resposta.json()["preco"])
+
+
+@pytest.mark.django_db
+def test_publicar_no_passado_e_recusado(painel, make_movie, make_seats, room):
+    """FR-026 — publicada no passado seria promessa que a loja não cumpre."""
+    make_seats(room)
+
+    resposta = painel.post(
+        GRADE, data=_corpo(make_movie(), room, horas=-2), content_type="application/json"
+    )
+
+    assert resposta.status_code == 400
+    assert "horário futuro" in str(resposta.json()["inicio"])
+
+
+@pytest.mark.django_db
+def test_rascunho_no_passado_e_aceito(painel, make_movie, make_seats, room):
+    """Um rascunho é anotação, não promessa — e por isso não tem essa recusa."""
+    make_seats(room)
+
+    resposta = painel.post(
+        GRADE,
+        data=_corpo(make_movie(), room, horas=-2, publicar=False),
+        content_type="application/json",
+    )
+
+    assert resposta.status_code == 201
+    assert resposta.json()["estado"] == "draft"
+
+
+@pytest.mark.django_db
+def test_publicar_em_sala_sem_lugares_e_recusado(painel, make_movie, room):
+    """FR-028 — publicar algo que o mapa não consegue exibir é vender o nada."""
+    resposta = painel.post(
+        GRADE, data=_corpo(make_movie(), room), content_type="application/json"
+    )
+
+    assert resposta.status_code == 400
+    assert "ainda não tem lugares" in str(resposta.json()["sala"])
+
+
+@pytest.mark.django_db
+def test_filme_e_sala_inexistentes_saem_com_frase_do_campo(painel, make_seats, room):
+    """Nada de texto de framework em inglês no meio de uma tela (Princípio V)."""
+    make_seats(room)
+
+    resposta = painel.post(
+        GRADE,
+        data={
+            "filme": 99999,
+            "sala": 99999,
+            "inicio": _horario(6),
+            "preco": "30.00",
+            "publicar": False,
+        },
+        content_type="application/json",
+    )
+
+    assert resposta.status_code == 400
+    assert "não está no catálogo" in str(resposta.json()["filme"])
+    assert "não existe" in str(resposta.json()["sala"])

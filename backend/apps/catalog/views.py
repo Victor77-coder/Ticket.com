@@ -12,8 +12,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.views_base import ProgramacaoViewBase
 from apps.catalog import selectors
 from apps.catalog.serializers import (
+    FilmeDoPainelSerializer,
     HighlightSerializer,
     MovieCardSerializer,
     MovieDetailSerializer,
@@ -126,3 +128,23 @@ class MovieDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(MovieDetailSerializer(movie).data)
+
+
+# --- Painel do organizador (feature 013) ----------------------------------
+#
+# As três views abaixo herdam de `ProgramacaoViewBase` e vivem sob
+# `/api/v1/programacao/`. As duas coisas juntas são o que faz FR-034 legível de
+# fora — declarar a permissão à mão em cada uma dependeria de alguém lembrar.
+
+
+class CatalogoDoPainelView(ProgramacaoViewBase):
+    """GET /api/v1/programacao/filmes/ — o catálogo LOCAL, para programar.
+
+    É o que mantém a promessa de FR-014: com o TMDb fora do ar, programar
+    continua funcionando. Esta resposta não toca a API externa em nenhuma
+    hipótese.
+    """
+
+    def get(self, request):
+        dados = FilmeDoPainelSerializer(selectors.catalogo_do_painel(), many=True).data
+        return Response({"count": len(dados), "results": dados})

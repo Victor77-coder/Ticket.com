@@ -7,6 +7,7 @@ from apps.screening.views import (
     PaymentCreateView,
     ReservationCreateView,
     ReservationDetailView,
+    SalasView,
     SeatMapView,
     SessoesView,
     SharedTicketView,
@@ -62,5 +63,6 @@ urlpatterns = [
     # de programação colocado FORA dele é falha de FR-034, ainda que declare a
     # permissão certa. A outra metade da cobertura é herdar de
     # `ProgramacaoViewBase` — ver o docstring dela.
+    path("programacao/salas/", SalasView.as_view(), name="programacao-salas"),
     path("programacao/sessoes/", SessoesView.as_view(), name="programacao-sessoes"),
 ]

@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.authentication import SessionAuthenticationSemCsrf
-from apps.accounts.permissions import IsOrganizer
+from apps.accounts.views_base import ProgramacaoViewBase
 from apps.screening import selectors
 from apps.screening.models import Reservation, Screening
 from apps.screening.permissions import (
@@ -25,6 +25,7 @@ from apps.screening.serializers import (
     estado_do_link,
     SalaDoPainelSerializer,
     SessaoDaGradeSerializer,
+    SessaoInputSerializer,
     SessaoDaPortaSerializer,
     ValidacaoInputSerializer,
     ValidacaoSerializer,
@@ -36,7 +37,13 @@ from apps.screening.serializers import (
     SeatMapSerializer,
     TicketSerializer,
 )
-from apps.screening.services import compartilhamento, pagamentos, portaria, reservas
+from apps.screening.services import (
+    compartilhamento,
+    pagamentos,
+    portaria,
+    programacao,
+    reservas,
+)
 
 SESSAO_NAO_ENCONTRADA = {"detail": "Sessão não encontrada."}
 RESERVA_NAO_ENCONTRADA = {"detail": "Reserva não encontrada."}
@@ -596,39 +603,27 @@ def _grupo_de(ingresso):
 
 
 # --- Programação do organizador (feature 013) -----------------------------
+#
+# A base de view mora em `accounts` junto da permissão, e pelo mesmo motivo: a
+# programação atravessa `catalog` e `screening`, e as duas metades da cobertura
+# — quem entra e como recusa — precisam ser uma só. Ver o docstring de lá.
 
-ENTRE_PARA_PROGRAMAR = {"detail": "Entre para programar sessões."}
 
+class SalasView(ProgramacaoViewBase):
+    """GET /api/v1/programacao/salas/ — as salas, com o que decide a troca.
 
-class ProgramacaoViewBase(APIView):
-    """O que TODA rota de programação compartilha: quem entra e como recusa.
-
-    Mesma autenticação sem CSRF de 007, 008, 009 e 010 — quem chama é o Next,
-    servidor a servidor —, e a mesma tradução do `401`, com a frase desta área.
-
-    A tradução existe porque o DRF converte "não autenticado" em `403` quando o
-    autenticador não oferece `WWW-Authenticate`, que é o caso da sessão. Sem
-    ela, visitante e papel errado sairiam iguais, e o front não saberia quando
-    conduzir à entrada e quando renderizar a recusa. Conduzir um cliente à
-    entrada por causa de um `403` é caminho sem saída: entrar de novo não muda
-    o papel (R11).
-
-    HERDAR DAQUI É O QUE COBRE UM ENDPOINT NOVO. A outra metade é o prefixo
-    `/api/v1/programacao/` — juntos, fazem a regra de FR-034 legível de fora,
-    em vez de depender de alguém lembrar de declarar a permissão.
+    Lista vazia devolve `200`: "nenhuma sala ainda" é o convite a criar a
+    primeira, não a ausência de um recurso.
     """
 
-    authentication_classes = [SessionAuthenticationSemCsrf]
-    permission_classes = [IsAuthenticated, IsOrganizer]
-
-    def handle_exception(self, exc):
-        if isinstance(exc, NotAuthenticated):
-            return Response(ENTRE_PARA_PROGRAMAR, status=401)
-        return super().handle_exception(exc)
+    def get(self, request):
+        salas = selectors.salas_do_organizador()
+        dados = SalaDoPainelSerializer(salas, many=True).data
+        return Response({"count": len(dados), "results": dados})
 
 
 class SessoesView(ProgramacaoViewBase):
-    """GET /api/v1/programacao/sessoes/ — a grade, com os três estados.
+    """GET e POST em /api/v1/programacao/sessoes/ — a grade e o que a alimenta.
 
     Grade vazia devolve `200` com `results: []`, nunca `404`: "nada programado
     ainda" é uma TELA escrita para gente, com o convite a programar a primeira
@@ -640,3 +635,41 @@ class SessoesView(ProgramacaoViewBase):
         sessoes = selectors.grade_do_organizador()
         dados = SessaoDaGradeSerializer(sessoes, many=True).data
         return Response({"count": len(dados), "results": dados})
+
+    def post(self, request):
+        """Cria a sessão — em rascunho ou já publicada.
+
+        O `409` do conflito vem do BANCO, capturado no serviço. Um `exists()`
+        aqui seria mais legível e seria falso: duas requisições simultâneas
+        verificariam, nenhuma encontraria, e ambas gravariam (R4, SC-004).
+        """
+        entrada = SessaoInputSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        dados = entrada.validated_data
+
+        try:
+            sessao = programacao.criar_sessao(
+                filme=dados["filme"],
+                sala=dados["sala"],
+                inicio=dados["inicio"],
+                preco=dados["preco"],
+                publicar=dados["publicar"],
+            )
+        except programacao.ConflitoDeHorario as recusa:
+            # 409, não 500 e não 400: a constraint fez o trabalho dela, e o
+            # resultado é um desfecho de negócio — o mesmo formato que a 007
+            # já usa para o assento perdido.
+            return Response({"detail": recusa.mensagem}, status=409)
+
+        return Response(_linha_da_grade(sessao.pk), status=201)
+
+
+def _linha_da_grade(pk):
+    """A sessão relida pela consulta da grade, para responder no MESMO formato.
+
+    Reler não é desperdício: `ocupacao`, `a_venda`, `no_futuro` e os lugares da
+    sala são ANOTAÇÕES, e o objeto recém-criado não as tem. Serializar o objeto
+    cru devolveria uma linha com campos faltando — e o front trata a resposta
+    de criar exatamente como trata uma linha da grade.
+    """
+    return SessaoDaGradeSerializer(selectors.grade_do_organizador().get(pk=pk)).data

@@ -10,8 +10,17 @@ identificador de reserva, prazo de reserva alheia, custo ou capacidade.
 from django.conf import settings
 from rest_framework import serializers
 
-from apps.screening.models import Payment, Reservation, Screening, Seat, Ticket
+from apps.catalog.models import Movie
+from apps.screening.models import (
+    Payment,
+    Reservation,
+    Room,
+    Screening,
+    Seat,
+    Ticket,
+)
 from apps.screening.services import ingressos as ingressos_service
+from apps.screening.services import programacao as programacao_service
 
 
 class SeatSerializer(serializers.Serializer):
@@ -551,3 +560,93 @@ class SalaDoPainelSerializer(serializers.Serializer):
         rede embaixo dos dois (FR-020, R5).
         """
         return getattr(room, "ocupacao_viva", 0) == 0
+
+
+class SessaoInputSerializer(serializers.Serializer):
+    """O que o painel envia para criar uma sessão.
+
+    As recusas de campo saem em português e nomeiam a próxima ação — nunca a
+    frase do DRF em inglês, que no meio de uma tela de programação é texto de
+    framework (Princípio V).
+
+    AS PRÉ-CONDIÇÕES DE PUBLICAÇÃO NÃO SÃO ESCRITAS AQUI: vêm de
+    `services/programacao.erros_para_publicar`, que é o mesmo lugar que a ação
+    `POST .../publicar/` consulta. Duas cópias divergiriam na primeira revisão
+    de redação, e a interface já tem uma terceira leitura da mesma pergunta
+    (`pode_publicar`) — que é dica, e não garantia.
+
+    O CONFLITO DE (SALA, HORÁRIO) NÃO É VALIDADO AQUI, e a ausência é
+    deliberada: quem recusa é a constraint do banco, capturada no serviço. Uma
+    checagem prévia melhoraria a mensagem no caminho feliz e daria a impressão
+    de ser a garantia — que é exatamente o engano que a 007, a 008 e a 009 já
+    documentaram (FR-025).
+    """
+
+    filme = serializers.PrimaryKeyRelatedField(
+        queryset=Movie.objects.all(),
+        error_messages={
+            "does_not_exist": "Este filme não está no catálogo.",
+            "required": "Escolha um filme.",
+            "incorrect_type": "Escolha um filme.",
+        },
+    )
+    sala = serializers.PrimaryKeyRelatedField(
+        queryset=Room.objects.all(),
+        error_messages={
+            "does_not_exist": "Esta sala não existe.",
+            "required": "Escolha uma sala.",
+            "incorrect_type": "Escolha uma sala.",
+        },
+    )
+    inicio = serializers.DateTimeField(
+        error_messages={
+            "required": "Informe a data e a hora.",
+            "invalid": "Informe uma data e uma hora válidas.",
+        }
+    )
+    preco = serializers.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        error_messages={
+            "required": programacao_service.PRECO_INVALIDO,
+            "invalid": programacao_service.PRECO_INVALIDO,
+        },
+    )
+    publicar = serializers.BooleanField(default=False)
+
+    def validate_preco(self, valor):
+        """Zero e negativo saem com a MESMA frase que o campo ausente.
+
+        Os três são o mesmo problema para quem está programando — não há preço
+        —, e distinguir "informe" de "informe um valor maior" só acrescentaria
+        redação sem acrescentar decisão.
+        """
+        if valor <= 0:
+            raise serializers.ValidationError(programacao_service.PRECO_INVALIDO)
+        return valor
+
+    def validate(self, dados):
+        if dados.get("publicar"):
+            erros = programacao_service.erros_para_publicar(
+                dados["sala"], dados["inicio"]
+            )
+            if erros:
+                raise serializers.ValidationError(erros)
+        return dados
+
+
+class SessaoEditavelSerializer(SessaoInputSerializer):
+    """A edição de um rascunho — os mesmos campos, sem `publicar`.
+
+    Editar NÃO publica: a sessão continua em rascunho depois da alteração
+    (FR-023). Publicar é uma ação com pré-condições próprias, e deixá-la
+    entrar por aqui como um campo booleano esconderia essas pré-condições
+    dentro de validação de formulário (R8).
+    """
+
+    publicar = None
+
+    def get_fields(self):
+        campos = super().get_fields()
+        campos.pop("publicar", None)
+        return campos
