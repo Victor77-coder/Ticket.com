@@ -61,13 +61,27 @@ DJANGO_SECRET_KEY=<gere uma>
 DJANGO_DEBUG=True
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend
 
+# Assina o código em QR do ingresso. Gere com o MESMO comando acima, mas
+# PRECISA SER UM VALOR DIFERENTE da DJANGO_SECRET_KEY — ver abaixo.
+TICKET_SIGNING_KEY=<gere outra>
+
 TMDB_API_KEY=<sua chave do TMDb>
 
 NEXT_PUBLIC_SITE_PORT=5003
 API_BASE_URL=http://backend:8000
 ```
 
-`DJANGO_SECRET_KEY` e `TMDB_API_KEY` nunca são commitados. O `.env.example` traz só os nomes.
+`DJANGO_SECRET_KEY`, `TICKET_SIGNING_KEY` e `TMDB_API_KEY` nunca são commitados. O `.env.example`
+traz só os nomes.
+
+**Sem `TICKET_SIGNING_KEY` o back-end não sobe**, e isso é intencional: um valor padrão em código
+viraria o segredo real de todo mundo que não leu esta seção, e o QR passaria a ser forjável por
+quem leu o repositório.
+
+**Por que ela é separada da `DJANGO_SECRET_KEY`**: são dois raios de comprometimento diferentes.
+Vazar a chave da aplicação compromete sessões; vazar a do ingresso compromete a catraca. Usar a
+mesma nas duas faz um incidente virar dois. Há teste que **falha** se um código assinado com a
+`DJANGO_SECRET_KEY` for aceito.
 
 ### 2. Subir os serviços
 
@@ -129,6 +143,32 @@ identificar você e oferece a saída.
 
 ---
 
+## Cartões de teste
+
+O pagamento é **simulado**: não há transação financeira real nem provedor externo. O desfecho é
+decidido pelo **número do cartão**, por esta tabela — **determinístico, nunca por sorteio**, para
+que os dois caminhos sejam exercitáveis de propósito por quem avalia.
+
+| Número | Desfecho | O que aparece na tela |
+|---|---|---|
+| `4242 4242 4242 4242` | **Aprovado** | os ingressos, um por lugar, com QR |
+| `4000 0000 0000 9995` | Recusado | Não havia saldo suficiente neste cartão. Tente outro cartão. |
+| `4000 0000 0000 0069` | Recusado | Este cartão está expirado. Use um cartão com validade em dia. |
+| `4000 0000 0000 0002` | Recusado | O banco emissor recusou a cobrança. Tente outro cartão ou fale com o banco. |
+
+Qualquer outro número bem formado (16 dígitos com verificador de Luhn válido) é **aprovado**, para
+que não seja preciso consultar esta tabela só para ver o caminho feliz. Validade e código de
+segurança são conferidos quanto à forma e **não** participam da decisão — quem decide é o número.
+
+Número mal formado é **erro de preenchimento**, não recusa de cobrança: são coisas diferentes, e a
+tela diz isso com palavras diferentes. Numa você corrige o que digitou, na outra troca de cartão.
+
+**A recusa não devolve o lugar.** A reserva segue viva até o vencimento original de dez minutos,
+para que dê para trocar de cartão sem perder o assento. O raciocínio por trás disso está em
+*Decisões que podem estranhar numa leitura rápida*.
+
+---
+
 ## Testes
 
 ```bash
@@ -139,14 +179,22 @@ docker compose exec frontend npm run test
 Ponta a ponta (ver a ressalva em Limitações conhecidas):
 
 ```bash
-cd frontend && npx playwright test
+cd frontend && npx playwright test --workers=2
 ```
+
+`--workers=2` não é detalhe: com o número padrão o servidor de desenvolvimento do Next satura e
+alguns testes caem por timeout. Verificado que passam sozinhos.
 
 Os testes obrigatórios são os que a constitution exige como prova: acesso público e ausência de
 vazamento de dado de gestão nas respostas públicas (Princípio IV), resiliência à queda do TMDb
 (Princípio VII), a garantia de que a lista de sugestões nunca exibe o resultado de um termo já
-abandonado, e a corrida de reserva — exatamente uma vence, e o teste **falha** se a constraint for
-removida (Princípio II).
+abandonado, a corrida de reserva — exatamente uma vence, e o teste **falha** se a constraint for
+removida (Princípio II) —, a corrida de pagamento, que emite um único conjunto de ingressos e
+**falha** se qualquer uma das duas garantias de banco for removida, e a rejeição de QR forjado,
+verificada **sem nenhuma consulta ao banco** (Princípio III).
+
+> Os testes ponta a ponta de pagamento **compram de verdade**, e lugar pago não volta ao estoque.
+> Rodar a suíte muitas vezes consome a grade semeada; `seed_demo` devolve o cenário ao início.
 
 ---
 
@@ -180,9 +228,55 @@ na tabela de ocupação. A corrida perdedora falha no banco, não numa checagem 
 `backend/tests/test_reservation_concurrency.py` prova isso com duas threads e conexões separadas —
 e está verificado que ele **falha** se a constraint for removida.
 
+**Pagamento simulado e emissão do ingresso** (`specs/008-payment-ticket-issuance/`) — a reserva é
+revisada, cobrada de forma simulada e, se aprovada, vira ingresso na **mesma transação**. Um
+ingresso **por assento**, não por reserva: quem entra na sala é uma pessoa por lugar. Cada um traz
+seu código em QR e o mesmo código em texto, para a digitação manual que a portaria vai exigir.
+
+Os dois caminhos são exercitáveis de propósito pelos cartões da tabela acima. Só o papel cliente
+paga, e só o dono paga a sua — organizador e portaria recebem `403` **do servidor**.
+
+O código do QR é assinado com `TICKET_SIGNING_KEY`, segredo próprio que nunca chega ao navegador,
+e a assinatura é conferida **antes de qualquer consulta ao banco**. Código adulterado, código
+assinado com outro segredo e código assinado com a `DJANGO_SECRET_KEY` são todos rejeitados, com
+teste para cada caso.
+
+Uma reserva nunca gera dois conjuntos de ingressos, e a garantia também é do PostgreSQL: índice
+parcial `UNIQUE(reserva) WHERE aprovado` no pagamento e `UNIQUE(assento reservado)` no ingresso.
+`backend/tests/test_payment_concurrency.py` prova isso com threads, e está verificado que ele
+**falha** se qualquer uma das duas for removida.
+
 ---
 
 ## Decisões que podem estranhar numa leitura rápida
+
+**A recusa de pagamento não libera o assento na hora.** O Princípio II da constitution diz
+"pagamento recusado DEVE liberar o assento", e à primeira vista isto contraria a regra. Não
+contraria, e a leitura está registrada em `specs/008-payment-ticket-issuance/spec.md`.
+
+O critério é a frase seguinte do próprio princípio: "não existe estado intermediário durável em que
+o assento esteja preso sem dono". Depois de uma recusa o assento tem **dono** — a mesma reserva, do
+mesmo cliente — e tem **prazo correndo**, o vencimento original, intocado. Nenhum dos dois defeitos
+que a cláusula previne acontece, e quem devolve o lugar ao estoque continua sendo o vencimento, por
+consulta, sem rotina agendada.
+
+Liberar na recusa seria pior para quem compra e não melhoraria a integridade: quem digitou o cartão
+errado perderia o lugar para outra pessoa entre uma tentativa e a seguinte. A resposta de recusa
+devolve `expira_em` justamente para que a ausência de mudança no prazo seja observável de fora.
+
+**O código do QR é assinado, não cifrado, e não é guardado em coluna.** Ele é derivado do ingresso
+quando pedido. Guardá-lo criaria a chance de a coluna e a chave discordarem depois de uma rotação,
+e não há o que ganhar: a assinatura é o que impede forjar, não o sigilo do conteúdo.
+
+O conteúdo carrega a identidade da **sessão** além da do ingresso, e isso é para a feature seguinte:
+sem ela, um ingresso legítimo apresentado na porta errada seria indistinguível de um código
+inventado, e a portaria não teria como produzir o desfecho "sessão errada" que o Princípio III
+exige. Entrou agora porque acrescentá-lo depois invalidaria todo código já emitido.
+
+**O ingresso não tem campo "utilizado".** A marcação de uso e a garantia de validação única nascem
+juntas na feature da portaria — o mesmo cuidado que a 007 teve ao criar a ocupação de assento e sua
+constraint na mesma migração. Uma coluna de estado que nada transiciona e nada protege seria
+convite para alguém marcá-la sem a garantia atrás.
 
 **A busca do navegador passa por um proxy do Next (`/api/busca`), não pelo Django direto.** Dentro
 do Docker Compose o front-end alcança o back-end por `http://backend:8000` — um nome que só resolve
@@ -294,9 +388,19 @@ cinema — uma sala existe sem lugar associado —, então o seletor não teria 
 quando houver o conceito de praça no modelo. Registrado em
 `specs/002-site-header-navigation/spec.md`.
 
-**Não há pagamento, ingresso com QR nem tela de portaria.** O que existe hoje vai do catálogo até
-a reserva dos lugares, com prazo correndo e caminho apontado para o pagamento — que é a próxima
-feature. Nenhum ingresso é emitido nesta etapa.
+**Não há área "Meus ingressos", link de compartilhamento nem tela de portaria.** O que existe hoje
+vai do catálogo até o ingresso emitido, visível na confirmação da compra e revisitável pelo mesmo
+endereço enquanto a sessão de navegação durar. A **lista** de todos os ingressos de um cliente, o
+link de compartilhamento e a validação na entrada são as próximas features.
+
+**O ingresso emitido não pode ser cancelado nem estornado.** `paga` é estado terminal nesta etapa.
+Cancelamento com devolução ao estoque está listado na constitution como item posterior ao
+fechamento do fluxo.
+
+**Lugar pago não volta ao estoque, nem depois de o prazo original vencer.** É o comportamento
+correto — o lugar está vendido —, mas tem uma consequência prática na demonstração: percorrer o
+fluxo de compra várias vezes esgota a sessão usada. Para voltar ao cenário conhecido, rode
+`docker compose exec backend python manage.py seed_demo` de novo.
 
 **A expiração da reserva não é demonstrável ao vivo.** O prazo é fixo em dez minutos e não é lido
 do ambiente — um prazo configurável viraria "dois segundos" na demonstração e a garantia deixaria
