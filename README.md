@@ -211,6 +211,8 @@ garantia que ela protege é pior do que prova nenhuma:
 | marca trocada pelo âmbar | ΔE 16 do alerta — marca confundível com cor de estado | `tokens.test.ts` |
 | vestígio da cor antiga num componente | um respingo laranja num sistema magenta | `tokens.test.ts` |
 | ícone de aba deixado para trás | favicon com a cor antiga, invisível durante o desenvolvimento | `tokens.test.ts` |
+| omitir `trailers` no detalhe do filme | a aba Trailers não distingue vazio de campo faltando | `test_filme_detalhe.py` |
+| `--cor-fundo-qr` harmonizado com a marca | a catraca deixa de ler o QR no ingresso-objeto | `tokens.test.ts` |
 
 > Os testes ponta a ponta de pagamento **compram de verdade**, e lugar pago não volta ao estoque.
 > Rodar a suíte muitas vezes consome a grade semeada; `seed_demo` devolve o cenário ao início.
@@ -389,6 +391,13 @@ logos. A marca gráfica é o **`t` inicial com o ponto do `.com`**, em geometria
 uma única pontuação, e ela já era elemento de marca desde a 002. Não é ícone de ingresso nem
 claquete, que seriam intercambiáveis com os de qualquer outro cinema.
 
+**Telas de compra** (`specs/012-telas-de-compra/`) — a página do filme, o mapa de assentos e o
+pagamento foram recompostos. Sessões viram grade por dia e sala no cliente; Sobre e Trailers usam o
+que o filme já persiste; `GET /api/v1/filmes/<slug>/` ganha `trailers[]` aditivo (highlights não).
+Em tela larga o resumo fica ao lado do mapa; o ingresso emitido no pagamento ganha a variante
+`objeto`. **A home não mudou** — o achado da 011 sobre a primeira dobra permanece achado, não
+entregável desta feature. Nenhuma regra de reserva, pagamento ou validação foi reaberta.
+
 ---
 
 ## Decisões que podem estranhar numa leitura rápida
@@ -541,10 +550,9 @@ guardar hash em silêncio e deixar o botão de copiar quebrado. Registrado em
 **A composição da primeira dobra ainda é convencional para o gênero.** A feature de identidade
 entregou cor, tipografia de marca e logo, e a checagem anti-slop passou — mas com uma ressalva
 registrada: arte em tela cheia, título grande à esquerda, sinopse curta, dois botões e trilha abaixo
-é o arranjo de qualquer catálogo de streaming. Hoje a identidade é carregada pela paleta e pela
-tipografia; o **layout** é o que ainda não tem autoria. Está registrado como achado para uma feature
-futura em `specs/011-marca-sem-laranja/contracts/anti-slop-review.md`, e alargar a 011 para mexer
-nisso seria exatamente o que aquele contrato proíbe.
+é o arranjo de qualquer catálogo de streaming. A 012 recomôs filme, assentos e pagamento e **deixou
+a home intocada de propósito**. Está registrado como achado em
+`specs/011-marca-sem-laranja/contracts/anti-slop-review.md`.
 
 **A leitura do QR por um leitor de terceiro é verificada à mão.** O requisito é que um aplicativo
 leitor de QR decodifique o código da tela a 320px de largura. Automatizar isso exigiria uma
@@ -672,6 +680,13 @@ que uma IA faz mal:
   julgamento final da checagem anti-slop, que é humano por definição — inclusive a ressalva
   registrada lá de que a **composição** da primeira dobra ainda é convencional para o gênero, e que
   a identidade hoje é carregada pela paleta e pela tipografia, não pelo layout.
+
+**Na feature das telas de compra (012)**:
+
+- **Com IA** — agrupamento de sessões no cliente, campo `trailers[]` aditivo, ilha de abas, layout
+  do mapa em duas colunas, variante `objeto` do ingresso, testes de apresentação e de contrato.
+- **Sem IA** — o recorte (três telas, catálogo congelado), a proibição de afrouxar o e2e da 007, e
+  a decisão de não unificar o cartão de ingresso com meus ingressos e a página pública.
 
 A cor, em particular, **não foi uma escolha estética**: as restrições eliminaram todos os candidatos
 menos um. Isso é verificável em `specs/011-marca-sem-laranja/research.md`, R1.
