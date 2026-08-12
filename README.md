@@ -196,7 +196,7 @@ verificada **sem nenhuma consulta ao banco** (Princípio III), a ausência de va
 ingresso compartilhado, inspecionada por valor na resposta inteira (Princípio III), e a corrida de
 geração de link, que produz um único link ativo e **falha** sem o índice parcial.
 
-Seis verificações foram feitas **quebrando o código de propósito**, porque uma prova que passa sem a
+Dez verificações foram feitas **quebrando o código de propósito**, porque uma prova que passa sem a
 garantia que ela protege é pior do que prova nenhuma:
 
 | Garantia removida | O que passa a acontecer | Teste que falha |
@@ -207,6 +207,10 @@ garantia que ela protege é pior do que prova nenhuma:
 | escrita condicional → `if` + `save()` na portaria | **quatro** pessoas entram com o mesmo ingresso | `test_gate_concurrency.py` |
 | `sellable()` na lista de sessões da portaria | some a sessão **em andamento**, que é a que a porta recebe | `test_gate_api.py` |
 | campo de uso no serializer do ingresso | "utilizado" aparece na página compartilhada pública | `test_share_link_leakage.py` |
+| contorno de foco escurecido | **a suíte inteira passa verde** com o foco de teclado invisível | `tokens.test.ts` |
+| marca trocada pelo âmbar | ΔE 16 do alerta — marca confundível com cor de estado | `tokens.test.ts` |
+| vestígio da cor antiga num componente | um respingo laranja num sistema magenta | `tokens.test.ts` |
+| ícone de aba deixado para trás | favicon com a cor antiga, invisível durante o desenvolvimento | `tokens.test.ts` |
 
 > Os testes ponta a ponta de pagamento **compram de verdade**, e lugar pago não volta ao estoque.
 > Rodar a suíte muitas vezes consome a grade semeada; `seed_demo` devolve o cenário ao início.
@@ -353,6 +357,37 @@ escrito antes do serviço.
 
 O código forjado é rejeitado **sem nenhuma consulta ao registro de ingressos**, reusando a
 verificação que a feature de pagamento já deixou pronta em módulo puro.
+
+**Identidade de marca** (`specs/011-marca-sem-laranja/`) — a paleta continua escura, mas o destaque
+deixou de ser laranja, o nome ganhou tipografia própria e a marca ganhou desenho. **Esta feature
+emenda o FR-020 da 006**, que exigia "paleta escura com destaque laranja": revoga a segunda metade da
+frase e mantém a primeira.
+
+**A cor não foi escolhida — sobrou.** Quatro restrições em ordem deixam uma região só do círculo
+cromático, e a segunda é a que ninguém antecipa: **a marca não pode colidir com cor de estado.** O
+sistema já tem sucesso (verde), alerta (âmbar) e erro (coral). Isso **elimina o âmbar** — que era o
+candidato mais óbvio para um cinema, com marquise e canhoto de ingresso —, porque ele fica a **8° do
+`--cor-alerta`** e adotá-lo exigiria mover uma cor de estado. O azul tem a melhor separação de todas
+e perde assim mesmo: é o azul padrão de todo software e vizinho do índigo vetado.
+
+Sobra o magenta, **`#ff2e88`**, e o que a região significa neste domínio tem nome. Um cinema à noite
+tem quatro luzes — marquise (âmbar), saída (verde), projeção (laranja) e fachada. As três primeiras
+já são cores de estado; sobrou o **neon da fachada**, que por acaso é a luz que se vê *antes de
+entrar*, para uma marca cuja função é vender a entrada.
+
+**Medido, e vale registrar:** a paleta antiga **já falhava** o limite de distância de estado — o
+laranja ficava a ΔE 23.8 do `--cor-erro`, abaixo do mínimo de 25. Ela era, dos candidatos avaliados,
+a mais confundível com uma cor de estado.
+
+**A troca custou quatro valores num arquivo.** É a disciplina de tokens da 006 sendo colhida: o
+laranja vivia em 4 declarações, e 12 arquivos consumiam apenas os nomes, em 28 usos. **Nenhum
+consumidor precisou ser tocado.**
+
+O nome sai em **Cabinet Grotesk** (Fontshare), auto-hospedada, com a licença versionada em
+`frontend/public/fontes/FFL.txt` — uso comercial permitido, e o §01 concede explicitamente criar
+logos. A marca gráfica é o **`t` inicial com o ponto do `.com`**, em geometria própria: o nome tem
+uma única pontuação, e ela já era elemento de marca desde a 002. Não é ícone de ingresso nem
+claquete, que seriam intercambiáveis com os de qualquer outro cinema.
 
 ---
 
@@ -503,6 +538,14 @@ guardar hash em silêncio e deixar o botão de copiar quebrado. Registrado em
 
 ## Limitações conhecidas
 
+**A composição da primeira dobra ainda é convencional para o gênero.** A feature de identidade
+entregou cor, tipografia de marca e logo, e a checagem anti-slop passou — mas com uma ressalva
+registrada: arte em tela cheia, título grande à esquerda, sinopse curta, dois botões e trilha abaixo
+é o arranjo de qualquer catálogo de streaming. Hoje a identidade é carregada pela paleta e pela
+tipografia; o **layout** é o que ainda não tem autoria. Está registrado como achado para uma feature
+futura em `specs/011-marca-sem-laranja/contracts/anti-slop-review.md`, e alargar a 011 para mexer
+nisso seria exatamente o que aquele contrato proíbe.
+
 **A leitura do QR por um leitor de terceiro é verificada à mão.** O requisito é que um aplicativo
 leitor de QR decodifique o código da tela a 320px de largura. Automatizar isso exigiria uma
 biblioteca nativa de decodificação (`zbar` e afins) trazida ao projeto só para essa asserção.
@@ -619,5 +662,18 @@ development. O que a IA fez e o que não fez:
 aparecem como "Decisões que podem estranhar" acima; a decisão de tirar o seletor de localidade do
 escopo e de deixar login para uma feature própria; e a revisão de cada saída contra a constitution
 antes do commit.
+
+**Na feature de identidade (011)**, vale detalhar porque "escolher a cor" soa como o tipo de coisa
+que uma IA faz mal:
+
+- **Com IA** — a medição (contraste WCAG, ΔE em CIELAB) que aplicou as restrições e eliminou os
+  candidatos; o teste que congela essas medidas; o desenho da marca em SVG; a redação.
+- **Sem IA** — o pedido de trocar o laranja e as proibições anti-slop, que vieram do autor; e o
+  julgamento final da checagem anti-slop, que é humano por definição — inclusive a ressalva
+  registrada lá de que a **composição** da primeira dobra ainda é convencional para o gênero, e que
+  a identidade hoje é carregada pela paleta e pela tipografia, não pelo layout.
+
+A cor, em particular, **não foi uma escolha estética**: as restrições eliminaram todos os candidatos
+menos um. Isso é verificável em `specs/011-marca-sem-laranja/research.md`, R1.
 
 O histórico de commits e os artefatos em `specs/` são o rastro dessas decisões.
