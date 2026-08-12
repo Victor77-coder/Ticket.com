@@ -34,3 +34,18 @@ class IsCustomerParaPagar(IsCustomer):
     """
 
     message = "Apenas clientes podem pagar reservas."
+
+
+class IsCustomerParaIngressos(IsCustomer):
+    """A mesma regra, com a frase da área de ingressos.
+
+    Terceira subclasse pelo mesmo motivo das duas anteriores: "Apenas
+    clientes podem reservar lugares." apareceria para quem abriu **Meus
+    ingressos**, descrevendo uma tela que a pessoa não acionou.
+
+    E continua sendo `403`, nunca `401`: organizador e portaria ENTRARAM, só
+    não têm ingressos. Um `401` os mandaria para a tela de entrada, que é
+    caminho sem saída — entrar de novo não muda o papel.
+    """
+
+    message = "Apenas clientes têm ingressos."

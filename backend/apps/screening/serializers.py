@@ -10,7 +10,7 @@ identificador de reserva, prazo de reserva alheia, custo ou capacidade.
 from django.conf import settings
 from rest_framework import serializers
 
-from apps.screening.models import Payment, Reservation, Seat, Ticket
+from apps.screening.models import Payment, Reservation, Screening, Seat, Ticket
 from apps.screening.services import ingressos as ingressos_service
 
 
@@ -263,3 +263,70 @@ class TicketSerializer(serializers.Serializer):
 
     def get_assento(self, ingresso):
         return LugarSerializer(ingresso.reserved_seat.seat).data
+
+
+class MeuIngressoSerializer(serializers.Serializer):
+    """O ingresso como o DONO o vê. COMPÕE `TicketSerializer`, não o estende.
+
+    A composição é a decisão de projeto mais importante deste arquivo na 009,
+    e não é sobre o que `TicketSerializer` expõe hoje — hoje ele expõe
+    exatamente o recorte que a página pública autoriza. É sobre a PRESSÃO DE
+    CRESCIMENTO.
+
+    A área do dono vai querer campos: estado do link, situação da sessão,
+    identificador do ingresso. Se eles forem parar em `TicketSerializer`,
+    aparecem na PÁGINA PÚBLICA no mesmo commit, em silêncio — e o teste de
+    não vazamento vira a única coisa entre isso e um vazamento.
+
+    Com dois serializers, quem precisa de um campo novo o acrescenta AQUI,
+    porque é aqui que está trabalhando. A pressão aponta para o lado que não
+    é público, por construção.
+
+    `TicketSerializer` NÃO PODE GANHAR CAMPO NENHUM.
+
+    `grupo` vem do contexto, e não é calculado aqui: quem separou futuros de
+    passados foi a consulta, com o relógio do BANCO. Recalcular no Python
+    introduziria um segundo relógio e uma janela de microssegundos em que um
+    ingresso do grupo dos futuros se descreveria como passado.
+    """
+
+    def to_representation(self, ingresso):
+        dados = TicketSerializer(ingresso).data
+        sessao = ingresso.reserved_seat.screening
+
+        # A identidade pública, que é o que endereça o ingresso nas rotas do
+        # dono. Fora da resposta pública de propósito: lá seria identificador
+        # reaproveitável e, pior, a metade não secreta do código assinado.
+        dados["id"] = str(ingresso.public_id)
+        dados["grupo"] = self.context.get("grupo", "futuro")
+        # Fato ORTOGONAL ao horário: uma sessão cancelada que ainda não
+        # começou continua no grupo dos futuros, com o aviso. Fundir os dois
+        # num campo só obrigaria o front a desfazer a fusão.
+        dados["sessao_cancelada"] = sessao.status == Screening.Status.CANCELLED
+        return dados
+
+
+def estado_do_link(link):
+    """O estado do link de compartilhamento, com ou sem link.
+
+    FUNÇÃO, e deliberadamente NÃO um `Serializer`. "Não existe link ativo" é
+    um estado legítimo e frequente desta resposta, e `Serializer(None).data`
+    devolve `{}` sem sequer chamar `to_representation` — o DRF curto-circuita
+    instância nula. O resultado seria um corpo vazio no lugar de
+    `{"ativo": false}`, e o front leria "sem link" como "resposta quebrada".
+
+    Descoberto por teste, não por leitura. Registrado aqui para que ninguém
+    "padronize" isto de volta para um serializer.
+
+    O endereço vem COMPLETO, montado a partir de `settings.SITE_URL`. Montá-lo
+    no navegador exigiria que o front soubesse a origem pública, o que erra
+    atrás de proxy — e o endereço existe para ser colado num aplicativo de
+    mensagens.
+
+    Recebe o link (ou `None`), nunca o ingresso: quem chama já fez a consulta.
+    """
+    if link is None:
+        return {"ativo": False, "endereco": None}
+
+    base = settings.SITE_URL.rstrip("/")
+    return {"ativo": True, "endereco": f"{base}/ingresso/{link.token}"}

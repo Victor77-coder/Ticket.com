@@ -5,6 +5,7 @@ O mapa é público e declara `AllowAny` explicitamente — o padrão do projeto 
 acesso público é decisão registrada aqui, não herança silenciosa.
 """
 
+from django.utils import timezone
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -13,8 +14,14 @@ from rest_framework.views import APIView
 from apps.accounts.authentication import SessionAuthenticationSemCsrf
 from apps.screening import selectors
 from apps.screening.models import Reservation
-from apps.screening.permissions import IsCustomer, IsCustomerParaPagar
+from apps.screening.permissions import (
+    IsCustomer,
+    IsCustomerParaIngressos,
+    IsCustomerParaPagar,
+)
 from apps.screening.serializers import (
+    estado_do_link,
+    MeuIngressoSerializer,
     PaymentInputSerializer,
     PaymentSerializer,
     ReservationInputSerializer,
@@ -22,12 +29,19 @@ from apps.screening.serializers import (
     SeatMapSerializer,
     TicketSerializer,
 )
-from apps.screening.services import pagamentos, reservas
+from apps.screening.services import compartilhamento, pagamentos, reservas
 
 SESSAO_NAO_ENCONTRADA = {"detail": "Sessão não encontrada."}
 RESERVA_NAO_ENCONTRADA = {"detail": "Reserva não encontrada."}
 ENTRE_PARA_RESERVAR = {"detail": "Entre para reservar."}
 ENTRE_PARA_PAGAR = {"detail": "Entre para concluir o pagamento."}
+ENTRE_PARA_VER_INGRESSOS = {"detail": "Entre para ver seus ingressos."}
+INGRESSO_NAO_ENCONTRADO = {"detail": "Ingresso não encontrado."}
+# A MESMA frase para token inexistente, revogado e substituído (FR-043).
+# Distinguir entregaria a quem está adivinhando a informação de que um palpite
+# chegou perto. E é uma frase, não "Não encontrado": quem recebeu o ingresso
+# de um amigo concluiria que o site quebrou.
+LINK_MORTO = {"detail": "Este link não vale mais. Peça um novo a quem enviou o ingresso."}
 RESERVA_EXPIRADA = "Esta reserva expirou. Escolha os lugares de novo."
 RESERVA_JA_PAGA = "Esta reserva já foi paga. Seus ingressos estão logo abaixo."
 RESERVA_CANCELADA = "Esta reserva foi cancelada. Escolha os lugares de novo."
@@ -294,3 +308,164 @@ class PaymentCreateView(ReservationViewBase):
             corpo["situacao"] = "paga"
             corpo["detail"] = frase
         return Response(corpo, status=409)
+
+
+# --- Ingressos do cliente e compartilhamento (feature 009) -----------------
+
+
+class TicketViewBase(APIView):
+    """O que as rotas de ingresso do DONO compartilham.
+
+    Mesma autenticação sem CSRF de 007 e 008 — quem chama é o Next, servidor
+    a servidor — e a mesma tradução do `401`, com a frase desta tela.
+
+    A tradução existe porque o DRF converte "não autenticado" em `403` quando
+    o autenticador não oferece `WWW-Authenticate`, que é o caso da sessão. Sem
+    ela o front não distingue "conduza à entrada" (visitante) de "seu papel
+    não tem ingressos" (organizador, portaria) — e conduzir um organizador à
+    entrada é caminho sem saída, porque entrar de novo não muda o papel.
+    """
+
+    authentication_classes = [SessionAuthenticationSemCsrf]
+    permission_classes = [IsAuthenticated, IsCustomerParaIngressos]
+
+    def handle_exception(self, exc):
+        if isinstance(exc, NotAuthenticated):
+            return Response(ENTRE_PARA_VER_INGRESSOS, status=401)
+        return super().handle_exception(exc)
+
+
+class MyTicketsView(TicketViewBase):
+    """GET /api/v1/meus-ingressos/ — a lista do cliente.
+
+    Devolve DOIS GRUPOS já separados e já ordenados, e não uma lista com um
+    instante para o front comparar: a fronteira entre futuro e passado é
+    decisão do servidor (FR-010), e o relógio do navegador não participa dela.
+
+    Cliente sem ingresso nenhum recebe `200` com os dois grupos vazios —
+    nunca `404` nem `204`. O estado vazio é uma TELA escrita para gente, não a
+    ausência de um recurso; um `404` faria o front tratar "nunca comprou" como
+    erro.
+    """
+
+    def get(self, request):
+        futuros, passados = selectors.ingressos_do_cliente(request.user)
+
+        return Response(
+            {
+                "futuros": MeuIngressoSerializer(
+                    futuros, many=True, context={"grupo": "futuro"}
+                ).data,
+                "passados": MeuIngressoSerializer(
+                    passados, many=True, context={"grupo": "passado"}
+                ).data,
+            }
+        )
+
+
+class TicketDetailView(TicketViewBase):
+    """GET /api/v1/ingressos/<public_id>/ — o ingresso do dono.
+
+    `404` para ingresso inexistente E para ingresso de outro cliente, nunca
+    `403`: um `403` confirmaria que aquele `public_id` existe — e `public_id`
+    é exatamente o valor que vai dentro do código assinado do QR. Mesma regra
+    que 007 e 008 já aplicam a reservas.
+    """
+
+    def get(self, request, public_id):
+        ingresso = selectors.ingresso_do_dono(request.user, public_id)
+        if ingresso is None:
+            return Response(INGRESSO_NAO_ENCONTRADO, status=404)
+
+        dados = MeuIngressoSerializer(
+            ingresso, context={"grupo": _grupo_de(ingresso)}
+        ).data
+        dados["link"] = estado_do_link(selectors.link_ativo(ingresso))
+        return Response(dados)
+
+
+class TicketShareLinkView(TicketViewBase):
+    """POST e DELETE em /api/v1/ingressos/<public_id>/link/.
+
+    Dois verbos num endereço só, e não `/gerar-link/` e `/revogar-link/`:
+    gerar e revogar são criar e apagar o MESMO recurso. Endereço que descreve
+    ação em vez de recurso é o que faz uma API crescer por acúmulo.
+    """
+
+    def post(self, request, public_id):
+        """Gera o link. `201` quando cria, `200` quando já existia.
+
+        A distinção segue o padrão que a 007 fixou em `POST /reservas/`: é o
+        que permite ao front dizer "gerei agora" ou "já era seu" sem
+        interpretar texto.
+
+        NUNCA `409`. Não há conflito a reportar — pediram um link e receberam
+        um link. É o mesmo desfecho da corrida perdida, e ela também não é
+        erro (FR-028).
+        """
+        ingresso = selectors.ingresso_do_dono(request.user, public_id)
+        if ingresso is None:
+            return Response(INGRESSO_NAO_ENCONTRADO, status=404)
+
+        link, criou = compartilhamento.gerar_link(ingresso)
+        return Response(estado_do_link(link), status=201 if criou else 200)
+
+    def delete(self, request, public_id):
+        """Revoga. `200` também quando não havia link ativo.
+
+        Um `404` na segunda chamada faria o front exibir erro por uma ação que
+        produziu exatamente o resultado desejado.
+        """
+        ingresso = selectors.ingresso_do_dono(request.user, public_id)
+        if ingresso is None:
+            return Response(INGRESSO_NAO_ENCONTRADO, status=404)
+
+        compartilhamento.revogar_link(ingresso)
+        return Response(estado_do_link(None))
+
+
+class SharedTicketView(APIView):
+    """GET /api/v1/ingressos-compartilhados/<token>/ — **público**.
+
+    O único endereço da API que entrega um ingresso a quem não se identificou.
+
+    `authentication_classes = []` é a metade que importa, e não é redundância
+    com `AllowAny`. Sem autenticador não existe caminho pelo qual esta view
+    enxergue um usuário — então não existe caminho pelo qual ela decida algo
+    com base em quem está olhando, nem por engano nem numa refatoração
+    futura. É o que faz "não pede conta e não conduz a entrada" ser ESTRUTURA
+    em vez de comportamento (FR-036).
+
+    O padrão do projeto é `IsAuthenticated` por default no `REST_FRAMEWORK`;
+    acesso público é sempre declarado com o motivo, como `SeatMapView` faz.
+
+    RESPONDE COM O `TicketSerializer` DA 008, SEM ALTERAÇÃO. Ele já expõe
+    exatamente o recorte que FR-037 autoriza — filme, sessão, sala, lugar,
+    código e QR — e não pode ganhar campo nenhum: os campos da área do dono
+    vivem em `MeuIngressoSerializer` justamente para que a pressão de
+    crescimento aponte para o lado que não é público.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request, token):
+        link = selectors.ingresso_por_token(token)
+        if link is None:
+            # Inexistente, revogado e substituído saem IGUAIS — a convergência
+            # acontece na consulta, não aqui (FR-043). Distinguir entregaria a
+            # quem adivinha a informação de que um palpite chegou perto.
+            return Response(LINK_MORTO, status=404)
+
+        return Response(TicketSerializer(link.ticket).data)
+
+
+def _grupo_de(ingresso):
+    """A mesma fronteira do selector, para um ingresso só.
+
+    A lista separa os grupos na consulta, com o relógio do banco. Aqui há uma
+    linha só e nenhuma consulta para carregar a informação, então a regra é
+    reaplicada — e é a MESMA regra: o início da sessão.
+    """
+    inicio = ingresso.reserved_seat.screening.starts_at
+    return "futuro" if inicio > timezone.now() else "passado"
