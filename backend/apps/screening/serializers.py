@@ -419,3 +419,135 @@ def estado_do_link(link):
 
     base = settings.SITE_URL.rstrip("/")
     return {"ativo": True, "endereco": f"{base}/ingresso/{link.token}"}
+
+
+# --- Programação do organizador (feature 013) -----------------------------
+#
+# ⚠️ A FRONTEIRA. Os serializers acima servem superfícies PÚBLICAS ou do dono, e
+# o aviso no topo deste arquivo vale para eles sem exceção. Os de baixo servem o
+# painel do organizador, e são os ÚNICOS do sistema autorizados a expor estado
+# de sessão, capacidade de sala e ocupação numérica.
+#
+# A direção da pressão importa: quando um campo de gestão for pedido em alguma
+# tela, ele nasce aqui. Nenhum campo desta seção pode migrar para cima, e
+# `tests/test_seat_map_api.py`, `test_highlights_api.py` e
+# `test_home_rows_api.py` continuam sendo a guarda do outro lado.
+
+
+class FilmeDaGradeSerializer(serializers.Serializer):
+    """O filme como o painel precisa dele: reconhecer e escolher.
+
+    Sem sinopse, sem gêneros, sem trailers — a grade lista dezenas de linhas, e
+    cada campo a mais é peso numa tela que serve para bater o olho.
+    """
+
+    id = serializers.IntegerField()
+    titulo = serializers.CharField(source="title")
+    poster_url = serializers.CharField(allow_null=True)
+
+
+class SalaDaGradeSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    nome = serializers.CharField(source="name")
+    lugares = serializers.SerializerMethodField()
+
+    def get_lugares(self, room):
+        """Vem da anotação da grade — nunca de `room.seats.count()`.
+
+        A contagem por instância seria uma consulta por linha da grade, que é
+        exatamente o N+1 que `grade_do_organizador` existe para evitar (R6).
+        """
+        return self.context.get("lugares", 0)
+
+
+class SessaoDaGradeSerializer(serializers.Serializer):
+    """Uma linha da grade. A ÚNICA superfície que expõe `estado` (FR-029).
+
+    Todos os campos derivados vêm de anotações feitas em UMA consulta por
+    `grade_do_organizador`. Se algum deles passar a ser calculado aqui com um
+    acesso a relação, a grade volta a ser N+1 sem que nenhum teste de
+    comportamento perceba.
+    """
+
+    id = serializers.IntegerField()
+    estado = serializers.CharField(source="status")
+    estado_rotulo = serializers.SerializerMethodField()
+    filme = serializers.SerializerMethodField()
+    sala = serializers.SerializerMethodField()
+    inicio = serializers.DateTimeField(source="starts_at")
+    preco = serializers.DecimalField(source="price", max_digits=8, decimal_places=2)
+    ocupacao = serializers.IntegerField()
+    a_venda = serializers.BooleanField()
+    pode_editar = serializers.SerializerMethodField()
+    pode_publicar = serializers.SerializerMethodField()
+    pode_cancelar = serializers.SerializerMethodField()
+
+    def get_estado_rotulo(self, screening):
+        """A palavra em português vem do MODELO, não de um dicionário daqui.
+
+        `Screening.Status` já carrega os três rótulos. Repeti-los aqui criaria
+        a segunda redação de "Rascunho", e a interface distingue os estados por
+        rótulo + forma — nunca só por cor (FR-029).
+        """
+        return screening.get_status_display()
+
+    def get_filme(self, screening):
+        return FilmeDaGradeSerializer(screening.movie).data
+
+    def get_sala(self, screening):
+        return SalaDaGradeSerializer(
+            screening.room, context={"lugares": getattr(screening, "sala_lugares", 0)}
+        ).data
+
+    def get_pode_editar(self, screening):
+        return screening.status == Screening.Status.DRAFT
+
+    def get_pode_publicar(self, screening):
+        """Rascunho ∧ futuro ∧ sala com lugar — as três de FR-026/FR-028.
+
+        É CONVENIÊNCIA DE INTERFACE, para desabilitar com explicação em vez de
+        esconder controle. Nunca autorização: `POST .../publicar/` revalida as
+        três no servidor, e é lá que a recusa acontece (FR-037).
+        """
+        return (
+            screening.status == Screening.Status.DRAFT
+            and bool(getattr(screening, "no_futuro", False))
+            and getattr(screening, "sala_lugares", 0) > 0
+        )
+
+    def get_pode_cancelar(self, screening):
+        """Rascunho E publicada. Cancelar não exige ter publicado antes.
+
+        Sem o cancelamento de rascunho, um rascunho errado ficaria na grade
+        para sempre — apagar sessão está fora de escopo (FR-030).
+        """
+        return screening.status in (
+            Screening.Status.DRAFT,
+            Screening.Status.PUBLISHED,
+        )
+
+
+class SalaDoPainelSerializer(serializers.Serializer):
+    """Uma sala na lista do painel, com o que decide se ela pode mudar.
+
+    `lugares` é CONTADO, e pode divergir de `capacidade`: a geometria trunca no
+    teto de 26 fileiras, e uma sala do seed acima disso tem menos lugares do
+    que declara. Exibir `capacidade` como se fosse o mapa esconderia a
+    diferença justamente na tela que existe para mostrá-la (R1).
+    """
+
+    id = serializers.IntegerField()
+    nome = serializers.CharField(source="name")
+    capacidade = serializers.IntegerField(source="capacity")
+    lugares = serializers.IntegerField()
+    acessiveis = serializers.IntegerField()
+    ocupacao_viva = serializers.IntegerField()
+    pode_trocar_capacidade = serializers.SerializerMethodField()
+
+    def get_pode_trocar_capacidade(self, room):
+        """`ocupacao_viva == 0` — dica de interface, nunca autorização.
+
+        O `PATCH` revalida lendo a ocupação de novo, e o PROTECT de `Seat` é a
+        rede embaixo dos dois (FR-020, R5).
+        """
+        return getattr(room, "ocupacao_viva", 0) == 0

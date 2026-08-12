@@ -8,6 +8,7 @@ from apps.screening.views import (
     ReservationCreateView,
     ReservationDetailView,
     SeatMapView,
+    SessoesView,
     SharedTicketView,
     TicketDetailView,
     TicketShareLinkView,
@@ -56,4 +57,10 @@ urlpatterns = [
         name="gate-screenings",
     ),
     path("portaria/validar/", GateValidateView.as_view(), name="gate-validate"),
+    # Programação (013). Todo endereço sob `programacao/` exige o papel
+    # organizador, e é o prefixo que torna a regra legível de fora: um endpoint
+    # de programação colocado FORA dele é falha de FR-034, ainda que declare a
+    # permissão certa. A outra metade da cobertura é herdar de
+    # `ProgramacaoViewBase` — ver o docstring dela.
+    path("programacao/sessoes/", SessoesView.as_view(), name="programacao-sessoes"),
 ]

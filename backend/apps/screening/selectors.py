@@ -4,13 +4,21 @@ Ficam fora das views para serem testáveis sem HTTP — mesmo padrão de
 `apps/catalog/selectors.py`.
 """
 
-from django.db.models import Exists, OuterRef
+from django.db.models import (
+    BooleanField,
+    Count,
+    Exists,
+    ExpressionWrapper,
+    OuterRef,
+    Q,
+)
 from django.utils import timezone
 from django.db.models.functions import Now
 
 from apps.screening.models import (
     Reservation,
     ReservedSeat,
+    Room,
     Screening,
     Seat,
     Ticket,
@@ -234,3 +242,101 @@ def sessoes_da_portaria():
         .select_related("movie", "room")
         .order_by("starts_at")
     )
+
+
+# --- Programação do organizador (feature 013) -----------------------------
+#
+# ESTA É A ÚNICA SEÇÃO DO ARQUIVO QUE EXPÕE GESTÃO: estado da sessão,
+# capacidade da sala e ocupação NUMÉRICA. Tudo acima serve superfície pública
+# ou do dono, e nada daqui pode migrar para lá — a fronteira está escrita em
+# `data-model.md` §fronteira entre painel e público.
+
+
+def _ocupacao_viva_em(caminho):
+    """A condição de ocupação viva, alcançada por um caminho de relação.
+
+    CONSOME `Reservation.OCUPANDO` — não a reescreve. O `Q` de lá tem dois
+    termos (paga OU não vencida) e o comentário do modelo explica por que
+    nenhum basta sozinho; repeti-los aqui seria a quarta cópia de uma regra
+    que a 008 consolidou justamente por já ter sido corrigida em duas de três
+    cópias.
+
+    A subconsulta `__in` é a mesma técnica de `Screening.seats_taken` e de
+    `ocupacoes_vivas`, e é o que permite prefixar a regra sem transcrevê-la.
+    """
+    return Q(**{f"{caminho}__reservation__in": Reservation.objects.filter(Reservation.OCUPANDO)})
+
+
+def grade_do_organizador():
+    """A grade inteira — os três estados —, pronta para serializar.
+
+    UMA CONSULTA, e é o ponto inteiro desta função. `Screening.seats_taken` é
+    uma property que consulta o banco POR INSTÂNCIA: correta para uma sessão,
+    que é como o mapa a usa, e desastrosa para uma grade de dezenas. O mesmo
+    vale para contar os lugares da sala e para perguntar se a sessão está à
+    venda (R6).
+
+    `distinct=True` nos dois `Count` não é zelo: são duas junções
+    multivaloradas na mesma consulta, e sem ele cada linha de uma multiplicaria
+    a contagem da outra.
+
+    `a_venda` reusa `sellable()` LITERALMENTE, por `Exists`. Reescrever
+    "publicada e no futuro" aqui criaria a segunda definição de vendável — e a
+    regra é de outro dono: `sellable()` responde "dá para comprar?" e nenhuma
+    outra pergunta (FR-033).
+
+    `no_futuro` usa `Now()`, a função do BANCO, pelo mesmo motivo que
+    `Reservation.OCUPANDO` e `ingressos_do_cliente`: a fronteira entre futuro e
+    passado é decisão do servidor, com um relógio só.
+    """
+    return (
+        Screening.objects.select_related("movie", "room")
+        .annotate(
+            ocupacao=Count(
+                "reserved_seats",
+                filter=_ocupacao_viva_em("reserved_seats"),
+                distinct=True,
+            ),
+            sala_lugares=Count("room__seats", distinct=True),
+            a_venda=Exists(Screening.objects.sellable().filter(pk=OuterRef("pk"))),
+            no_futuro=ExpressionWrapper(
+                Q(starts_at__gt=Now()), output_field=BooleanField()
+            ),
+        )
+        .order_by("starts_at", "room__name")
+    )
+
+
+def salas_do_organizador():
+    """As salas com lugares, acessíveis e ocupação viva — também em uma consulta.
+
+    `lugares` pode divergir de `capacity`, e a divergência é legítima: a
+    geometria trunca no teto de 26 fileiras, e uma sala do seed criada acima
+    disso tem menos lugares do que a capacidade declara. Por isso o número
+    exibido é CONTADO, nunca lido de `capacity` (R1).
+
+    `ocupacao_viva` atravessa todas as sessões da sala, e não uma: a pergunta
+    que ela responde é "esta sala pode mudar de capacidade?", e um lugar
+    vendido em qualquer sessão já responde não (FR-020).
+    """
+    return Room.objects.annotate(
+        lugares=Count("seats", distinct=True),
+        acessiveis=Count(
+            "seats", filter=Q(seats__kind=Seat.Kind.ACCESSIBLE), distinct=True
+        ),
+        ocupacao_viva=Count(
+            "screenings__reserved_seats",
+            filter=_ocupacao_viva_em("screenings__reserved_seats"),
+            distinct=True,
+        ),
+    ).order_by("name")
+
+
+def ocupacao_viva_da_sala(room):
+    """Quantos lugares desta sala estão ocupados, agora.
+
+    Consumida por `services/salas.alterar_capacidade` para RECUSAR COM FRASE.
+    A garantia continua sendo o PROTECT de `Seat` em `ReservedSeat.seat` — se
+    esta leitura errar, o banco recusa de qualquer forma (R5).
+    """
+    return ocupacoes_vivas().filter(screening__room=room).count()

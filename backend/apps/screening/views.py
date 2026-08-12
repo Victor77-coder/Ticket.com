@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.authentication import SessionAuthenticationSemCsrf
+from apps.accounts.permissions import IsOrganizer
 from apps.screening import selectors
 from apps.screening.models import Reservation, Screening
 from apps.screening.permissions import (
@@ -22,6 +23,8 @@ from apps.screening.permissions import (
 )
 from apps.screening.serializers import (
     estado_do_link,
+    SalaDoPainelSerializer,
+    SessaoDaGradeSerializer,
     SessaoDaPortaSerializer,
     ValidacaoInputSerializer,
     ValidacaoSerializer,
@@ -590,3 +593,50 @@ def _grupo_de(ingresso):
     """
     inicio = ingresso.reserved_seat.screening.starts_at
     return "futuro" if inicio > timezone.now() else "passado"
+
+
+# --- Programação do organizador (feature 013) -----------------------------
+
+ENTRE_PARA_PROGRAMAR = {"detail": "Entre para programar sessões."}
+
+
+class ProgramacaoViewBase(APIView):
+    """O que TODA rota de programação compartilha: quem entra e como recusa.
+
+    Mesma autenticação sem CSRF de 007, 008, 009 e 010 — quem chama é o Next,
+    servidor a servidor —, e a mesma tradução do `401`, com a frase desta área.
+
+    A tradução existe porque o DRF converte "não autenticado" em `403` quando o
+    autenticador não oferece `WWW-Authenticate`, que é o caso da sessão. Sem
+    ela, visitante e papel errado sairiam iguais, e o front não saberia quando
+    conduzir à entrada e quando renderizar a recusa. Conduzir um cliente à
+    entrada por causa de um `403` é caminho sem saída: entrar de novo não muda
+    o papel (R11).
+
+    HERDAR DAQUI É O QUE COBRE UM ENDPOINT NOVO. A outra metade é o prefixo
+    `/api/v1/programacao/` — juntos, fazem a regra de FR-034 legível de fora,
+    em vez de depender de alguém lembrar de declarar a permissão.
+    """
+
+    authentication_classes = [SessionAuthenticationSemCsrf]
+    permission_classes = [IsAuthenticated, IsOrganizer]
+
+    def handle_exception(self, exc):
+        if isinstance(exc, NotAuthenticated):
+            return Response(ENTRE_PARA_PROGRAMAR, status=401)
+        return super().handle_exception(exc)
+
+
+class SessoesView(ProgramacaoViewBase):
+    """GET /api/v1/programacao/sessoes/ — a grade, com os três estados.
+
+    Grade vazia devolve `200` com `results: []`, nunca `404`: "nada programado
+    ainda" é uma TELA escrita para gente, com o convite a programar a primeira
+    sessão — não a ausência de um recurso. É a mesma decisão que
+    `MyTicketsView` já registrou para o cliente sem ingressos.
+    """
+
+    def get(self, request):
+        sessoes = selectors.grade_do_organizador()
+        dados = SessaoDaGradeSerializer(sessoes, many=True).data
+        return Response({"count": len(dados), "results": dados})
