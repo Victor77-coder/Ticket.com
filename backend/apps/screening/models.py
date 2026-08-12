@@ -9,13 +9,18 @@ ReservedSeat e `unico_assento_por_sessao` nasceram na mesma migração. A
 garantia continua sendo a razão de o modelo poder existir — ver a seção
 "onde a garantia vive" em specs/007-seat-selection/data-model.md.
 
-Ticket permanece fora: emissão de ingresso é a próxima feature.
+A feature 008 fez o mesmo com o par seguinte: `Payment` e `Ticket` nasceram
+na mesma migração que as constraints que os protegem, porque "pagamento
+aprovado DEVE emitir o ingresso; não existe estado intermediário durável em
+que o assento esteja preso sem dono" é a mesma exigência lida do outro lado.
 """
 
 import uuid
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
+from django.db.models.functions import Now
 from django.utils import timezone
 
 
@@ -91,10 +96,14 @@ class Screening(models.Model):
         é por isso que a 007 pôde preenchê-la sem migração de dados.
 
         Reserva vencida não conta: a liberação é por consulta, sem depender
-        de rotina agendada ter passado.
+        de rotina agendada ter passado. Reserva PAGA conta sempre — o lugar
+        vendido não volta ao estoque no vencimento original.
+
+        A regra vem de `Reservation.OCUPANDO`, e é consumida daqui, não
+        copiada: ver o comentário de lá.
         """
         return self.reserved_seats.filter(
-            reservation__expires_at__gt=timezone.now()
+            reservation__in=Reservation.objects.filter(Reservation.OCUPANDO)
         ).count()
 
     @property
@@ -144,6 +153,8 @@ class Reservation(models.Model):
         HELD = "held", "Reservada"
         EXPIRED = "expired", "Expirada"
         CANCELLED = "cancelled", "Cancelada"
+        # Terminal: não há estorno nem cancelamento de compra nesta feature.
+        PAID = "paid", "Paga"
 
     screening = models.ForeignKey(
         Screening, related_name="reservations", on_delete=models.PROTECT
@@ -161,6 +172,28 @@ class Reservation(models.Model):
     idempotency_key = models.UUIDField(default=uuid.uuid4, unique=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # A regra de ocupação viva, em UM lugar só.
+    #
+    # Antes da 008 ela era só o prazo, e estava escrita TRÊS vezes: aqui via
+    # `Screening.seats_taken`, em `selectors.ocupacoes_vivas` e em Python
+    # dentro de `services/reservas._liberar_ou_recusar`. Uma regra de dois
+    # termos copiada três vezes é uma regra que alguém corrige em duas.
+    #
+    # Os dois termos são necessários e nenhum basta:
+    #   - só o prazo  → a reserva PAGA não mexe em `expires_at`, então dez
+    #                   minutos depois da compra o lugar VENDIDO volta ao
+    #                   estoque — e `_liberar_ou_recusar` apaga a ocupação
+    #                   dele sem violar constraint nenhuma, porque apagar
+    #                   antes de inserir é operação legal para o banco;
+    #   - só o status → o lugar ficaria preso até alguém marcar a expiração,
+    #                   e marcar exigiria a rotina agendada que a 007 evitou
+    #                   justamente para não ter a janela que ela cria.
+    #
+    # `Now()` é a função do banco, não `timezone.now()`: este `Q` é avaliado
+    # uma vez na importação do módulo, e um instante do Python congelaria o
+    # relógio na subida do processo.
+    OCUPANDO = Q(status=Status.PAID) | Q(expires_at__gt=Now())
 
     class Meta:
         verbose_name = "reserva"
@@ -222,3 +255,122 @@ class ReservedSeat(models.Model):
 
     def __str__(self):
         return f"{self.seat} — sessão {self.screening_id}"
+
+
+class Payment(models.Model):
+    """Uma tentativa de cobrança simulada sobre uma reserva.
+
+    Sem transação financeira real e sem provedor externo (FR-005). O
+    desfecho é decidido pelo número do cartão, por tabela fixa em
+    `settings.PAYMENT_TEST_CARDS` — determinístico, nunca por sorteio, porque
+    a constitution exige que os dois caminhos sejam exercitáveis pelo
+    avaliador e recusa por sorteio não é exercitável nem testável.
+    """
+
+    class Status(models.TextChoices):
+        APPROVED = "approved", "Aprovado"
+        DECLINED = "declined", "Recusado"
+
+    class DeclineReason(models.TextChoices):
+        """Chave, não frase.
+
+        A redação em português vive na camada de apresentação. Motivo gravado
+        como texto livre diverge da tela na primeira revisão de redação.
+        """
+
+        INSUFFICIENT_FUNDS = "saldo_insuficiente", "Saldo insuficiente"
+        EXPIRED_CARD = "cartao_expirado", "Cartão expirado"
+        ISSUER_DECLINED = "recusado_pelo_emissor", "Recusado pelo emissor"
+
+    reservation = models.ForeignKey(
+        Reservation, related_name="payments", on_delete=models.PROTECT
+    )
+    status = models.CharField(max_length=12, choices=Status.choices)
+    decline_reason = models.CharField(
+        max_length=32, choices=DeclineReason.choices, blank=True, default=""
+    )
+    # Congelado no instante da cobrança, calculado pelo servidor a partir do
+    # preço da sessão e da quantidade de lugares. Valor vindo do cliente não é
+    # aceito em nenhuma forma, nem para conferência (FR-003).
+    amount = models.DecimalField(max_digits=8, decimal_places=2)
+
+    # SÓ ISTO do cartão. Não há cobrança real, então guardar o número não tem
+    # nem a desculpa de recobrança — seria risco puro sem contrapartida
+    # (FR-011). O número completo e o CVV não são persistidos em lugar nenhum.
+    card_last4 = models.CharField(max_length=4)
+    card_brand = models.CharField(max_length=16)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "pagamento"
+        verbose_name_plural = "pagamentos"
+        ordering = ["-created_at"]
+        constraints = [
+            # Metade da garantia do Princípio II nesta feature.
+            #
+            # ÍNDICE PARCIAL, e aqui ele é possível — ao contrário da 007.
+            # Lá o predicado seria `expira_em > now()`, e o PostgreSQL exige
+            # predicado IMUTÁVEL em índice parcial: `now()` não é, e a
+            # constraint teve de ser absoluta. Aqui o predicado é uma coluna
+            # comparada a um literal, que é imutável.
+            #
+            # É essa diferença que permite guardar TODAS as tentativas
+            # recusadas, como o FR-012 exige, sem que a unicidade as proíba.
+            # Uma `UNIQUE(reservation)` sem condição impediria a segunda
+            # tentativa — justamente o que a US2 promete ao cliente.
+            models.UniqueConstraint(
+                fields=["reservation"],
+                condition=models.Q(status="approved"),
+                name="um_pagamento_aprovado_por_reserva",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Pagamento {self.pk} — reserva {self.reservation_id} — {self.status}"
+
+
+class Ticket(models.Model):
+    """O direito de UMA pessoa entrar na sala.
+
+    Um ingresso por LUGAR reservado, nunca um por reserva: quem entra é uma
+    pessoa por assento, e é o ingresso que a portaria lê na catraca. Uma
+    reserva de três lugares gera três ingressos com QR próprio (FR-014).
+
+    NENHUM campo `used`/`used_at` aqui, e a ausência é deliberada: a
+    transição para "utilizado" e a garantia de validação única nascem juntas
+    na feature da portaria — o mesmo cuidado que a 007 teve com `ReservedSeat`
+    e sua constraint. Acrescentar a coluna agora criaria um estado que nada
+    transiciona e nada protege.
+    """
+
+    # Identidade pública, e é ela que vai dentro do código assinado.
+    # UUID e não a chave primária: sequencial revelaria quantos ingressos
+    # existem e convidaria a tentar o vizinho (FR-032).
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+
+    # A OUTRA METADE da garantia. `OneToOneField` É `UNIQUE` na coluna, e é
+    # ABSOLUTA, sem predicado: nenhuma sequência de operações produz dois
+    # ingressos para o mesmo assento reservado.
+    #
+    # NÃO TROCAR POR ForeignKey. A troca não muda uma linha de lógica visível
+    # e remove a garantia inteira — é a mesma classe de erro que enfraquecer
+    # a constraint da 007 com um `condition`.
+    #
+    # A ligação é com a ocupação, e não com (reserva, assento), porque
+    # `ReservedSeat` já é a linha que diz "este lugar, nesta sessão, é desta
+    # reserva" e já carrega a constraint da 007. Pendurar o ingresso nela faz
+    # a unicidade do ingresso herdar a unicidade do assento.
+    reserved_seat = models.OneToOneField(
+        ReservedSeat, related_name="ticket", on_delete=models.PROTECT
+    )
+    payment = models.ForeignKey(Payment, related_name="tickets", on_delete=models.PROTECT)
+    issued_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "ingresso"
+        verbose_name_plural = "ingressos"
+        ordering = ["reserved_seat__seat__row", "reserved_seat__seat__number"]
+
+    def __str__(self):
+        return f"Ingresso {self.public_id} — {self.reserved_seat}"
