@@ -17,6 +17,17 @@ env = environ.Env(
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
+
+# Segredo que assina o código do ingresso. PRÓPRIO e DISTINTO da SECRET_KEY,
+# por exigência do Princípio III e do FR-031: são dois raios de comprometimento
+# diferentes. Vazar a SECRET_KEY compromete sessões; vazar esta compromete a
+# catraca. Amarrar as duas faz um incidente virar dois.
+#
+# Sem valor padrão de propósito — um padrão em código viraria o segredo real de
+# todo mundo que não leu o README, e o QR passaria a ser forjável por quem leu
+# o repositório. Falta da variável derruba o boot, e isso é o comportamento
+# desejado.
+TICKET_SIGNING_KEY = env("TICKET_SIGNING_KEY")
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 INSTALLED_APPS = [
@@ -170,3 +181,27 @@ ACCESSIBLE_SEATS_PER_ROOM = 3
 
 # Lugares por fileira do mapa. O corredor visual fica entre o quinto e o sexto.
 SEATS_PER_ROW = 10
+
+# --- Pagamento simulado ---
+# A cobrança é simulada: sem transação financeira real e sem provedor externo
+# (FR-005). O desfecho é decidido pelo NÚMERO do cartão, por esta tabela.
+#
+# DETERMINÍSTICO, nunca por sorteio. A constitution exige que os dois caminhos
+# — aprovação e recusa — sejam "exercitáveis pelo avaliador", e recusa que
+# aparece uma vez em cada cinco não é exercitável nem testável: o avaliador
+# pode não vê-la, e o teste falharia sozinho de vez em quando.
+#
+# ESTA TABELA É CONTRATO COM O README (FR-007). Mudar um número aqui sem mudar
+# o README quebra a única forma que o avaliador tem de alcançar a recusa.
+#
+# Os números são os de ambiente de teste que qualquer pessoa que já integrou
+# pagamento reconhece — quem digitar 4242… por reflexo acerta o caminho feliz
+# sem consultar nada. Qualquer outro número bem formado é aprovado.
+PAYMENT_DECLINE_CARDS = {
+    "4000000000009995": "saldo_insuficiente",
+    "4000000000000069": "cartao_expirado",
+    "4000000000000002": "recusado_pelo_emissor",
+}
+
+# Documentado no README como o cartão do caminho feliz.
+PAYMENT_APPROVED_CARD = "4242424242424242"
