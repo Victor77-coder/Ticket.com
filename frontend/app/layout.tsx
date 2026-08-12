@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Archivo } from "next/font/google";
+import localFont from "next/font/local";
 import "@/styles/tokens.css";
 
 import { SiteHeader } from "@/components/header/SiteHeader";
@@ -29,6 +30,25 @@ const archivo = Archivo({
   variable: "--fonte-archivo",
 });
 
+/**
+ * Cabinet Grotesk — a família da MARCA, e só dela.
+ *
+ * Auto-hospedada: o arquivo vive em `public/fontes/`, com a licença ao lado.
+ * Nenhuma requisição a terceiro em tempo de visita — Princípio VII aplicado a
+ * fontes, a mesma razão que fez a 006 escolher `next/font` para a interface.
+ *
+ * `adjustFontFallback` declara a métrica da substituta a partir do arquivo:
+ * sem isso o cabeçalho SALTA quando a fonte chega, que é o defeito que a 006
+ * já tinha evitado na família da interface (FR-018).
+ */
+const cabinet = localFont({
+  src: "../public/fontes/CabinetGrotesk-Variable.woff2",
+  variable: "--fonte-cabinet",
+  display: "swap",
+  weight: "100 900",
+  adjustFontFallback: "Arial",
+});
+
 export const metadata: Metadata = {
   // O título do navegador carrega o mesmo nome do cabeçalho (FR-004).
   title: "ticket.com — ingressos de cinema",
@@ -41,7 +61,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const sessao = await getSessao();
 
   return (
-    <html lang="pt-BR" className={archivo.variable}>
+    <html lang="pt-BR" className={`${archivo.variable} ${cabinet.variable}`}>
       <body>
         {/* O cabeçalho mora no layout raiz, não em cada página: é isso que
          * garante a mesma composição em todas elas (FR-001). */}

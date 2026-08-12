@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+  <!-- A variante compacta da marca: o `t` de ticket e o ponto do `.com`.
+       Mesma geometria de MarcaGrafica.tsx, com o fundo da interface, para
+       funcionar na aba de qualquer navegador. -->
+  <rect width="24" height="24" rx="5" fill="#0a0a0f"/>
+  <path d="M11 3 v14.2 a3.8 3.8 0 0 0 3.8 3.8 H18" fill="none" stroke="#f4f4f7" stroke-width="3" stroke-linecap="square"/>
+  <path d="M5 8.5 H17" fill="none" stroke="#f4f4f7" stroke-width="3" stroke-linecap="square"/>
+  <circle cx="5" cy="19.2" r="2.6" fill="#ff2e88"/>
+</svg>

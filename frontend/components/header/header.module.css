@@ -42,20 +42,57 @@
 
 /* --- Identidade --- */
 
-/* O wordmark é texto, não imagem (R8): selecionável, escala com o zoom e é
- * lido corretamente por leitor de tela. A autoria vem do tratamento
- * tipográfico, não de um asset importado. */
+/* A marca: desenho + nome.
+ *
+ * O NOME continua sendo texto, não imagem (R8 da 006): selecionável, escala
+ * com o zoom e é lido corretamente por leitor de tela. O que mudou na 011 é
+ * que ele agora sai na família da MARCA, não na da interface — e ganhou um
+ * desenho ao lado.
+ *
+ * O DESENHO é geometria própria em SVG, não um glifo vetorizado: aparece
+ * igual antes de a fonte chegar, e a licença da família torna trabalho
+ * derivado propriedade do licenciador. Ver MarcaGrafica.tsx. */
 .marca {
   display: inline-flex;
-  align-items: baseline;
-  gap: 0.05em;
+  align-items: center;
+  gap: 0.4em;
+  font-family: var(--fonte-marca);
   font-size: var(--texto-lg);
-  font-weight: var(--peso-forte);
-  letter-spacing: -0.03em;
+  font-weight: var(--peso-display);
+  letter-spacing: -0.035em;
   line-height: var(--altura-linha-apertada);
   color: var(--cor-texto);
   text-decoration: none;
   white-space: nowrap;
+}
+
+/* O desenho herda a cor do texto pelo `currentColor`; só o ponto é do
+ * destaque, e é ele que liga o desenho ao sufixo do nome. */
+.marcaDesenho {
+  flex-shrink: 0;
+}
+
+.marcaPonto {
+  fill: var(--cor-destaque);
+  transition: fill var(--transicao-rapida);
+}
+
+.marca:hover .marcaPonto {
+  fill: var(--cor-destaque-forte);
+}
+
+/* O nome, quando ele cabe. Some em tela estreita, onde o desenho sozinho
+ * carrega a marca. */
+.marcaNome {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.05em;
+}
+
+@media (max-width: 30rem) {
+  .marcaNome {
+    display: none;
+  }
 }
 
 .marcaSufixo {
