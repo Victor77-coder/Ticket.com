@@ -2,8 +2,9 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Plan: `specs/011-marca-sem-laranja/plan.md`
-- Spec: `specs/011-marca-sem-laranja/spec.md`
+- Plan: `specs/011-marca-sem-laranja/plan.md` — identidade entregue; a 012 ainda não tem plano
+- Spec atual: `specs/012-telas-de-compra/spec.md`
+- Spec anterior: `specs/011-marca-sem-laranja/spec.md`
 - Research: `specs/011-marca-sem-laranja/research.md`
 - Data model: `specs/011-marca-sem-laranja/data-model.md`
 - Contracts: `specs/011-marca-sem-laranja/contracts/`
@@ -27,30 +28,22 @@ Features anteriores, já implementadas:
   fechado**. A garantia é `UPDATE ... WHERE used_at IS NULL` — sem constraint, o teste de
   concorrência é a única defesa. A portaria tem **tela única**: pousa em `/portaria` ao entrar e não
   alcança o catálogo (middleware que nega por padrão).
+- `specs/011-marca-sem-laranja/` — cor, tipografia de marca e logo. EMENDA o FR-020 da 006.
+  Magenta `#ff2e88` (neon de fachada). Cabinet Grotesk no nome. Logo: `t` com o ponto do `.com`.
+  **A composição da home ficou de fora** — achado da checagem anti-slop, não desta feature.
 
-**A feature 011 troca a cor da marca, dá tipografia própria ao nome e cria a logo. EMENDA o FR-020
-da 006** ("paleta escura com destaque laranja") — revoga a segunda metade, mantém a primeira.
+**A feature 012 recomõe só três telas: filme, assentos e pagamento.** Catálogo (home, carrossel,
+trilhas, busca), seed e contratos de destaque **não entram**. Sessões viram grade por dia e sala;
+Sobre e Trailers usam o que o filme já persiste; o resumo da compra fica ao lado do mapa e do
+formulário; o ingresso emitido nessa tela passa a ler como objeto. Nenhuma regra de negócio é
+reaberta.
 
-**A cor sai por ELIMINAÇÃO, não por gosto.** A restrição que ninguém antecipa: a marca não pode
-colidir com cor de estado. `--cor-alerta` é âmbar (38°), e isso **elimina o âmbar** — o candidato
-mais óbvio para um cinema — porque ele fica a 8° dela. Sobra o magenta: **`#ff2e88`**. Conceito:
-das quatro luzes de um cinema (marquise, saída, projeção, fachada), três já são cores de estado;
-sobrou o **neon da fachada**.
+**A 011 permanece premissa, não entregável da 012.** Nomes de token iguais, valores iguais, marca
+igual. Se a composição precisar de espaço ou raio novo, ele nasce em token — disciplina da 006.
 
-**Os NOMES dos tokens não mudam, só os valores.** O laranja vive em 4 declarações num arquivo só;
-12 arquivos consomem os nomes em 28 usos. **Nenhum consumidor deve ser tocado** — se um precisar, um
-valor vazou dos tokens.
-
-**A armadilha é de classe nova: trocar cor NÃO QUEBRA NADA.** Os 197 testes de front-end continuam
-verdes com o contorno de foco invisível, o texto do botão ilegível e o assento selecionado
-indistinguível do tomado. Nenhum teste mede contraste. Por isso existe `tests/tokens.test.ts`, que
-lê os tokens e mede: contraste WCAG, ΔE contra as cores de estado, e ausência da cor antiga.
-
-**Dois tokens a vigiar**: `--cor-destaque-forte` é o **contorno de foco global** (`tokens.css:293`)
-e é mais clara que a base de propósito; `--cor-fundo-qr` continua **branco**, exceção deliberada da
-008 — harmonizá-lo com a marca faz a catraca parar de ler.
-
-**`--cor-sobre-destaque` precisa passar em DOIS fundos**: a base (repouso) e a `-forte` (hover).
+**Dois tokens a vigiar** (herdados da 011, ainda válidos): `--cor-destaque-forte` é o contorno de
+foco global; `--cor-fundo-qr` continua **branco**. Harmonizá-lo com a marca na recomposição do
+ingresso faz a catraca parar de ler.
 
 Project constitution (governa todas as features): `.specify/memory/constitution.md`
 <!-- SPECKIT END -->
