@@ -142,4 +142,30 @@ describe("uma reserva de três lugares", () => {
 
     expect(screen.queryByText(/Ingresso \d+ de \d+/)).not.toBeInTheDocument();
   });
+
+  it("sem prop, a variante é o cartão da 009", () => {
+    render(
+      <ul>
+        <Ingresso ingresso={criarIngresso()} />
+      </ul>,
+    );
+
+    expect(screen.getByRole("listitem")).toHaveAttribute("data-variante", "cartao");
+    expect(screen.getByText(CODIGO)).toBeInTheDocument();
+    expect(screen.getByRole("img")).toHaveAttribute("src", expect.stringContaining("data:image"));
+  });
+
+  it("variante objeto destaca o lugar e mantém QR e código", () => {
+    render(
+      <ul>
+        <Ingresso ingresso={criarIngresso()} variante="objeto" />
+      </ul>,
+    );
+
+    const item = screen.getByRole("listitem");
+    expect(item).toHaveAttribute("data-variante", "objeto");
+    expect(within(item).getAllByText("A3").length).toBeGreaterThanOrEqual(1);
+    expect(within(item).getByText(CODIGO)).toBeInTheDocument();
+    expect(within(item).getByRole("img")).toBeInTheDocument();
+  });
 });

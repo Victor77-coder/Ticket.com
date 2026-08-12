@@ -98,6 +98,48 @@
   line-height: var(--altura-linha-base);
 }
 
+/* Variante objeto — só a tela de pagamento após aprovação (012). Picote com
+ * tokens de fundo e borda; o QR continua branco nas duas variantes. */
+.objeto {
+  position: relative;
+}
+
+.objeto::before,
+.objeto::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: var(--esp-4);
+  height: var(--esp-4);
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pilula);
+  transform: translateY(-50%);
+}
+
+.objeto::before {
+  left: calc(var(--esp-4) / -2);
+}
+
+.objeto::after {
+  right: calc(var(--esp-4) / -2);
+}
+
+.objeto .codigo {
+  border-left: 1px dashed var(--cor-borda);
+  padding-left: var(--esp-5);
+}
+
+.lugarDestaque {
+  margin: 0 0 var(--esp-2);
+  font-size: var(--texto-2xl);
+  font-weight: var(--peso-display);
+  font-variation-settings: "wdth" var(--largura-display);
+  letter-spacing: var(--espacamento-display);
+  color: var(--cor-destaque);
+  line-height: var(--altura-linha-apertada);
+}
+
 /* --- O painel de compartilhamento (feature 009) --- */
 
 .painel {

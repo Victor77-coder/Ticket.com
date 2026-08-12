@@ -127,6 +127,12 @@ describe("aprovação", () => {
     // FR-038: o código em texto acompanha o QR — é o que a portaria digita.
     expect(screen.getByText("codigo-assinado-A")).toBeInTheDocument();
     expect(screen.getByText("codigo-assinado-B")).toBeInTheDocument();
+
+    const itens = screen.getAllByRole("listitem");
+    expect(itens).toHaveLength(2);
+    for (const item of itens) {
+      expect(item).toHaveAttribute("data-variante", "objeto");
+    }
   });
 
   it("anuncia o resultado a quem não está olhando para a tela", async () => {

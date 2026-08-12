@@ -34,6 +34,11 @@ export type IngressoProps = {
    */
   indice?: number;
   total?: number;
+  /**
+   * `objeto` só na tela de pagamento após aprovação. O padrão permanece o
+   * cartão da 009 — meus ingressos e a página pública não passam a prop (012).
+   */
+  variante?: "cartao" | "objeto";
 };
 
 function formatarHorario(iso: string) {
@@ -46,17 +51,25 @@ function formatarHorario(iso: string) {
   }).format(new Date(iso));
 }
 
-export default function Ingresso({ ingresso, indice, total }: IngressoProps) {
+export default function Ingresso({
+  ingresso,
+  indice,
+  total,
+  variante = "cartao",
+}: IngressoProps) {
   const lugar = `${ingresso.assento.fileira}${ingresso.assento.numero}`;
+  const classe =
+    variante === "objeto" ? `${estilos.ingresso} ${estilos.objeto}` : estilos.ingresso;
 
   return (
-    <li className={estilos.ingresso}>
+    <li className={classe} data-variante={variante}>
       <div className={estilos.dados}>
         {indice !== undefined && total !== undefined && (
           <p className={estilos.contagem}>
             Ingresso {indice} de {total}
           </p>
         )}
+        {variante === "objeto" && <p className={estilos.lugarDestaque}>{lugar}</p>}
         <h3 className={estilos.filme}>{ingresso.filme}</h3>
         <p className={estilos.detalhe}>{formatarHorario(ingresso.sessao)}</p>
         <p className={estilos.detalhe}>

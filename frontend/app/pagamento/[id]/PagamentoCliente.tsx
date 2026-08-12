@@ -154,6 +154,7 @@ export default function PagamentoCliente({ reserva, filme, sala, inicio }: Props
               ingresso={ingresso}
               indice={i + 1}
               total={pago.ingressos.length}
+              variante="objeto"
             />
           ))}
         </ul>
