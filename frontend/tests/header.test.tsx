@@ -88,3 +88,29 @@ describe("acesso à conta", () => {
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 });
+
+describe("cabeçalho de um papel de tela única", () => {
+  it("não oferece a busca do catálogo à portaria", () => {
+    // Oferecer e depois recusar é pior do que não oferecer: a busca leva ao
+    // catálogo, e a portaria seria devolvida à tela dela.
+    render(<SiteHeader sessao={{ nome: "Olívia", papel: "gate" }} />);
+
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  });
+
+  it("a marca leva a portaria à tela dela, não à home", () => {
+    render(<SiteHeader sessao={{ nome: "Olívia", papel: "gate" }} />);
+
+    expect(screen.getByRole("link", { name: /ticket\.com/i })).toHaveAttribute(
+      "href",
+      "/portaria",
+    );
+  });
+
+  it("o cliente continua com busca e marca apontando para a home", () => {
+    render(<SiteHeader sessao={{ nome: "Ana", papel: "customer" }} />);
+
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /ticket\.com/i })).toHaveAttribute("href", "/");
+  });
+});

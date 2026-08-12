@@ -234,6 +234,26 @@ test("o menu da conta também leva à validação", async ({ page }) => {
   await expect(page).toHaveURL(/\/portaria$/);
 });
 
+test("a portaria não alcança o catálogo", async ({ page }) => {
+  // Ela fica na porta validando; o catálogo é a tela de quem compra. Quem
+  // testa isto de verdade é o middleware — e é ele que faz a página criada
+  // amanhã nascer coberta, sem ninguém precisar lembrar.
+  await entrar(page, "portaria");
+
+  for (const caminho of ["/", "/filmes/duna-parte-dois", "/meus-ingressos"]) {
+    await page.goto(caminho);
+    await expect(page).toHaveURL(/\/portaria$/);
+  }
+
+  // E o cabeçalho não oferece o que levaria de volta: sem busca, e a marca
+  // aponta para a própria tela.
+  await expect(page.getByRole("combobox")).toHaveCount(0);
+  await expect(page.locator("header").getByRole("link").first()).toHaveAttribute(
+    "href",
+    "/portaria",
+  );
+});
+
 test("papel errado lê a explicação e não é mandado à entrada", async ({ page }) => {
   await entrar(page, "cliente1");
   await page.goto("/portaria");

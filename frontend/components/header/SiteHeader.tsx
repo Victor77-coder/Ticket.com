@@ -1,3 +1,4 @@
+import { CASA_DO_PAPEL, temTelaUnica } from "@/lib/papeis";
 import type { Sessao } from "@/lib/types";
 import { AccountMenu } from "./AccountMenu";
 import { BrandMark } from "./BrandMark";
@@ -24,13 +25,19 @@ type Props = {
 // síncrono preserva a decisão da feature 002 de mantê-lo testável como
 // componente, e deixa a busca de dados num lugar só.
 export function SiteHeader({ sessao = null }: Props) {
+  // Um papel de tela única não navega pelo catálogo, então o cabeçalho não
+  // oferece o que levaria a um redirecionamento de volta: a busca some, e a
+  // marca aponta para a tela dele. Oferecer e depois recusar é pior do que não
+  // oferecer — e a decisão vem da mesma tabela que decide o pouso da entrada e
+  // o item do menu, não de um `if` solto aqui.
+  const telaUnica = sessao ? temTelaUnica(sessao.papel) : false;
+  const destinoDaMarca = telaUnica ? CASA_DO_PAPEL[sessao!.papel]!.href : "/";
+
   return (
     <header className={styles.faixa}>
       <div className={styles.conteudo}>
-        <BrandMark />
-        <div className={styles.espacoBusca}>
-          <SearchBox />
-        </div>
+        <BrandMark destino={destinoDaMarca} />
+        <div className={styles.espacoBusca}>{!telaUnica && <SearchBox />}</div>
         <div className={styles.espacoConta}>
           <AccountMenu sessao={sessao} caminhoEntrada="/entrar" />
         </div>

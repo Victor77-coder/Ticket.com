@@ -304,6 +304,16 @@ O operador entra com a conta `portaria` e **já pousa na tela de validação** �
 não navega pelo site, então cair no catálogo de filmes seria cair no lugar errado. Depois disso, o
 **menu da conta** o traz de volta a qualquer momento ("Validar ingressos").
 
+**A portaria não alcança o catálogo.** Ela tem uma tela só, e o cabeçalho dela não oferece busca nem
+caminho de volta à home — tentar abrir qualquer outra página devolve à validação. A regra vive num
+middleware que **nega por padrão**: qualquer página nova nasce coberta, sem ninguém precisar
+lembrar.
+
+Vale dizer o que isso **não** é: não é segurança. O catálogo é público — um visitante vê as mesmas
+páginas, e a portaria veria tudo bastando sair da conta. É produto: evita oferecer a ela uma viagem
+que termina em recusa. A autorização de verdade continua no servidor, e é ela que devolve `403`
+quando a portaria tenta reservar, pagar ou abrir ingressos de cliente.
+
 Cada papel tem ali o seu destino de trabalho: cliente vai para "Meus ingressos", portaria para a
 validação. O cliente, porém, **pousa na home** ao entrar — ele entra para comprar, e mandá-lo direto
 para a lista faria um cliente novo aterrissar no estado vazio. O organizador não tem item porque o

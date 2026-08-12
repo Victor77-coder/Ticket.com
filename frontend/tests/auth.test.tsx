@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AccountMenu } from "@/components/header/AccountMenu";
+import { devolverParaCasa, temTelaUnica } from "@/lib/papeis";
 import { caminhoDeRetornoSeguro } from "@/lib/session";
 import { LoginForm } from "@/app/entrar/LoginForm";
 
@@ -200,6 +201,43 @@ describe("formulário de entrada", () => {
 });
 
 // --- Menu de conta --------------------------------------------------------
+
+describe("papel de tela única", () => {
+  it.each([
+    "/",
+    "/filmes/duna-parte-dois",
+    "/sessoes/272",
+    "/busca?q=matrix",
+    "/meus-ingressos",
+    "/entrar",
+  ])("devolve a portaria à tela dela ao tentar %s", (caminho) => {
+    // DENY POR PADRÃO: nenhuma destas aparece numa lista de proibidas — todas
+    // caem por não serem a casa do papel. É o que faz a página criada amanhã
+    // nascer coberta.
+    expect(devolverParaCasa("gate", caminho)).toBe("/portaria");
+  });
+
+  it.each(["/portaria", "/portaria/qualquer-coisa"])(
+    "não mexe quando a portaria já está em casa (%s)",
+    (caminho) => {
+      // Sem isto haveria laço de redirecionamento.
+      expect(devolverParaCasa("gate", caminho)).toBeNull();
+    },
+  );
+
+  it.each(["/", "/filmes/duna-parte-dois", "/meus-ingressos"])(
+    "não bloqueia o cliente em %s",
+    (caminho) => {
+      // O cliente circula pelo site inteiro: ele compra.
+      expect(devolverParaCasa("customer", caminho)).toBeNull();
+    },
+  );
+
+  it("o organizador não é bloqueado — ele ainda não tem tela própria", () => {
+    expect(devolverParaCasa("organizer", "/")).toBeNull();
+    expect(temTelaUnica("organizer")).toBe(false);
+  });
+});
 
 describe("menu de conta", () => {
   it("mostra o convite para entrar quando não há sessão", () => {
