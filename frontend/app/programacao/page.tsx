@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 import { EstadoVazio } from "@/components/programacao/EstadoVazio";
 import { Grade } from "@/components/programacao/Grade";
-import { COOKIE_SESSAO, fetchGrade } from "@/lib/api";
+import { fetchGrade } from "@/lib/api";
 
+import { chaveDeSessao, conduzirAEntrada, TelaDeErro, TelaDeRecusa } from "./guarda";
 import estilos from "@/components/programacao/programacao.module.css";
 
 /**
@@ -36,45 +35,13 @@ export const metadata = {
 };
 
 export default async function ProgramacaoPage() {
-  const chave = (await cookies()).get(COOKIE_SESSAO)?.value;
-
-  if (!chave) redirect("/entrar?next=/programacao");
-
+  const chave = await chaveDeSessao("/programacao");
   const resultado = await fetchGrade(chave);
 
   if (!resultado.ok) {
-    if (resultado.status === 401) redirect("/entrar?next=/programacao");
-
-    if (resultado.status === 403) {
-      return (
-        <main className={estilos.pagina}>
-          <section className={estilos.aviso} role="alert">
-            <h1 className={estilos.avisoTitulo}>Esta área é da programação</h1>
-            <p className={estilos.avisoTexto}>
-              Programar filmes, salas e sessões é trabalho de quem organiza a
-              grade. Sua conta tem outro papel neste sistema.
-            </p>
-            <Link href="/" className={estilos.acao}>
-              Voltar ao catálogo
-            </Link>
-          </section>
-        </main>
-      );
-    }
-
-    return (
-      <main className={estilos.pagina}>
-        <section className={estilos.aviso} role="alert">
-          <h1 className={estilos.avisoTitulo}>Não conseguimos carregar a grade</h1>
-          <p className={estilos.avisoTexto}>
-            O servidor não respondeu agora. Atualize a página em alguns instantes.
-          </p>
-          <Link href="/" className={estilos.acao}>
-            Voltar ao catálogo
-          </Link>
-        </section>
-      </main>
-    );
+    if (resultado.status === 401) conduzirAEntrada("/programacao");
+    if (resultado.status === 403) return <TelaDeRecusa />;
+    return <TelaDeErro titulo="Não conseguimos carregar a grade" />;
   }
 
   const { count, results } = resultado.data;

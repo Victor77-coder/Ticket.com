@@ -94,22 +94,22 @@ comprá-la até o ingresso pelo fluxo do cliente, sem rodar comando nenhum.
 
 ### Testes da US2
 
-- [ ] T024 [P] [US2] Escrever `backend/tests/test_programacao_concorrencia.py`: duas criações simultâneas da mesma `(sala, horário)` — exatamente uma grava, a outra recebe `409` com a frase que nomeia sala e horário (SC-004, R4), no mesmo formato dos testes de concorrência das 007/008/010
-- [ ] T025 [P] [US2] Completar `backend/tests/test_programacao_sessoes.py` com criação em rascunho e publicada, preço ausente/zero/negativo → `400`, `publicar: true` com horário passado → `400`, `publicar: true` em sala sem lugares → `400`, e rascunho com horário passado → **aceito** (contrato §POST sessoes)
-- [ ] T026 [P] [US2] Escrever `backend/tests/test_programacao_filmes.py::test_catalogo_local_lista_com_contagem_de_sessoes`, provando que `GET /api/v1/programacao/filmes/` agrega `sessoes` (não canceladas) sem N+1
-- [ ] T027 [P] [US2] Escrever `frontend/tests/e2e/programacao.spec.ts`: organizador entra, publica sessão de filme local, e um cliente encontra o horário na página do filme e chega ao mapa de assentos (SC-001, SC-002)
+- [X] T024 [P] [US2] Escrever `backend/tests/test_programacao_concorrencia.py`: duas criações simultâneas da mesma `(sala, horário)` — exatamente uma grava, a outra recebe `409` com a frase que nomeia sala e horário (SC-004, R4), no mesmo formato dos testes de concorrência das 007/008/010
+- [X] T025 [P] [US2] Completar `backend/tests/test_programacao_sessoes.py` com criação em rascunho e publicada, preço ausente/zero/negativo → `400`, `publicar: true` com horário passado → `400`, `publicar: true` em sala sem lugares → `400`, e rascunho com horário passado → **aceito** (contrato §POST sessoes)
+- [X] T026 [P] [US2] Escrever `backend/tests/test_programacao_filmes.py::test_catalogo_local_lista_com_contagem_de_sessoes`, provando que `GET /api/v1/programacao/filmes/` agrega `sessoes` (não canceladas) sem N+1
+- [X] T027 [P] [US2] Escrever `frontend/tests/e2e/programacao.spec.ts`: organizador entra, publica sessão de filme local, e um cliente encontra o horário na página do filme e chega ao mapa de assentos (SC-001, SC-002)
 
 ### Implementação da US2
 
-- [ ] T028 [US2] Implementar `criar_sessao(...)` em `backend/apps/screening/services/programacao.py`: `transaction.atomic()` **interno**, `Screening.objects.create(...)`, e `except IntegrityError` reconhecendo `uma_sessao_por_sala_e_horario` pelo **nome** para levantar `ConflitoDeHorario(sala, inicio)` (R4). Nenhum `exists()` prévio
-- [ ] T029 [US2] Acrescentar em `backend/apps/screening/serializers.py` o serializer de escrita de sessão (filme, sala, início, preço, `publicar`) com as recusas de campo do contrato — preço > 0, horário futuro só quando `publicar`, sala com ≥ 1 lugar quando `publicar` (FR-026, FR-027, FR-028)
-- [ ] T030 [US2] Acrescentar em `backend/apps/screening/serializers.py` e `selectors.py` a lista de salas para escolha (`nome`, `capacidade`, `lugares`, `acessiveis`, `ocupacao_viva`, `pode_trocar_capacidade`), com `ocupacao_viva` agregada por `Reservation.OCUPANDO` (contrato §GET salas, FR-021)
-- [ ] T031 [US2] Acrescentar em `backend/apps/catalog/serializers.py` o serializer do catálogo local para o painel (`id`, `tmdb_id`, `titulo`, `ano`, `poster_url`, `duracao_min`, `sessoes`) — sem tocar nos serializers públicos
-- [ ] T032 [US2] Implementar `CatalogoDoPainelView` (`GET programacao/filmes/`) em `backend/apps/catalog/views.py` e `SalasView` (`GET programacao/salas/`) em `backend/apps/screening/views.py`, ambas sob `IsOrganizer`, e registrá-las nas urls dos respectivos apps
-- [ ] T033 [US2] Implementar `SessoesView` (`POST`) em `backend/apps/screening/views.py`, mapeando `ConflitoDeHorario` para `409` com a frase do contrato e reusando a `GradeView` já registrada em `programacao/sessoes/`
-- [ ] T034 [US2] Criar `frontend/app/programacao/sessoes/nova/page.tsx` — escolher filme do catálogo local, sala, horário e preço, com "salvar rascunho" e "publicar" como duas ações explícitas (FR-022)
-- [ ] T035 [US2] Criar `frontend/components/programacao/FormularioDeSessao.tsx` exibindo as recusas do servidor campo a campo, e o `409` de conflito como frase que nomeia sala e horário
-- [ ] T036 [US2] Criar `frontend/app/api/programacao/filmes/route.ts` e `frontend/app/api/programacao/salas/route.ts` repassando status e corpo sem alteração
+- [X] T028 [US2] Implementar `criar_sessao(...)` em `backend/apps/screening/services/programacao.py`: `transaction.atomic()` **interno**, `Screening.objects.create(...)`, e `except IntegrityError` reconhecendo `uma_sessao_por_sala_e_horario` pelo **nome** para levantar `ConflitoDeHorario(sala, inicio)` (R4). Nenhum `exists()` prévio
+- [X] T029 [US2] Acrescentar em `backend/apps/screening/serializers.py` o serializer de escrita de sessão (filme, sala, início, preço, `publicar`) com as recusas de campo do contrato — preço > 0, horário futuro só quando `publicar`, sala com ≥ 1 lugar quando `publicar` (FR-026, FR-027, FR-028)
+- [X] T030 [US2] Acrescentar em `backend/apps/screening/serializers.py` e `selectors.py` a lista de salas para escolha (`nome`, `capacidade`, `lugares`, `acessiveis`, `ocupacao_viva`, `pode_trocar_capacidade`), com `ocupacao_viva` agregada por `Reservation.OCUPANDO` (contrato §GET salas, FR-021)
+- [X] T031 [US2] Acrescentar em `backend/apps/catalog/serializers.py` o serializer do catálogo local para o painel (`id`, `tmdb_id`, `titulo`, `ano`, `poster_url`, `duracao_min`, `sessoes`) — sem tocar nos serializers públicos
+- [X] T032 [US2] Implementar `CatalogoDoPainelView` (`GET programacao/filmes/`) em `backend/apps/catalog/views.py` e `SalasView` (`GET programacao/salas/`) em `backend/apps/screening/views.py`, ambas sob `IsOrganizer`, e registrá-las nas urls dos respectivos apps
+- [X] T033 [US2] Implementar `SessoesView` (`POST`) em `backend/apps/screening/views.py`, mapeando `ConflitoDeHorario` para `409` com a frase do contrato e reusando a `GradeView` já registrada em `programacao/sessoes/`
+- [X] T034 [US2] Criar `frontend/app/programacao/sessoes/nova/page.tsx` — escolher filme do catálogo local, sala, horário e preço, com "salvar rascunho" e "publicar" como duas ações explícitas (FR-022)
+- [X] T035 [US2] Criar `frontend/components/programacao/FormularioDeSessao.tsx` exibindo as recusas do servidor campo a campo, e o `409` de conflito como frase que nomeia sala e horário
+- [X] T036 [US2] Criar `frontend/app/api/programacao/sessoes/route.ts` repassando status e corpo sem alteração. **Os proxies de `filmes/` e `salas/` não foram criados**: as duas listas são lidas pelo componente de servidor, e um proxy sem chamador é código morto — o de `filmes/busca/` nasce na US3, onde o navegador digita
 
 **Checkpoint**: o painel entrega valor inteiro em versão mínima — programar e vender sem terminal.
 
