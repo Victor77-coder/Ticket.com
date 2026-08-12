@@ -14,6 +14,20 @@ type Props = {
 };
 
 /**
+ * Onde cada papel trabalha.
+ *
+ * `organizer` está ausente de propósito: o painel do organizador ainda não
+ * existe, e apontar para uma tela que recusa por papel seria pior do que não
+ * ter o item. Quando ele existir, entra aqui — e é por isso que isto é uma
+ * tabela e não dois `if`.
+ */
+const DESTINO_DO_PAPEL: Partial<Record<Sessao["papel"], { href: string; rotulo: string }>> =
+  {
+    customer: { href: "/meus-ingressos", rotulo: "Meus ingressos" },
+    gate: { href: "/portaria", rotulo: "Validar ingressos" },
+  };
+
+/**
  * Ilha cliente que dá dono ao `onAbrirConta` do `AccountButton`.
  *
  * O `AccountButton` da feature 002 já previa o estado autenticado com um
@@ -79,21 +93,31 @@ export function AccountMenu({ sessao, caminhoEntrada }: Props) {
         <div className={styles.contaMenu} role="menu" aria-label="Sua conta">
           <p className={styles.contaMenuPapel}>{rotuloDoPapel(sessao.papel)}</p>
 
-          {/* Só para cliente: organizador e portaria não têm ingressos, e um
-            * item que leva a uma recusa por papel é pior do que item nenhum.
+          {/* O destino de trabalho de cada papel.
+            *
+            * Cada papel tem UM lugar onde faz o que veio fazer, e é daqui que
+            * ele chega lá. Sem este item o usuário de portaria entra, cai no
+            * catálogo de filmes — que não é a tela dele — e não tem caminho
+            * nenhum até a validação a não ser digitar o endereço. Um papel
+            * cuja tela só é alcançável por endereço decorado é uma tela que,
+            * na prática, não existe.
+            *
+            * O organizador não aparece aqui porque o painel dele não existe
+            * ainda, e um item que leva a uma recusa por papel é pior do que
+            * item nenhum. Quando o painel existir, ele entra nesta tabela.
             *
             * O menu da conta é o lugar certo, e não a navegação principal do
-            * cabeçalho: o destino existe para metade dos papéis, e mexer na
-            * composição do `SiteHeader` seria alterar território da 002 sem
-            * precisar (R14). */}
-          {sessao.papel === "customer" && (
+            * cabeçalho: o destino MUDA por papel, e um item de navegação
+            * global que troca de rótulo conforme quem olha seria mais
+            * confuso do que útil. */}
+          {DESTINO_DO_PAPEL[sessao.papel] && (
             <Link
-              href="/meus-ingressos"
+              href={DESTINO_DO_PAPEL[sessao.papel]!.href}
               role="menuitem"
               className={styles.contaMenuItem}
               onClick={() => setAberto(false)}
             >
-              Meus ingressos
+              {DESTINO_DO_PAPEL[sessao.papel]!.rotulo}
             </Link>
           )}
 

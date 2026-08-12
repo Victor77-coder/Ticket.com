@@ -127,7 +127,14 @@ test("comprar → escolher a porta → válido → já utilizado → inválido",
   const { codigo } = await comprarIngressoDeHoje(page, request);
 
   await entrar(page, "portaria");
-  await page.goto("/portaria");
+
+  // PELO MENU DA CONTA, e não por `goto`: é assim que o porteiro chega. Se
+  // este caminho não existir, a tela só é alcançável digitando o endereço — e
+  // uma tela que depende de endereço decorado é uma tela que, na prática, não
+  // existe.
+  await page.locator("header").getByRole("button").first().click();
+  await page.getByRole("menuitem", { name: "Validar ingressos" }).click();
+  await expect(page).toHaveURL(/\/portaria$/);
 
   // --- A sessão da porta vem ANTES de qualquer leitura ---
   await expect(

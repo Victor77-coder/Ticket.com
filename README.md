@@ -300,7 +300,12 @@ simultâneos criam cinco credenciais ativas, e o dono revogaria uma achando que 
 **Validação na portaria** (`specs/010-gate-validation/`) — **é esta feature que fecha o fluxo ponta
 a ponta**: catálogo → sessão → assento → pagamento → ingresso → **entrada**.
 
-O operador entra com a conta `portaria`, escolhe **qual sessão aquela porta está recebendo** e
+O operador entra com a conta `portaria` e chega à tela pelo **menu da conta**, no cabeçalho —
+"Validar ingressos". Cada papel tem ali o seu destino de trabalho: cliente vai para "Meus
+ingressos", portaria para a validação. O organizador não tem item porque o painel dele ainda não
+existe, e apontar para uma tela que recusa por papel seria pior do que não ter o item.
+
+Na tela, o operador escolhe **qual sessão aquela porta está recebendo** e
 valida — pela câmera ou digitando o código escrito no ingresso. Cada apresentação produz um de
 **quatro desfechos**, distinguíveis por símbolo e título antes de qualquer cor: **pode entrar**,
 **já foi usado** (com a hora do primeiro uso), **ingresso de outra sessão** (com a sessão a que ele

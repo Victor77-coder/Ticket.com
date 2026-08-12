@@ -185,6 +185,36 @@ describe("menu de conta", () => {
     expect(screen.getByRole("menuitem", { name: "Sair" })).toBeInTheDocument();
   });
 
+  it.each([
+    ["customer", "Meus ingressos", "/meus-ingressos"],
+    ["gate", "Validar ingressos", "/portaria"],
+  ] as const)(
+    "leva %s ao destino de trabalho dele",
+    async (papel, rotulo, href) => {
+      // Sem este item, o usuário de portaria entra, cai no catálogo de filmes
+      // — que não é a tela dele — e só alcança a validação digitando o
+      // endereço. Um papel cuja tela depende de endereço decorado é uma tela
+      // que, na prática, não existe.
+      const usuario = userEvent.setup();
+      render(<AccountMenu sessao={{ nome: "Olívia", papel }} caminhoEntrada="/entrar" />);
+
+      await usuario.click(screen.getByRole("button", { name: /olívia/i }));
+
+      expect(screen.getByRole("menuitem", { name: rotulo })).toHaveAttribute("href", href);
+    },
+  );
+
+  it("não oferece destino de trabalho ao organizador, que ainda não tem painel", async () => {
+    // Um item que leva a uma recusa por papel é pior do que item nenhum.
+    const usuario = userEvent.setup();
+    render(<AccountMenu sessao={{ nome: "Olívia", papel: "organizer" }} caminhoEntrada="/entrar" />);
+
+    await usuario.click(screen.getByRole("button", { name: /olívia/i }));
+
+    expect(screen.getAllByRole("menuitem")).toHaveLength(1);
+    expect(screen.getByRole("menuitem", { name: "Sair" })).toBeInTheDocument();
+  });
+
   it("fecha com Escape", async () => {
     const usuario = userEvent.setup();
     render(<AccountMenu sessao={{ nome: "Olívia", papel: "gate" }} caminhoEntrada="/entrar" />);
