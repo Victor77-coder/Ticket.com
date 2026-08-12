@@ -2,13 +2,12 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Plan: `specs/011-marca-sem-laranja/plan.md` — identidade entregue; a 012 ainda não tem plano
-- Spec atual: `specs/012-telas-de-compra/spec.md`
-- Spec anterior: `specs/011-marca-sem-laranja/spec.md`
-- Research: `specs/011-marca-sem-laranja/research.md`
-- Data model: `specs/011-marca-sem-laranja/data-model.md`
-- Contracts: `specs/011-marca-sem-laranja/contracts/`
-- Quickstart: `specs/011-marca-sem-laranja/quickstart.md`
+- Plan: `specs/012-telas-de-compra/plan.md`
+- Spec: `specs/012-telas-de-compra/spec.md`
+- Research: `specs/012-telas-de-compra/research.md`
+- Data model: `specs/012-telas-de-compra/data-model.md`
+- Contracts: `specs/012-telas-de-compra/contracts/`
+- Quickstart: `specs/012-telas-de-compra/quickstart.md`
 
 Features anteriores, já implementadas:
 
@@ -30,20 +29,21 @@ Features anteriores, já implementadas:
   alcança o catálogo (middleware que nega por padrão).
 - `specs/011-marca-sem-laranja/` — cor, tipografia de marca e logo. EMENDA o FR-020 da 006.
   Magenta `#ff2e88` (neon de fachada). Cabinet Grotesk no nome. Logo: `t` com o ponto do `.com`.
-  **A composição da home ficou de fora** — achado da checagem anti-slop, não desta feature.
+  **A composição da home ficou de fora** — achado da checagem anti-slop, não da 012.
 
 **A feature 012 recomõe só três telas: filme, assentos e pagamento.** Catálogo (home, carrossel,
-trilhas, busca), seed e contratos de destaque **não entram**. Sessões viram grade por dia e sala;
-Sobre e Trailers usam o que o filme já persiste; o resumo da compra fica ao lado do mapa e do
-formulário; o ingresso emitido nessa tela passa a ler como objeto. Nenhuma regra de negócio é
-reaberta.
+trilhas, busca), seed e contratos de destaque **não entram**. Sessões viram grade por dia e sala
+**no cliente**; Sobre e Trailers usam o que o filme já persiste; `GET /api/v1/filmes/<slug>/` ganha
+`trailers[]` aditivo — highlights **não**. O resumo fica ao lado do mapa em tela larga; o ingresso
+emitido no pagamento ganha variante `objeto`. Nenhuma regra de negócio é reaberta.
 
-**A 011 permanece premissa, não entregável da 012.** Nomes de token iguais, valores iguais, marca
-igual. Se a composição precisar de espaço ou raio novo, ele nasce em token — disciplina da 006.
+**A armadilha é o clique, não a cor.** O horário disponível continua o link com nome acessível
+`Escolher lugares —` (e2e da 007). `--cor-fundo-qr` continua **branco** na variante nova.
+Arquivos congelados: `components/highlights/` (importar `TrailerFrame` a partir dele, não editá-lo),
+`components/rows/`, `components/header/`, `app/page.tsx`, sync e seed.
 
-**Dois tokens a vigiar** (herdados da 011, ainda válidos): `--cor-destaque-forte` é o contorno de
-foco global; `--cor-fundo-qr` continua **branco**. Harmonizá-lo com a marca na recomposição do
-ingresso faz a catraca parar de ler.
+**A 011 permanece premissa, não entregável.** Nomes de token iguais, valores iguais, marca igual.
+Se a composição precisar de espaço novo, ele nasce em token — disciplina da 006.
 
 Project constitution (governa todas as features): `.specify/memory/constitution.md`
 <!-- SPECKIT END -->
