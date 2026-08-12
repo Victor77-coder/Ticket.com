@@ -2,12 +2,12 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Plan: `specs/012-telas-de-compra/plan.md`
-- Spec: `specs/012-telas-de-compra/spec.md`
-- Research: `specs/012-telas-de-compra/research.md`
-- Data model: `specs/012-telas-de-compra/data-model.md`
-- Contracts: `specs/012-telas-de-compra/contracts/`
-- Quickstart: `specs/012-telas-de-compra/quickstart.md`
+- Plan: `specs/013-painel-do-organizador/plan.md`
+- Spec: `specs/013-painel-do-organizador/spec.md`
+- Research: `specs/013-painel-do-organizador/research.md`
+- Data model: `specs/013-painel-do-organizador/data-model.md`
+- Contracts: `specs/013-painel-do-organizador/contracts/`
+- Quickstart: `specs/013-painel-do-organizador/quickstart.md`
 
 Features anteriores, já implementadas:
 
@@ -31,19 +31,29 @@ Features anteriores, já implementadas:
   Magenta `#ff2e88` (neon de fachada). Cabinet Grotesk no nome. Logo: `t` com o ponto do `.com`.
   **A composição da home ficou de fora** — achado da checagem anti-slop, não da 012.
 
-**A feature 012 recomõe só três telas: filme, assentos e pagamento.** Catálogo (home, carrossel,
-trilhas, busca), seed e contratos de destaque **não entram**. Sessões viram grade por dia e sala
-**no cliente**; Sobre e Trailers usam o que o filme já persiste; `GET /api/v1/filmes/<slug>/` ganha
-`trailers[]` aditivo — highlights **não**. O resumo fica ao lado do mapa em tela larga; o ingresso
-emitido no pagamento ganha variante `objeto`. Nenhuma regra de negócio é reaberta.
+- `specs/012-telas-de-compra/` — recomposição de filme, assentos e pagamento. Sessões viram grade por
+  dia e sala **no cliente**; `GET /api/v1/filmes/<slug>/` ganha `trailers[]` aditivo. O horário
+  disponível é o link com nome acessível `Escolher lugares —` (e2e da 007). `--cor-fundo-qr` branco.
 
-**A armadilha é o clique, não a cor.** O horário disponível continua o link com nome acessível
-`Escolher lugares —` (e2e da 007). `--cor-fundo-qr` continua **branco** na variante nova.
-Arquivos congelados: `components/highlights/` (importar `TrailerFrame` a partir dele, não editá-lo),
-`components/rows/`, `components/header/`, `app/page.tsx`, sync e seed.
+**A feature 013 é a etapa 6 da constitution: o painel do organizador.** Ele pousa em `/programacao`,
+busca filme no TMDb **pelo back-end**, persiste local, cria sala/sessão e publica. **Zero migração** —
+`Movie`, `Room`, `Seat`, `Screening` já bastam; coluna nova é escopo escorregando.
 
-**A 011 permanece premissa, não entregável.** Nomes de token iguais, valores iguais, marca igual.
-Se a composição precisar de espaço novo, ele nasce em token — disciplina da 006.
+**Três regras existentes não podem ganhar segunda cópia.** O mapa físico da sala sai de `seed_demo`
+para `screening/services/salas.py` e é consumido pelos dois. A importação de filme usa o
+`sync_movie` que já existe — não um mapeamento reduzido. "Ocupação viva" continua sendo
+`Reservation.OCUPANDO`, consumida, nunca reescrita.
+
+**Duas armadilhas.** (1) `CASA_DO_PAPEL` separa `telaUnica` em `pousa` + `telaUnica`: o organizador
+pousa no painel mas **não** é confinado — o middleware nega por padrão, e `telaUnica: true` o
+trancaria fora do catálogo público. `devolverParaCasa("organizer", …)` continua `null`. (2) O
+conflito `(sala, horário)` é recusado pelo `IntegrityError` da constraint
+`uma_sessao_por_sala_e_horario`, **nunca** por `exists()` prévio.
+
+**Toda escrita de programação vive sob `/api/v1/programacao/` e exige `IsOrganizer`.** Cliente e
+portaria recebem `403`, nunca `401`. Cancelar sessão **para de vender** e mais nada: não estorna,
+não apaga ingresso, não devolve lugar pago. `seed_demo` passa a exigir `--force` quando já existe
+grade. Congelados: home, carrossel, trilhas, busca, mapa, pagamento, ingresso, portaria.
 
 Project constitution (governa todas as features): `.specify/memory/constitution.md`
 <!-- SPECKIT END -->
