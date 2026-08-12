@@ -22,3 +22,15 @@ class IsCustomer(BasePermission):
     def has_permission(self, request, view):
         user = request.user
         return bool(user and user.is_authenticated and user.is_customer)
+
+
+class IsCustomerParaPagar(IsCustomer):
+    """A mesma regra, com a frase do pagamento.
+
+    Só a mensagem muda. "Apenas clientes podem reservar lugares." apareceria
+    para quem tentou **pagar**, e mandaria o organizador procurar um botão de
+    reserva que não é o que ele acionou — mensagem de erro que descreve outra
+    tela é o tipo de texto que o Princípio V proíbe.
+    """
+
+    message = "Apenas clientes podem pagar reservas."
