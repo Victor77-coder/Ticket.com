@@ -349,11 +349,33 @@ class Ticket(models.Model):
     pessoa por assento, e é o ingresso que a portaria lê na catraca. Uma
     reserva de três lugares gera três ingressos com QR próprio (FR-014).
 
-    NENHUM campo `used`/`used_at` aqui, e a ausência é deliberada: a
-    transição para "utilizado" e a garantia de validação única nascem juntas
-    na feature da portaria — o mesmo cuidado que a 007 teve com `ReservedSeat`
-    e sua constraint. Acrescentar a coluna agora criaria um estado que nada
-    transiciona e nada protege.
+    A 008 deixou este modelo SEM campo de uso, registrando que "a transição
+    para utilizado e a garantia de validação única nascem juntas na feature da
+    portaria". A 010 cumpriu: `used_at` chegou com o que o protege.
+
+    E O QUE O PROTEGE NÃO É UMA CONSTRAINT. Procurar por um índice aqui e não
+    achar é o que vai acontecer com quem leu as três features anteriores —
+    007, 008 e 009 fecharam seus invariantes com `UNIQUE`. A ausência é
+    deliberada, e o motivo é que o invariante é de OUTRA NATUREZA:
+
+      - aquelas proíbem DUAS LINHAS COEXISTIREM, e é isso que um índice sabe
+        dizer;
+      - esta proíbe uma TRANSIÇÃO ACONTECER DUAS VEZES, sobre a mesma linha.
+
+    Não existe índice que expresse "esta coluna só pode sair de nulo uma vez":
+    uma `CHECK` enxerga o valor final, não a história — `used_at` preenchido é
+    legítimo, tendo sido escrito uma ou duas vezes —, e uma `UNIQUE` precisa
+    de duas linhas para comparar.
+
+    A garantia é a FORMA DA ESCRITA, em `services/portaria.py`:
+
+        UPDATE ... SET used_at = now() WHERE id = %s AND used_at IS NULL
+
+    O PostgreSQL bloqueia o segundo `UPDATE` até o primeiro confirmar e
+    reavalia o predicado contra a versão nova: encontra a coluna preenchida e
+    afeta zero linhas. Continua sendo o BANCO decidindo; a aplicação lê o
+    resultado. Ver "Por que não há constraint" em
+    specs/010-gate-validation/data-model.md.
     """
 
     # Identidade pública, e é ela que vai dentro do código assinado.
@@ -378,6 +400,26 @@ class Ticket(models.Model):
     )
     payment = models.ForeignKey(Payment, related_name="tickets", on_delete=models.PROTECT)
     issued_at = models.DateTimeField(auto_now_add=True)
+
+    # O instante da validação na portaria. Nulo = não utilizado.
+    #
+    # INSTANTE, e não booleano: o desfecho "já utilizado" precisa informar
+    # QUANDO, porque é isso que permite ao operador julgar se é a mesma pessoa
+    # voltando ou outra com uma captura de tela. Um `used = True` obrigaria a
+    # acrescentar a coluna do instante depois, para um dado que já era
+    # requisito.
+    #
+    # Terminal na outra direção: não existe "desutilizar". Estorno e
+    # cancelamento estão fora de escopo.
+    #
+    # SEM `used_by`. Guardar qual operador validou seria auditoria, e nenhum
+    # dos quatro desfechos depende disso — mesma disciplina que manteve esta
+    # coluna inteira fora do modelo até a feature que a consome existir.
+    #
+    # NÃO EXPOR EM SERIALIZER DE CLIENTE. `TicketSerializer` (008) e
+    # `MeuIngressoSerializer` (009) não podem ganhar este campo: o primeiro é
+    # o que serve a PÁGINA COMPARTILHADA PÚBLICA da 009.
+    used_at = models.DateTimeField(null=True, blank=True, default=None)
 
     class Meta:
         verbose_name = "ingresso"
