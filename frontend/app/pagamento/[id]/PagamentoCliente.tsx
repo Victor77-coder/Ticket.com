@@ -158,8 +158,11 @@ export default function PagamentoCliente({ reserva, filme, sala, inicio }: Props
           ))}
         </ul>
 
-        <Link href="/" className={estilos.voltar}>
-          Voltar ao início
+        {/* A 008 deixava a confirmação como único lugar onde o ingresso
+          * aparecia — sair daqui e ele ficava inalcançável. Este é o caminho
+          * para o endereço permanente (FR-003). */}
+        <Link href="/meus-ingressos" className={estilos.voltar}>
+          Ver em Meus ingressos
         </Link>
       </section>
     );

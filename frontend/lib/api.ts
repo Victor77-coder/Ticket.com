@@ -10,8 +10,12 @@ import type {
   ApiResult,
   HighlightsResponse,
   HomeRowsResponse,
+  Ingresso,
+  LinkDeCompartilhamento,
+  ListaDeIngressos,
   LoginResponse,
   MapaSessao,
+  MeuIngresso,
   MovieDetail,
   Reserva,
   SearchResponse,
@@ -204,6 +208,66 @@ export function fetchReserva(
 ): Promise<ApiResultComStatus<Reserva>> {
   return getJson<Reserva>(
     `/api/v1/reservas/${id}/`,
+    sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {},
+  );
+}
+
+/** A lista de "Meus ingressos" do cliente autenticado. */
+export function fetchMeusIngressos(
+  sessionKey: string | undefined,
+): Promise<ApiResultComStatus<ListaDeIngressos>> {
+  return getJson<ListaDeIngressos>(
+    "/api/v1/meus-ingressos/",
+    sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {},
+  );
+}
+
+/** Um ingresso do dono, com o estado do link de compartilhamento. */
+export function fetchIngresso(
+  sessionKey: string | undefined,
+  id: string,
+): Promise<ApiResultComStatus<MeuIngresso>> {
+  return getJson<MeuIngresso>(
+    `/api/v1/ingressos/${encodeURIComponent(id)}/`,
+    sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {},
+  );
+}
+
+/**
+ * O ingresso de um link compartilhado. **Sem cookie de sessão, nunca.**
+ *
+ * A ausência do cookie não é esquecimento: a página é pública, não pede conta
+ * e não conduz a nenhuma entrada (FR-036). Repassar a sessão faria a resposta
+ * depender de quem está olhando, que é exatamente o que ela não pode fazer.
+ */
+export function fetchIngressoCompartilhado(
+  token: string,
+): Promise<ApiResultComStatus<Ingresso>> {
+  return getJson<Ingresso>(
+    `/api/v1/ingressos-compartilhados/${encodeURIComponent(token)}/`,
+  );
+}
+
+/** Gera o link do ingresso. Idempotente: já havendo link ativo, devolve o mesmo. */
+export function postLink(
+  sessionKey: string | undefined,
+  id: string,
+): Promise<ApiResultComStatus<LinkDeCompartilhamento>> {
+  return postJson<LinkDeCompartilhamento>(
+    `/api/v1/ingressos/${encodeURIComponent(id)}/link/`,
+    {},
+    sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {},
+  );
+}
+
+/** Revoga o link ativo. Idempotente: sem link ativo, devolve o mesmo estado. */
+export function deleteLink(
+  sessionKey: string | undefined,
+  id: string,
+): Promise<ApiResultComStatus<LinkDeCompartilhamento>> {
+  return pedir<LinkDeCompartilhamento>(
+    `/api/v1/ingressos/${encodeURIComponent(id)}/link/`,
+    { method: "DELETE" },
     sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {},
   );
 }

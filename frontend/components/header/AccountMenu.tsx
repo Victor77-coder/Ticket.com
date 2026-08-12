@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -77,6 +78,25 @@ export function AccountMenu({ sessao, caminhoEntrada }: Props) {
       {aberto && (
         <div className={styles.contaMenu} role="menu" aria-label="Sua conta">
           <p className={styles.contaMenuPapel}>{rotuloDoPapel(sessao.papel)}</p>
+
+          {/* Só para cliente: organizador e portaria não têm ingressos, e um
+            * item que leva a uma recusa por papel é pior do que item nenhum.
+            *
+            * O menu da conta é o lugar certo, e não a navegação principal do
+            * cabeçalho: o destino existe para metade dos papéis, e mexer na
+            * composição do `SiteHeader` seria alterar território da 002 sem
+            * precisar (R14). */}
+          {sessao.papel === "customer" && (
+            <Link
+              href="/meus-ingressos"
+              role="menuitem"
+              className={styles.contaMenuItem}
+              onClick={() => setAberto(false)}
+            >
+              Meus ingressos
+            </Link>
+          )}
+
           <button
             type="button"
             role="menuitem"

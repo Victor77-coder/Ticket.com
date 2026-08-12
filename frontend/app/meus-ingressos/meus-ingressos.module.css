@@ -1,0 +1,182 @@
+/* A área "Meus ingressos" — a lista e o estado vazio.
+ *
+ * Disciplina de tokens da 006 (FR-059): nenhum valor de cor, espaçamento,
+ * tipografia, raio ou duração fora dos tokens.
+ *
+ * A distinção entre "próximas sessões" e "já aconteceram" NÃO pode depender
+ * só de cor (FR-006). Ela é feita por três coisas empilhadas: título de
+ * seção, uma linha descrevendo o grupo, e — só como reforço — a opacidade.
+ * Quem não distingue as duas cores continua lendo dois títulos diferentes.
+ */
+
+.pagina {
+  max-width: var(--largura-conteudo);
+  margin: 0 auto;
+  padding: var(--ritmo-secao) var(--esp-5) var(--ritmo-dobra);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ritmo-secao);
+}
+
+.titulo {
+  font-size: var(--texto-2xl);
+  font-weight: var(--peso-display);
+  line-height: var(--altura-linha-apertada);
+  font-variation-settings: "wdth" var(--largura-display);
+}
+
+/* --- Os grupos --- */
+
+.grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.grupoTitulo {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-forte);
+  line-height: var(--altura-linha-apertada);
+}
+
+.grupoDescricao {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+  margin-bottom: var(--esp-3);
+}
+
+.lista,
+.listaPassada {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+  list-style: none;
+}
+
+/* Reforço visual, nunca o sinal. O QR fica FORA do esmaecimento: um ingresso
+ * passado continua sendo um ingresso, e um código apagado seria mais difícil
+ * de ler sem nenhum ganho. */
+.listaPassada .cartao {
+  opacity: 0.72;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.cartao {
+  list-style: none;
+}
+
+.cancelada {
+  font-size: var(--texto-sm);
+  color: var(--cor-alerta);
+  background: var(--cor-erro-fraca);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  padding: var(--esp-3) var(--esp-4);
+}
+
+.abrir {
+  align-self: flex-start;
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  color: var(--cor-destaque);
+  padding: var(--esp-2) var(--esp-4);
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-pilula);
+  transition: background var(--transicao-rapida), color var(--transicao-rapida);
+}
+
+.abrir:hover,
+.abrir:focus-visible {
+  background: var(--cor-destaque-fraca);
+  color: var(--cor-destaque-forte);
+}
+
+/* --- O estado vazio --- */
+
+.vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  padding: var(--esp-7) var(--esp-5);
+}
+
+.vazioTitulo {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-forte);
+}
+
+.vazioTexto {
+  font-size: var(--texto-md);
+  color: var(--cor-texto-suave);
+  line-height: var(--altura-linha-base);
+  max-width: 44ch;
+}
+
+/* --- Avisos (papel errado, servidor fora) --- */
+
+.aviso {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  padding: var(--esp-6) var(--esp-5);
+}
+
+.avisoTitulo {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-forte);
+  line-height: var(--altura-linha-apertada);
+}
+
+.avisoTexto {
+  font-size: var(--texto-md);
+  color: var(--cor-texto-suave);
+  line-height: var(--altura-linha-base);
+  max-width: 52ch;
+}
+
+.acao {
+  margin-top: var(--esp-2);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-forte);
+  color: var(--cor-sobre-destaque);
+  background: var(--cor-destaque);
+  padding: var(--esp-3) var(--esp-5);
+  border-radius: var(--raio-pilula);
+  transition: background var(--transicao-rapida);
+}
+
+.acao:hover,
+.acao:focus-visible {
+  background: var(--cor-destaque-forte);
+}
+
+.voltar {
+  align-self: flex-start;
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+  transition: color var(--transicao-rapida);
+}
+
+.voltar:hover,
+.voltar:focus-visible {
+  color: var(--cor-destaque);
+}
+
+@media (max-width: 34rem) {
+  .pagina {
+    padding: var(--esp-6) var(--esp-4) var(--ritmo-secao);
+  }
+}

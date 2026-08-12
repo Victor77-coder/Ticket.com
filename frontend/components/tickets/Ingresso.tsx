@@ -18,9 +18,22 @@ import estilos from "./tickets.module.css";
 
 export type IngressoProps = {
   ingresso: IngressoTipo;
-  /** Posição na lista, para quem lê com leitor de tela saber quantos são. */
-  indice: number;
-  total: number;
+  /**
+   * Posição na lista, para quem lê com leitor de tela saber quantos são.
+   *
+   * OPCIONAIS desde a 009, porque o mesmo cartão passou a servir três
+   * superfícies: a confirmação da compra, a lista de "Meus ingressos" e a
+   * página compartilhada — e nesta última há **um** ingresso, que não tem
+   * "1 de 1" para anunciar.
+   *
+   * Reaproveitar em vez de escrever um cartão novo não é economia: duas
+   * cópias divergiriam primeiro no tamanho do QR, ou seja, na legibilidade na
+   * catraca. E há um efeito de segurança — este componente só aceita a forma
+   * `Ingresso`, então **não tem como** renderizar comprador ou valor na
+   * página pública, porque não recebe esses campos.
+   */
+  indice?: number;
+  total?: number;
 };
 
 function formatarHorario(iso: string) {
@@ -39,9 +52,11 @@ export default function Ingresso({ ingresso, indice, total }: IngressoProps) {
   return (
     <li className={estilos.ingresso}>
       <div className={estilos.dados}>
-        <p className={estilos.contagem}>
-          Ingresso {indice} de {total}
-        </p>
+        {indice !== undefined && total !== undefined && (
+          <p className={estilos.contagem}>
+            Ingresso {indice} de {total}
+          </p>
+        )}
         <h3 className={estilos.filme}>{ingresso.filme}</h3>
         <p className={estilos.detalhe}>{formatarHorario(ingresso.sessao)}</p>
         <p className={estilos.detalhe}>

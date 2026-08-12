@@ -233,6 +233,46 @@ export type Reserva = {
   detail?: string;
 };
 
+/**
+ * O estado do link de compartilhamento de um ingresso.
+ *
+ * O endereço vem **completo** do servidor, pronto para copiar e enviar.
+ * Montá-lo aqui exigiria que o navegador soubesse a origem pública, o que
+ * erra atrás de proxy (FR-024).
+ */
+export type LinkDeCompartilhamento = {
+  ativo: boolean;
+  endereco: string | null;
+};
+
+/**
+ * O ingresso como o **dono** o vê.
+ *
+ * Amplia `Ingresso` com o que só faz sentido para quem comprou. Os campos
+ * extras **não** existem na página compartilhada, e a separação é estrutural:
+ * lá o servidor responde com o recorte de `Ingresso` e mais nada (FR-037).
+ */
+export type MeuIngresso = Ingresso & {
+  /** Identidade pública — endereça o ingresso nas rotas do dono. */
+  id: string;
+  grupo: "futuro" | "passado";
+  sessao_cancelada: boolean;
+  /** Só na rota do ingresso individual, nunca na lista. */
+  link?: LinkDeCompartilhamento;
+};
+
+/**
+ * A lista de "Meus ingressos".
+ *
+ * Os grupos vêm **separados e ordenados do servidor**: futuros em ordem
+ * crescente de sessão, passados em decrescente. A tela não recompara datas —
+ * a fronteira entre futuro e passado é decisão do servidor (FR-010).
+ */
+export type ListaDeIngressos = {
+  futuros: MeuIngresso[];
+  passados: MeuIngresso[];
+};
+
 /** O corpo do `201` do pagamento aprovado. */
 export type PagamentoAprovado = {
   situacao: "paga";
