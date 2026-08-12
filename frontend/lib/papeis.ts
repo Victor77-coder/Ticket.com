@@ -8,32 +8,43 @@ import type { Papel } from "./types";
  * aconteceu uma vez neste projeto — o menu ganhar um destino e o resto do
  * sistema não saber dele.
  *
- * `telaUnica` é UM fato com TRÊS consequências, e elas andam juntas de
- * propósito — separá-las em três campos seria convidá-las a divergir:
+ * DOIS FATOS, E ELES SE SEPARARAM NA 013. Até a portaria ser o único papel
+ * confinado, "pousa aqui ao entrar" e "não alcança mais nada" andavam juntos, e
+ * este arquivo afirmava que separá-los seria convidá-los a divergir. O
+ * organizador é o contraexemplo que dividiu a afirmação:
  *
- *   1. o papel **pousa** na tela dele ao entrar;
- *   2. o papel **não alcança** nenhuma outra página;
- *   3. o cabeçalho não oferece navegação que ele não pode usar.
+ *   `pousa`      — o papel aterrissa na tela dele ao entrar;
+ *   `telaUnica`  — o papel não alcança nenhuma outra página, e o cabeçalho não
+ *                  lhe oferece navegação que ele não pode usar.
  *
- * A PORTARIA tem tela única: ela fica na porta validando, não navega pelo
- * site, e o catálogo de filmes é a tela de quem compra. Oferecer o catálogo a
- * ela é oferecer uma viagem que termina em recusa.
+ * A PORTARIA tem os dois. Ela fica na porta validando, não navega pelo site, e
+ * o catálogo é a tela de quem compra — oferecê-lo a ela é oferecer uma viagem
+ * que termina em recusa.
  *
- * O CLIENTE não tem. A casa de trabalho dele é "Meus ingressos", mas ele
- * circula pelo site inteiro — e **pousa no catálogo**, porque entra para
- * COMPRAR e comprar vem antes de ter ingresso. Mandá-lo direto para a lista
- * faria um cliente novo aterrissar no estado vazio.
+ * O ORGANIZADOR tem só o primeiro, e a diferença é a razão de o campo existir:
+ * ele **precisa** do catálogo público, porque é ali que ele confere que a
+ * sessão que acabou de publicar apareceu à venda (FR-004). Registrá-lo com
+ * `telaUnica: true` o trancaria fora justamente da tela onde ele verifica o
+ * próprio trabalho — e o middleware nega por padrão, então isso não daria erro
+ * nenhum: daria um organizador preso, com a suíte inteira passando.
  *
- * `organizer` está AUSENTE de propósito. O painel dele ainda não existe, e
- * apontar para uma tela que recusa por papel é pior do que não apontar para
- * nada: o item viraria convite a um beco sem saída. Quando o painel existir,
- * ele entra aqui e as duas telas passam a conhecê-lo de graça.
+ * O CLIENTE não tem nenhum dos dois. A casa de trabalho dele é "Meus
+ * ingressos", mas ele circula pelo site inteiro e **pousa no catálogo**, porque
+ * entra para COMPRAR e comprar vem antes de ter ingresso. Mandá-lo direto para
+ * a lista faria um cliente novo aterrissar no estado vazio — e essa é a
+ * regressão mais provável desta mudança, fixada por teste próprio.
  */
 export const CASA_DO_PAPEL: Partial<
-  Record<Papel, { href: string; rotulo: string; telaUnica: boolean }>
+  Record<Papel, { href: string; rotulo: string; pousa: boolean; telaUnica: boolean }>
 > = {
-  customer: { href: "/meus-ingressos", rotulo: "Meus ingressos", telaUnica: false },
-  gate: { href: "/portaria", rotulo: "Validar ingressos", telaUnica: true },
+  customer: {
+    href: "/meus-ingressos",
+    rotulo: "Meus ingressos",
+    pousa: false,
+    telaUnica: false,
+  },
+  gate: { href: "/portaria", rotulo: "Validar ingressos", pousa: true, telaUnica: true },
+  organizer: { href: "/programacao", rotulo: "Programação", pousa: true, telaUnica: false },
 };
 
 /** O papel tem uma tela só, e é lá que ele vive. */
@@ -51,6 +62,10 @@ export function temTelaUnica(papel: Papel): boolean {
  *
  * `caminhoDeRetorno` já vem validado por `caminhoDeRetornoSeguro` (FR-011): um
  * destino externo nunca chega até aqui.
+ *
+ * LÊ `pousa`, e não `telaUnica`. Era `telaUnica` até a 013, quando pousar
+ * deixou de implicar ficar preso: o organizador aterrissa no painel e continua
+ * alcançando o catálogo.
  */
 export function destinoAposEntrada(papel: Papel, caminhoDeRetorno: string): string {
   // "/" é o que `caminhoDeRetornoSeguro` devolve quando NÃO houve pedido — é
@@ -58,7 +73,7 @@ export function destinoAposEntrada(papel: Papel, caminhoDeRetorno: string): stri
   if (caminhoDeRetorno !== "/") return caminhoDeRetorno;
 
   const casa = CASA_DO_PAPEL[papel];
-  return casa?.telaUnica ? casa.href : "/";
+  return casa?.pousa ? casa.href : "/";
 }
 
 /**
@@ -66,6 +81,12 @@ export function destinoAposEntrada(papel: Papel, caminhoDeRetorno: string): stri
  *
  * Devolve `null` quando não há nada a fazer — papel sem tela única, ou já
  * está onde deveria.
+ *
+ * CONTINUA LENDO `telaUnica`, E ISSO É INVARIANTE. Se um dia esta função
+ * passar a consultar `pousa`, a portaria não muda de comportamento e o
+ * organizador perde a home — o sintoma aparece longe da causa, numa tela que
+ * ninguém associaria a este arquivo. `devolverParaCasa("organizer", …)`
+ * devolve `null` para qualquer caminho, e há teste fixando isso.
  *
  * DENY POR PADRÃO: qualquer caminho que não seja a casa do papel devolve o
  * redirecionamento. É o oposto de uma lista de páginas proibidas, e é
@@ -81,7 +102,8 @@ export function destinoAposEntrada(papel: Papel, caminhoDeRetorno: string): stri
  * impressão errada: o catálogo é PÚBLICO — um visitante vê as mesmas páginas.
  * Bloquear a portaria não protege nada; evita oferecer a ela uma viagem que
  * termina em recusa. A autorização de verdade continua onde sempre esteve, no
- * servidor, e é ela que devolve 403 quando a portaria tenta reservar ou pagar.
+ * servidor, e é ela que devolve 403 quando a portaria tenta reservar, pagar ou
+ * programar.
  */
 export function devolverParaCasa(papel: Papel, caminho: string): string | null {
   const casa = CASA_DO_PAPEL[papel];

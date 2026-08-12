@@ -89,9 +89,10 @@ export function AccountMenu({ sessao, caminhoEntrada }: Props) {
             * cuja tela só é alcançável por endereço decorado é uma tela que,
             * na prática, não existe.
             *
-            * O organizador não aparece aqui porque o painel dele não existe
-            * ainda, e um item que leva a uma recusa por papel é pior do que
-            * item nenhum. Quando o painel existir, ele entra nesta tabela.
+            * O organizador entrou na tabela na 013, e este componente não
+            * mudou uma linha para isso — era exatamente o que a tabela única
+            * prometia: o painel nasceu e os dois consumidores passaram a
+            * conhecê-lo de graça.
             *
             * O menu da conta é o lugar certo, e não a navegação principal do
             * cabeçalho: o destino MUDA por papel, e um item de navegação

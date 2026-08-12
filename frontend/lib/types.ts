@@ -351,3 +351,91 @@ export type PagamentoRecusado = {
   detail: string;
   expira_em: string;
 };
+
+// --- Programação do organizador (feature 013) -----------------------------
+//
+// FRONTEIRA DE DADOS: estes tipos carregam `status`, `capacidade` e ocupação
+// NUMÉRICA — campos que nenhuma resposta pública expõe (data-model.md §fronteira
+// entre painel e público). Não reaproveitar `MovieCard`, `MapaSessao` ou
+// `SessaoDaPorta` aqui: a projeção pobre daqueles tipos é o que impede um campo
+// de gestão vazar para a vitrine, e um tipo compartilhado dissolveria a
+// fronteira sem que nada quebrasse.
+
+/** Um filme do catálogo LOCAL, para escolher sem passar pelo TMDb (FR-013). */
+export type FilmeDoPainel = {
+  id: number;
+  tmdb_id: number;
+  titulo: string;
+  ano: number | null;
+  poster_url: string | null;
+  duracao_min: number | null;
+  /** Sessões não canceladas — agregado, nunca contado por linha. */
+  sessoes: number;
+};
+
+/** Um resultado da busca no TMDb, feita pelo back-end (FR-009, FR-010). */
+export type ResultadoTmdb = {
+  tmdb_id: number;
+  titulo: string;
+  ano: number | null;
+  poster_url: string | null;
+  /** Resolvido em UMA consulta `__in`, nunca uma por resultado. */
+  ja_no_catalogo: boolean;
+};
+
+export type SalaDoPainel = {
+  id: number;
+  nome: string;
+  capacidade: number;
+  /** Pode divergir de `capacidade` numa sala do seed acima do teto. */
+  lugares: number;
+  acessiveis: number;
+  ocupacao_viva: number;
+  /**
+   * `ocupacao_viva === 0`. Existe para a interface **desabilitar com
+   * explicação**, nunca como autorização — o PATCH revalida (FR-020, FR-037).
+   */
+  pode_trocar_capacidade: boolean;
+};
+
+export type EstadoDaSessao = "draft" | "published" | "cancelled";
+
+/**
+ * Uma linha da grade do organizador.
+ *
+ * É a única superfície do sistema que expõe `estado` (FR-029).
+ *
+ * Os três `pode_*` são conveniência de interface e o servidor revalida os três
+ * na ação. Um deles vindo `true` nunca é permissão — é uma dica sobre o que
+ * vale a pena oferecer.
+ */
+export type SessaoDaGrade = {
+  id: number;
+  estado: EstadoDaSessao;
+  estado_rotulo: string;
+  filme: { id: number; titulo: string; poster_url: string | null };
+  sala: { id: number; nome: string; lugares: number };
+  inicio: string;
+  preco: string;
+  /** Agregada em UMA consulta sobre a grade, nunca `seats_taken` por linha. */
+  ocupacao: number;
+  /** `sellable()` — publicada E no futuro. Leitura, sem responsabilidade nova. */
+  a_venda: boolean;
+  pode_editar: boolean;
+  pode_publicar: boolean;
+  pode_cancelar: boolean;
+};
+
+export type ListaDeFilmesDoPainel = { count: number; results: FilmeDoPainel[] };
+export type BuscaTmdbResponse = { termo: string; count: number; results: ResultadoTmdb[] };
+export type ListaDeSalas = { count: number; results: SalaDoPainel[] };
+export type GradeResponse = { count: number; results: SessaoDaGrade[] };
+
+/** O que o formulário envia para criar uma sessão. */
+export type NovaSessao = {
+  filme: number;
+  sala: number;
+  inicio: string;
+  preco: string;
+  publicar: boolean;
+};

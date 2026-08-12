@@ -39,7 +39,16 @@ export function hojeCivil(): string {
   }).format(new Date());
 }
 
-function rotuloDoDia(dia: string): string {
+/**
+ * "Hoje", ou "seg 14/08".
+ *
+ * Exportado na 013 para a grade do painel usar a MESMA leitura de dia que a
+ * página do filme usa desde a 012. Duas redações de "Hoje" divergiriam na
+ * primeira revisão, e o organizador confere no catálogo público o que
+ * programou no painel — ver os dois lados dizerem coisas diferentes sobre a
+ * mesma data seria confuso de um jeito difícil de nomear.
+ */
+export function rotuloDoDia(dia: string): string {
   if (dia === hojeCivil()) return "Hoje";
 
   const instante = new Date(`${dia}T12:00:00-03:00`);

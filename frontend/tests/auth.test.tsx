@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AccountMenu } from "@/components/header/AccountMenu";
-import { devolverParaCasa, temTelaUnica } from "@/lib/papeis";
+import { destinoAposEntrada, devolverParaCasa, temTelaUnica } from "@/lib/papeis";
 import { caminhoDeRetornoSeguro } from "@/lib/session";
 import { LoginForm } from "@/app/entrar/LoginForm";
 
@@ -233,10 +233,52 @@ describe("papel de tela única", () => {
     },
   );
 
-  it("o organizador não é bloqueado — ele ainda não tem tela própria", () => {
-    expect(devolverParaCasa("organizer", "/")).toBeNull();
-    expect(temTelaUnica("organizer")).toBe(false);
+  it.each(["/", "/filmes/duna-parte-dois", "/busca?q=matrix", "/meus-ingressos"])(
+    "o organizador tem painel e mesmo assim circula por %s",
+    (caminho) => {
+      // As duas asserções são as mesmas de antes da 013, e passaram a valer
+      // MAIS: agora ele tem tela própria — e continua não sendo bloqueado.
+      // É a razão de `pousa` e `telaUnica` serem campos distintos: com um
+      // campo só, dar-lhe o pouso o trancaria fora do catálogo, que é onde
+      // ele confere que a sessão publicada apareceu à venda (FR-004).
+      expect(devolverParaCasa("organizer", caminho)).toBeNull();
+      expect(temTelaUnica("organizer")).toBe(false);
+    },
+  );
+});
+
+// --- Pouso do papel (FR-002, FR-003 — contracts/casa-do-papel.md) ---------
+
+describe("destino depois da entrada", () => {
+  it("pousa o organizador na programação", () => {
+    expect(destinoAposEntrada("organizer", "/")).toBe("/programacao");
   });
+
+  it("um destino pedido vence o pouso do organizador", () => {
+    expect(destinoAposEntrada("organizer", "/filmes/duna-parte-dois")).toBe(
+      "/filmes/duna-parte-dois",
+    );
+  });
+
+  it("deixa o cliente no catálogo, e não em Meus ingressos", () => {
+    // A REGRESSÃO MAIS PROVÁVEL do campo `pousa`: bastaria registrar o
+    // cliente com `pousa: true` para um cliente novo aterrissar no estado
+    // vazio da lista de ingressos em vez de no catálogo — que é o lugar de
+    // quem entrou para comprar.
+    expect(destinoAposEntrada("customer", "/")).toBe("/");
+  });
+
+  it("continua pousando a portaria na tela dela", () => {
+    expect(destinoAposEntrada("gate", "/")).toBe("/portaria");
+  });
+
+  it.each(["/", "/filmes/x", "/busca?q=a", "/meus-ingressos"])(
+    "a portaria continua confinada ao tentar %s",
+    (caminho) => {
+      // A mudança de FORMA da tabela não podia mexer no papel que já existia.
+      expect(devolverParaCasa("gate", caminho)).toBe("/portaria");
+    },
+  );
 });
 
 describe("menu de conta", () => {
@@ -271,6 +313,7 @@ describe("menu de conta", () => {
   it.each([
     ["customer", "Meus ingressos", "/meus-ingressos"],
     ["gate", "Validar ingressos", "/portaria"],
+    ["organizer", "Programação", "/programacao"],
   ] as const)(
     "leva %s ao destino de trabalho dele",
     async (papel, rotulo, href) => {
@@ -287,14 +330,18 @@ describe("menu de conta", () => {
     },
   );
 
-  it("não oferece destino de trabalho ao organizador, que ainda não tem painel", async () => {
-    // Um item que leva a uma recusa por papel é pior do que item nenhum.
+  it("oferece ao organizador o painel, ao lado de Sair", async () => {
+    // Até a 013 este teste afirmava o contrário — o organizador não tinha
+    // tela e um item que leva a uma recusa por papel é pior do que item
+    // nenhum. O painel existe e aceita o organizador, então a premissa caiu:
+    // o item agora é o caminho até o trabalho dele.
     const usuario = userEvent.setup();
     render(<AccountMenu sessao={{ nome: "Olívia", papel: "organizer" }} caminhoEntrada="/entrar" />);
 
     await usuario.click(screen.getByRole("button", { name: /olívia/i }));
 
-    expect(screen.getAllByRole("menuitem")).toHaveLength(1);
+    expect(screen.getAllByRole("menuitem")).toHaveLength(2);
+    expect(screen.getByRole("menuitem", { name: "Programação" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Sair" })).toBeInTheDocument();
   });
 

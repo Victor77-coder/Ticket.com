@@ -1,0 +1,221 @@
+/**
+ * A área de programação.
+ *
+ * NENHUM VALOR FORA DOS TOKENS (FR-039). Cor, espaçamento, tipografia, raio e
+ * duração vêm de `styles/tokens.css`, e `tests/tokens.test.ts` varre este
+ * arquivo junto dos outros. Espaço novo, se precisar, nasce token.
+ *
+ * O estado da sessão é dito por RÓTULO + FORMA, nunca só por cor: a pastilha
+ * carrega a palavra, e o contorno muda de tracejado (rascunho) para sólido
+ * (publicada) para riscado (cancelada). Em escala de cinza as três continuam
+ * distinguíveis — mesma regra que o mapa de assentos cumpre desde a 007.
+ */
+
+.pagina {
+  max-width: var(--largura-conteudo);
+  margin: 0 auto;
+  padding: var(--ritmo-secao) var(--esp-5) var(--ritmo-dobra);
+}
+
+.cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  margin-bottom: var(--ritmo-secao);
+}
+
+.titulo {
+  font-size: var(--texto-2xl);
+  font-weight: var(--peso-display);
+  letter-spacing: var(--espacamento-display);
+  line-height: var(--altura-linha-apertada);
+}
+
+.subtitulo {
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+  margin-top: var(--esp-2);
+}
+
+.atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-3);
+}
+
+/* --- A grade ------------------------------------------------------------ */
+
+.grade {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ritmo-secao);
+}
+
+.diaTitulo {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cor-texto-suave);
+  padding-bottom: var(--esp-2);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.linhas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.linha {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) 8rem 6rem 6rem 8rem;
+  align-items: center;
+  gap: var(--esp-4);
+  padding: var(--esp-4) var(--esp-2);
+  border-bottom: 1px solid var(--cor-borda);
+  font-size: var(--texto-sm);
+}
+
+.linha[data-estado="cancelled"] .horario,
+.linha[data-estado="cancelled"] .filme {
+  text-decoration: line-through;
+  color: var(--cor-texto-fraco);
+}
+
+.horario {
+  font-weight: var(--peso-forte);
+  font-size: var(--texto-md);
+  font-variant-numeric: tabular-nums;
+}
+
+.filme {
+  color: var(--cor-texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sala,
+.preco {
+  color: var(--cor-texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.ocupacao {
+  display: flex;
+  align-items: baseline;
+  gap: var(--esp-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.ocupacaoNumero {
+  font-weight: var(--peso-forte);
+}
+
+.ocupacaoTotal {
+  color: var(--cor-texto-fraco);
+  font-size: var(--texto-xs);
+}
+
+/* --- Estado: rótulo + forma, nunca só cor ------------------------------- */
+
+.estado {
+  justify-self: start;
+  padding: var(--esp-1) var(--esp-3);
+  border-radius: var(--raio-pilula);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-forte);
+}
+
+.estado[data-estado="draft"] {
+  border: 1px dashed var(--cor-borda-forte);
+  color: var(--cor-texto-suave);
+}
+
+.estado[data-estado="published"] {
+  border: 1px solid var(--cor-destaque);
+  background: var(--cor-destaque-fraca);
+  color: var(--cor-destaque-forte);
+}
+
+.estado[data-estado="cancelled"] {
+  border: 1px dotted var(--cor-texto-fraco);
+  color: var(--cor-texto-fraco);
+  text-decoration: line-through;
+}
+
+/* --- Vazio, erro e recusa ----------------------------------------------- */
+
+.vazio,
+.aviso {
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+  padding: var(--esp-7) var(--esp-5);
+  text-align: center;
+}
+
+.vazioTitulo,
+.avisoTitulo {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-forte);
+  margin-bottom: var(--esp-3);
+}
+
+.vazioTexto,
+.avisoTexto {
+  color: var(--cor-texto-suave);
+  max-width: 42ch;
+  margin: 0 auto var(--esp-5);
+  line-height: var(--altura-linha-base);
+}
+
+.acao {
+  display: inline-block;
+  padding: var(--esp-3) var(--esp-5);
+  border-radius: var(--raio-pilula);
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+  font-weight: var(--peso-forte);
+  font-size: var(--texto-sm);
+  text-decoration: none;
+  transition: background var(--transicao-rapida);
+}
+
+.acao:hover {
+  background: var(--cor-destaque-forte);
+}
+
+.acaoSecundaria {
+  display: inline-block;
+  padding: var(--esp-3) var(--esp-5);
+  border-radius: var(--raio-pilula);
+  border: 1px solid var(--cor-borda-forte);
+  color: var(--cor-texto);
+  font-weight: var(--peso-medio);
+  font-size: var(--texto-sm);
+  text-decoration: none;
+  transition: border-color var(--transicao-rapida);
+}
+
+.acaoSecundaria:hover {
+  border-color: var(--cor-destaque);
+}
+
+@media (max-width: 48rem) {
+  .linha {
+    grid-template-columns: 4rem minmax(0, 1fr) auto;
+    row-gap: var(--esp-2);
+  }
+
+  .sala,
+  .preco,
+  .ocupacao {
+    grid-column: 2;
+  }
+}

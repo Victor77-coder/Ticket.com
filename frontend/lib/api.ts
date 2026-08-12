@@ -8,9 +8,17 @@
 
 import type {
   ApiResult,
+  BuscaTmdbResponse,
+  FilmeDoPainel,
+  GradeResponse,
   HighlightsResponse,
   HomeRowsResponse,
   Ingresso,
+  ListaDeFilmesDoPainel,
+  ListaDeSalas,
+  NovaSessao,
+  SalaDoPainel,
+  SessaoDaGrade,
   LinkDeCompartilhamento,
   ListaDeIngressos,
   Desfecho,
@@ -317,5 +325,157 @@ export function postPagamento(
     `/api/v1/reservas/${reserva}/pagamento/`,
     corpo,
     sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {},
+  );
+}
+
+// --- Programação do organizador (feature 013) -----------------------------
+//
+// TODAS as chamadas desta seção repassam o cookie de sessão, e todas falam com
+// endereços sob `/api/v1/programacao/`. O prefixo é a regra de autorização
+// legível de fora: tudo ali exige o papel organizador, e um endpoint novo
+// nasce coberto por estar ali (contracts/programacao-api.md).
+//
+// A distinção de status importa mais aqui do que em qualquer outra seção deste
+// arquivo, e quem a consome é a página: `401` conduz à entrada, `403` RENDERIZA
+// a recusa. Mandar um cliente à entrada por causa de um `403` é caminho sem
+// saída — entrar de novo não muda o papel (R11).
+
+function comSessao(sessionKey: string | undefined): Opcoes {
+  return sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {};
+}
+
+function patchJson<T>(
+  path: string,
+  corpo: unknown,
+  opcoes?: Opcoes,
+): Promise<ApiResultComStatus<T>> {
+  return pedir<T>(
+    path,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(corpo),
+    },
+    opcoes,
+  );
+}
+
+/** A grade inteira — os três estados. É a leitura que a área de trabalho pousa. */
+export function fetchGrade(
+  sessionKey: string | undefined,
+): Promise<ApiResultComStatus<GradeResponse>> {
+  return getJson<GradeResponse>("/api/v1/programacao/sessoes/", comSessao(sessionKey));
+}
+
+/** O catálogo LOCAL, para programar sem depender do TMDb (FR-013, FR-014). */
+export function fetchFilmesDoPainel(
+  sessionKey: string | undefined,
+): Promise<ApiResultComStatus<ListaDeFilmesDoPainel>> {
+  return getJson<ListaDeFilmesDoPainel>(
+    "/api/v1/programacao/filmes/",
+    comSessao(sessionKey),
+  );
+}
+
+/**
+ * Busca no TMDb — **pelo back-end**.
+ *
+ * A chave da API nunca sai do Django (FR-010), e o `502` traz a frase que o
+ * `TMDBError` já escreve em português. Não traduzir de novo: seriam duas
+ * redações da mesma falha.
+ */
+export function fetchBuscaTmdb(
+  sessionKey: string | undefined,
+  termo: string,
+): Promise<ApiResultComStatus<BuscaTmdbResponse>> {
+  return getJson<BuscaTmdbResponse>(
+    `/api/v1/programacao/filmes/busca/?q=${encodeURIComponent(termo)}`,
+    comSessao(sessionKey),
+  );
+}
+
+/** Importa um filme do TMDb. `201` criou, `200` já existia — nunca erro (FR-012). */
+export function postImportarFilme(
+  sessionKey: string | undefined,
+  tmdbId: number,
+): Promise<ApiResultComStatus<FilmeDoPainel>> {
+  return postJson<FilmeDoPainel>(
+    "/api/v1/programacao/filmes/",
+    { tmdb_id: tmdbId },
+    comSessao(sessionKey),
+  );
+}
+
+export function fetchSalas(
+  sessionKey: string | undefined,
+): Promise<ApiResultComStatus<ListaDeSalas>> {
+  return getJson<ListaDeSalas>("/api/v1/programacao/salas/", comSessao(sessionKey));
+}
+
+export function postSala(
+  sessionKey: string | undefined,
+  corpo: { nome: string; capacidade: number },
+): Promise<ApiResultComStatus<SalaDoPainel>> {
+  return postJson<SalaDoPainel>("/api/v1/programacao/salas/", corpo, comSessao(sessionKey));
+}
+
+/**
+ * Renomeia ou troca a capacidade.
+ *
+ * O `409` da sala com ocupação viva vem daqui inteiro, com a frase que diz
+ * quantos lugares estão ocupados — a interface não a reescreve.
+ */
+export function patchSala(
+  sessionKey: string | undefined,
+  id: number,
+  corpo: { nome?: string; capacidade?: number },
+): Promise<ApiResultComStatus<SalaDoPainel>> {
+  return patchJson<SalaDoPainel>(
+    `/api/v1/programacao/salas/${id}/`,
+    corpo,
+    comSessao(sessionKey),
+  );
+}
+
+export function postSessao(
+  sessionKey: string | undefined,
+  corpo: NovaSessao,
+): Promise<ApiResultComStatus<SessaoDaGrade>> {
+  return postJson<SessaoDaGrade>(
+    "/api/v1/programacao/sessoes/",
+    corpo,
+    comSessao(sessionKey),
+  );
+}
+
+/** Só rascunho. Publicada ou cancelada volta `409` com a frase do servidor. */
+export function patchSessao(
+  sessionKey: string | undefined,
+  id: number,
+  corpo: Partial<Omit<NovaSessao, "publicar">>,
+): Promise<ApiResultComStatus<SessaoDaGrade>> {
+  return patchJson<SessaoDaGrade>(
+    `/api/v1/programacao/sessoes/${id}/`,
+    corpo,
+    comSessao(sessionKey),
+  );
+}
+
+/**
+ * Publicar e cancelar são AÇÕES, não `PATCH status`.
+ *
+ * Cada uma carrega pré-condições próprias — horário futuro e sala com lugares;
+ * estado não terminal — que um campo de status esconderia dentro de validação
+ * de campo (R8).
+ */
+export function postAcaoDeSessao(
+  sessionKey: string | undefined,
+  id: number,
+  acao: "publicar" | "cancelar",
+): Promise<ApiResultComStatus<SessaoDaGrade>> {
+  return postJson<SessaoDaGrade>(
+    `/api/v1/programacao/sessoes/${id}/${acao}/`,
+    {},
+    comSessao(sessionKey),
   );
 }
