@@ -13,14 +13,18 @@ from rest_framework.views import APIView
 
 from apps.accounts.authentication import SessionAuthenticationSemCsrf
 from apps.screening import selectors
-from apps.screening.models import Reservation
+from apps.screening.models import Reservation, Screening
 from apps.screening.permissions import (
     IsCustomer,
     IsCustomerParaIngressos,
     IsCustomerParaPagar,
+    IsGate,
 )
 from apps.screening.serializers import (
     estado_do_link,
+    SessaoDaPortaSerializer,
+    ValidacaoInputSerializer,
+    ValidacaoSerializer,
     MeuIngressoSerializer,
     PaymentInputSerializer,
     PaymentSerializer,
@@ -29,7 +33,7 @@ from apps.screening.serializers import (
     SeatMapSerializer,
     TicketSerializer,
 )
-from apps.screening.services import compartilhamento, pagamentos, reservas
+from apps.screening.services import compartilhamento, pagamentos, portaria, reservas
 
 SESSAO_NAO_ENCONTRADA = {"detail": "Sessão não encontrada."}
 RESERVA_NAO_ENCONTRADA = {"detail": "Reserva não encontrada."}
@@ -42,6 +46,11 @@ INGRESSO_NAO_ENCONTRADO = {"detail": "Ingresso não encontrado."}
 # chegou perto. E é uma frase, não "Não encontrado": quem recebeu o ingresso
 # de um amigo concluiria que o site quebrou.
 LINK_MORTO = {"detail": "Este link não vale mais. Peça um novo a quem enviou o ingresso."}
+ENTRE_PARA_PORTARIA = {"detail": "Entre para usar a portaria."}
+CODIGO_AUSENTE = {"detail": "Apresente ou digite um código."}
+SESSAO_DA_PORTA_AUSENTE = {
+    "detail": "Escolha a sessão que esta porta está recebendo."
+}
 RESERVA_EXPIRADA = "Esta reserva expirou. Escolha os lugares de novo."
 RESERVA_JA_PAGA = "Esta reserva já foi paga. Seus ingressos estão logo abaixo."
 RESERVA_CANCELADA = "Esta reserva foi cancelada. Escolha os lugares de novo."
@@ -458,6 +467,118 @@ class SharedTicketView(APIView):
             return Response(LINK_MORTO, status=404)
 
         return Response(TicketSerializer(link.ticket).data)
+
+
+# --- Portaria (feature 010) -----------------------------------------------
+
+
+class GateViewBase(APIView):
+    """O que as duas rotas da portaria compartilham.
+
+    Mesma autenticação sem CSRF de 007, 008 e 009 — quem chama é o Next — e a
+    mesma tradução do `401`, com a frase desta tela. Sem ela o DRF devolveria
+    `403` para quem não entrou, e o front não distinguiria "conduza à entrada"
+    de "seu papel não valida" — e conduzir um cliente à entrada é caminho sem
+    saída, porque entrar de novo não muda o papel.
+    """
+
+    authentication_classes = [SessionAuthenticationSemCsrf]
+    permission_classes = [IsAuthenticated, IsGate]
+
+    def handle_exception(self, exc):
+        if isinstance(exc, NotAuthenticated):
+            return Response(ENTRE_PARA_PORTARIA, status=401)
+        return super().handle_exception(exc)
+
+
+class GateScreeningsView(GateViewBase):
+    """GET /api/v1/portaria/sessoes/ — as sessões que este posto pode receber.
+
+    Lista vazia devolve `200`, nunca `404`: "hoje não tem sessão" é um estado
+    da portaria, não a ausência de um recurso, e a tela tem frase própria para
+    ele.
+    """
+
+    def get(self, request):
+        sessoes = selectors.sessoes_da_portaria()
+        return Response({"sessoes": SessaoDaPortaSerializer(sessoes, many=True).data})
+
+
+class GateValidateView(GateViewBase):
+    """POST /api/v1/portaria/validar/ — a única escrita da feature.
+
+    OS QUATRO DESFECHOS RESPONDEM `200`, e a escolha tem motivo: nenhum deles é
+    erro DA REQUISIÇÃO. A portaria perguntou "posso deixar entrar?" e recebeu
+    resposta; "não" é uma resposta. Mapear "já utilizado" para `409` ou
+    "inválido" para `422` faria o front distinguir desfecho de negócio por
+    semântica de HTTP, e qualquer camada que trate `4xx` como erro esconderia
+    um desfecho legítimo.
+
+    É divergência deliberada em relação à 008, onde a recusa de cartão é `402`:
+    lá os códigos separam CAMINHOS DE RECUPERAÇÃO diferentes — "corrija o
+    formulário" e "troque de cartão". Aqui os quatro vão para a mesma tela, e
+    o front escolhe a apresentação pelo campo `situacao`.
+
+    `400` fica só para o que a portaria não chegou a apresentar.
+    """
+
+    def post(self, request):
+        entrada = ValidacaoInputSerializer(data=request.data)
+        if not entrada.is_valid():
+            return Response(CODIGO_AUSENTE, status=400)
+
+        dados = entrada.validated_data
+        codigo = (dados.get("codigo") or "").strip()
+
+        # Campo vazio NÃO é "inválido" (FR-014): nada foi apresentado, e não há
+        # o que julgar. Dizer "ingresso não reconhecido" para um campo em
+        # branco faria o operador procurar defeito no ingresso da pessoa.
+        if not codigo:
+            return Response(CODIGO_AUSENTE, status=400)
+
+        sessao_id = dados.get("sessao")
+        if sessao_id is None or not selectors.sessoes_da_portaria().filter(
+            pk=sessao_id
+        ).exists():
+            return Response(SESSAO_DA_PORTA_AUSENTE, status=400)
+
+        resultado = portaria.validar(codigo=codigo, sessao_id=sessao_id)
+
+        corpo = ValidacaoSerializer(resultado).data
+        corpo["detail"] = _frase_do_desfecho(resultado)
+        return Response(corpo)
+
+
+def _frase_do_desfecho(resultado):
+    """A frase que o operador lê, em português, dizendo a próxima ação.
+
+    Mora na camada de apresentação, e não no serviço: o serviço devolve um
+    valor fixo (`situacao`), e é ele que a tela usa para escolher símbolo e
+    título. A frase muda numa revisão de redação sem que nada mais mude.
+    """
+    if resultado.situacao == portaria.VALIDO:
+        lugar = resultado.ingresso.reserved_seat.seat
+        sala = resultado.sessao_do_ingresso.room.name
+        return f"Pode entrar. {sala}, lugar {lugar.row}{lugar.number}."
+
+    if resultado.situacao == portaria.JA_UTILIZADO:
+        quando = timezone.localtime(resultado.utilizado_em).strftime("%H:%M")
+        return f"Este ingresso já foi usado às {quando}. Não libere a entrada."
+
+    if resultado.situacao == portaria.SESSAO_ERRADA:
+        sessao = resultado.sessao_do_ingresso
+        if sessao.status == Screening.Status.CANCELLED:
+            return (
+                "Este ingresso é de uma sessão que foi cancelada. "
+                "Encaminhe a pessoa à bilheteria."
+            )
+        quando = timezone.localtime(sessao.starts_at).strftime("%H:%M")
+        return (
+            f"Este ingresso é da sessão das {quando}, {sessao.room.name}. "
+            "Não é esta porta."
+        )
+
+    return "Ingresso não reconhecido. Não libere a entrada."
 
 
 def _grupo_de(ingresso):

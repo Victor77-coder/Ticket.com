@@ -49,3 +49,21 @@ class IsCustomerParaIngressos(IsCustomer):
     """
 
     message = "Apenas clientes têm ingressos."
+
+
+class IsGate(BasePermission):
+    """Só o papel portaria valida ingressos.
+
+    Não herda de `IsCustomer` — é o papel oposto. Um cliente aqui recebe
+    `403`, não `401`: ele entrou, só não valida. É a mesma distinção que as
+    três permissões acima já fazem, agora do outro lado.
+
+    A recusa importa mais aqui do que nas outras: sem ela, um cliente marca o
+    PRÓPRIO ingresso como utilizado e ninguém entra com ele depois.
+    """
+
+    message = "Apenas a portaria valida ingressos."
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated and user.is_gate)

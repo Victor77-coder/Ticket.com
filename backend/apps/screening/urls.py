@@ -1,6 +1,8 @@
 from django.urls import path
 
 from apps.screening.views import (
+    GateScreeningsView,
+    GateValidateView,
     MyTicketsView,
     PaymentCreateView,
     ReservationCreateView,
@@ -47,4 +49,11 @@ urlpatterns = [
         SharedTicketView.as_view(),
         name="shared-ticket",
     ),
+    # Portaria (010). A validação é a única escrita da feature.
+    path(
+        "portaria/sessoes/",
+        GateScreeningsView.as_view(),
+        name="gate-screenings",
+    ),
+    path("portaria/validar/", GateValidateView.as_view(), name="gate-validate"),
 ]

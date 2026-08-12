@@ -306,6 +306,95 @@ class MeuIngressoSerializer(serializers.Serializer):
         return dados
 
 
+class SessaoDaPortaSerializer(serializers.Serializer):
+    """Uma sessão que a portaria pode receber.
+
+    Filme, horário e sala — o que o operador precisa para reconhecer a porta
+    em que está. Nada de preço, capacidade ou status: é o mesmo recorte que o
+    mapa público da 007 já aplica, e a portaria não gerencia nada.
+    """
+
+    id = serializers.IntegerField()
+    filme = serializers.SerializerMethodField()
+    inicio = serializers.DateTimeField(source="starts_at")
+    sala = serializers.SerializerMethodField()
+
+    def get_filme(self, sessao):
+        return sessao.movie.title
+
+    def get_sala(self, sessao):
+        return sessao.room.name
+
+
+class ValidacaoInputSerializer(serializers.Serializer):
+    """O que a portaria envia.
+
+    `codigo` é EXATAMENTE o que a 008 emite e a 009 exibe. Nenhum segundo
+    formato existe.
+
+    `sessao` é a sessão da porta, escolhida pelo operador. Vem do cliente por
+    decisão registrada (R9): a escolha é por posto, não por conta, e dois
+    operadores podem usar a mesma conta do seed em portas diferentes. Não é
+    escalada de privilégio — ele obteria o mesmo resultado escolhendo outra
+    sessão no menu; a autorização que importa é o papel, conferida no servidor.
+    """
+
+    # `allow_blank` de propósito: o vazio é recusado pela VIEW, com frase
+    # própria em português. Se a obrigatoriedade morasse aqui, o DRF recusaria
+    # antes com a frase dele, em inglês — mesmo cuidado que o pagamento da 008
+    # já tinha tomado.
+    codigo = serializers.CharField(max_length=512, allow_blank=True, default="")
+    sessao = serializers.IntegerField(required=False, allow_null=True, default=None)
+
+
+class ValidacaoSerializer(serializers.Serializer):
+    """O desfecho, como a portaria o vê.
+
+    A saída é montada por `to_representation` porque cada situação carrega
+    campos diferentes — e o INVÁLIDO carrega NENHUM, deliberadamente: qualquer
+    detalhe a mais entregaria a quem tenta adivinhar a informação que o
+    desfecho existe para negar.
+
+    NÃO traz comprador, valor, `public_id`, id de reserva ou de pagamento. A
+    portaria confere o ingresso, não a identidade de quem comprou.
+    """
+
+    def to_representation(self, resultado):
+        from apps.screening.services import portaria as portaria_service
+
+        dados = {"situacao": resultado.situacao}
+
+        if resultado.situacao == portaria_service.INVALIDO:
+            return dados
+
+        if resultado.situacao == portaria_service.SESSAO_ERRADA:
+            sessao = resultado.sessao_do_ingresso
+            dados["sessao_do_ingresso"] = {
+                "filme": sessao.movie.title,
+                "inicio": sessao.starts_at,
+                "sala": sessao.room.name,
+                # Informação DENTRO do desfecho, nunca um quinto (FR-024).
+                "cancelada": sessao.status == Screening.Status.CANCELLED,
+            }
+            return dados
+
+        ingresso = resultado.ingresso
+        sessao = resultado.sessao_do_ingresso
+        dados["ingresso"] = {
+            "filme": sessao.movie.title,
+            "sessao": sessao.starts_at,
+            "sala": sessao.room.name,
+            "assento": LugarSerializer(ingresso.reserved_seat.seat).data,
+        }
+
+        if resultado.situacao == portaria_service.JA_UTILIZADO:
+            # Obrigatório: é o que permite ao operador julgar se é a mesma
+            # pessoa voltando ou outra com uma captura de tela (FR-021).
+            dados["utilizado_em"] = resultado.utilizado_em
+
+        return dados
+
+
 def estado_do_link(link):
     """O estado do link de compartilhamento, com ou sem link.
 

@@ -5,6 +5,7 @@ Ficam fora das views para serem testáveis sem HTTP — mesmo padrão de
 """
 
 from django.db.models import Exists, OuterRef
+from django.utils import timezone
 from django.db.models.functions import Now
 
 from apps.screening.models import (
@@ -195,3 +196,41 @@ def ingresso_por_token(token):
 def link_ativo(ingresso):
     """O link ativo de um ingresso, ou `None`."""
     return ingresso.share_links.filter(revoked_at__isnull=True).first()
+
+
+# --- Portaria (feature 010) -----------------------------------------------
+
+
+def sessoes_da_portaria():
+    """As sessões que um posto de portaria pode receber hoje.
+
+    NÃO USA `sellable()`, E NÃO PODE USAR — segunda vez no projeto que este
+    filtro é o erro natural. A 009 registrou a primeira, com o histórico de
+    ingressos; aqui é pior, porque some justamente a sessão que a porta está
+    recebendo NESTE MOMENTO.
+
+    `sellable()` é `published()` E `starts_at > now()`. A porta precisa
+    exatamente do que o segundo termo exclui: **a sessão em andamento**. Gente
+    chega atrasada, e a portaria valida durante a sessão inteira. Uma lista
+    que some com a sessão em curso é uma lista que não serve à porta.
+
+    A regra que emerge das duas aparições, e que vale para a próxima:
+
+        `sellable()` responde "dá para comprar?", e nenhuma outra pergunta.
+
+    Canceladas ficam fora — não há entrada a receber, e `published()` já as
+    exclui. O ingresso de uma sessão cancelada continua alcançando a portaria
+    pelo código e sai como "sessão errada", com o aviso do cancelamento.
+
+    AS SESSÕES DO DIA, e não uma janela em horas: uma janela teria duas pontas
+    para explicar e mudaria de resultado conforme o instante em que a tela foi
+    aberta. O dia é a unidade que o operador tem na cabeça.
+    """
+    hoje = timezone.localdate()
+
+    return (
+        Screening.objects.published()
+        .filter(starts_at__date=hoje)
+        .select_related("movie", "room")
+        .order_by("starts_at")
+    )
