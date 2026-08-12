@@ -31,6 +31,16 @@ function novaChave() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function formatarHorario(iso: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+}
+
 export default function SeatSelection({ mapa }: SeatSelectionProps) {
   const router = useRouter();
 
@@ -122,10 +132,6 @@ export default function SeatSelection({ mapa }: SeatSelectionProps) {
     }
   }
 
-  if (reserva) {
-    return <ReservationPanel reserva={reserva} />;
-  }
-
   if (mapa.esgotada) {
     return (
       <div className={estilos.confirmada}>
@@ -141,16 +147,31 @@ export default function SeatSelection({ mapa }: SeatSelectionProps) {
   const total = ids.size * Number(mapa.preco);
 
   return (
-    <>
-      <SeatMap fileiras={mapa.fileiras} selecionados={ids} onAlternar={alternar} />
-      <SelectionSummary
-        lugares={selecionados}
-        total={total}
-        limite={mapa.limite_por_reserva}
-        aviso={aviso}
-        enviando={enviando}
-        onConfirmar={confirmar}
-      />
-    </>
+    <div className={estilos.compra} data-layout="compra">
+      <div className={estilos.mapaColuna}>
+        <SeatMap
+          fileiras={mapa.fileiras}
+          selecionados={ids}
+          onAlternar={reserva ? () => {} : alternar}
+        />
+      </div>
+      <aside className={estilos.resumoColuna}>
+        {reserva ? (
+          <ReservationPanel reserva={reserva} />
+        ) : (
+          <SelectionSummary
+            filme={mapa.filme.titulo}
+            horario={formatarHorario(mapa.inicio)}
+            sala={mapa.sala.nome}
+            lugares={selecionados}
+            total={total}
+            limite={mapa.limite_por_reserva}
+            aviso={aviso}
+            enviando={enviando}
+            onConfirmar={confirmar}
+          />
+        )}
+      </aside>
+    </div>
   );
 }

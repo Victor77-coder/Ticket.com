@@ -13,6 +13,9 @@ import estilos from "./seats.module.css";
  */
 
 export type SelectionSummaryProps = {
+  filme: string;
+  horario: string;
+  sala: string;
   lugares: LugarReservado[];
   total: number;
   limite: number;
@@ -32,6 +35,9 @@ export function nomearLugares(lugares: LugarReservado[]) {
 }
 
 export default function SelectionSummary({
+  filme,
+  horario,
+  sala,
   lugares,
   total,
   limite,
@@ -50,6 +56,10 @@ export default function SelectionSummary({
       )}
 
       <div>
+        <p className={estilos.resumoFilme}>{filme}</p>
+        <p className={estilos.resumoSessao}>
+          {horario} · {sala}
+        </p>
         {vazio ? (
           <p className={estilos.resumoVazio}>
             Escolha até {limite} lugares no mapa para continuar.

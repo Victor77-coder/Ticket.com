@@ -231,6 +231,9 @@
    * componentes (R7). */
   --altura-painel: clamp(30rem, calc(78vh - var(--altura-cabecalho)), 44rem);
   --largura-conteudo: 1200px;
+  /* Coluna do resumo ao lado do mapa (e, se couber, do pagamento). Medida,
+   * não cor — literal no CSS do assento é o que a 006 tirou (012 / R10). */
+  --largura-coluna-resumo: 20rem;
 
   /* --- Medidas do cabeçalho ---
    * A altura é token porque duas coisas dependem dela: o próprio cabeçalho e

@@ -212,6 +212,15 @@ describe("seleção", () => {
 
     expect(screen.getByRole("button", { name: /Confirmar lugares/ })).toBeDisabled();
   });
+
+  it("mapa e resumo convivem no mesmo arranjo", () => {
+    render(<SeatSelection mapa={criarMapa()} />);
+
+    expect(document.querySelector("[data-layout='compra']")).toBeInTheDocument();
+    expect(screen.getByText("Tela")).toBeInTheDocument();
+    expect(screen.getByText("A Odisseia")).toBeInTheDocument();
+    expect(screen.getByText(/Sala 1/)).toBeInTheDocument();
+  });
 });
 
 // --- Teclado (FR-011, SC-008) ----------------------------------------------
