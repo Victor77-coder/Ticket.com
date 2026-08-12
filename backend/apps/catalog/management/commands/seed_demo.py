@@ -17,7 +17,7 @@ from django.utils import timezone
 
 from apps.catalog.models import Movie
 from apps.catalog.selectors import HIGHLIGHTS_LIMIT
-from apps.screening.models import Reservation, Room, Screening, Seat
+from apps.screening.models import Payment, Reservation, Room, Screening, Seat, Ticket
 
 User = get_user_model()
 
@@ -138,7 +138,27 @@ class Command(BaseCommand):
         sessão e toda reserva no banco vieram deste comando ou do fluxo de
         demonstração. Quando o painel existir, isto precisa passar a apagar
         apenas o que o seed criou.
+
+        A ORDEM É OBRIGATÓRIA, e a feature 008 a tornou assim: `Ticket` aponta
+        para `Payment` e para `ReservedSeat`, e `Payment` aponta para
+        `Reservation` — os três com PROTECT, porque apagar um ingresso vendido
+        por efeito colateral de outra operação é justamente o que PROTECT
+        existe para impedir.
+
+        Sem esta ordem o comando morre com `ProtectedError` assim que alguém
+        conclui uma compra, e o seed é o que o avaliador usa para voltar ao
+        cenário conhecido. O PROTECT continua certo; quem tinha de mudar era o
+        reset, que é o único lugar do sistema autorizado a desfazer a
+        demonstração inteira.
         """
+        ingressos, _ = Ticket.objects.all().delete()
+        if ingressos:
+            self.stdout.write(f"  ingressos anteriores removidos ({ingressos} linha(s))")
+
+        pagamentos, _ = Payment.objects.all().delete()
+        if pagamentos:
+            self.stdout.write(f"  pagamentos anteriores removidos ({pagamentos} linha(s))")
+
         reservas, _ = Reservation.objects.all().delete()
         if reservas:
             self.stdout.write(f"  reservas anteriores removidas ({reservas} linha(s))")

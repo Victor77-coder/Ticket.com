@@ -336,3 +336,53 @@ def test_seed_refaz_o_cenario_mesmo_com_reserva_existente(catalogo):
     assert Reservation.objects.count() == 0
     assert ReservedSeat.objects.count() == 0
     assert Seat.objects.count() == 100
+
+
+def test_seed_refaz_o_cenario_mesmo_com_compra_concluida(catalogo):
+    """Ingresso emitido não pode travar o seed — regressão da feature 008.
+
+    A 008 acrescentou `Payment` e `Ticket`, os dois com PROTECT na direção da
+    reserva. `Reservation.objects.all().delete()` passou a estourar
+    `ProtectedError` assim que alguém concluía uma compra — e o comando que o
+    avaliador usa para voltar ao cenário conhecido morria justamente depois de
+    a demonstração ter sido percorrida até o fim.
+
+    Foi encontrado rodando o seed durante a implementação, não pela suíte: o
+    teste anterior cobre reserva viva, que é um estado que a 007 já produzia, e
+    nenhum teste chegava a pagar antes de semear de novo.
+
+    O PROTECT continua certo. Quem tinha de mudar era a ORDEM do reset.
+    """
+    from django.contrib.auth import get_user_model
+
+    from apps.screening.models import Payment, Ticket
+
+    _semear()
+
+    sessao = Screening.objects.first()
+    assento = sessao.room.seats.first()
+    reserva = Reservation.objects.create(
+        screening=sessao,
+        customer=get_user_model().objects.get(username="cliente1"),
+        expires_at=timezone.now() + timedelta(minutes=10),
+        status=Reservation.Status.PAID,
+    )
+    ocupacao = ReservedSeat.objects.create(
+        reservation=reserva, screening=sessao, seat=assento
+    )
+    pagamento = Payment.objects.create(
+        reservation=reserva,
+        status=Payment.Status.APPROVED,
+        amount=sessao.price,
+        card_last4="4242",
+        card_brand="visa",
+    )
+    Ticket.objects.create(reserved_seat=ocupacao, payment=pagamento)
+
+    _semear()
+
+    assert Ticket.objects.count() == 0
+    assert Payment.objects.count() == 0
+    assert Reservation.objects.count() == 0
+    assert ReservedSeat.objects.count() == 0
+    assert Seat.objects.count() == 100
