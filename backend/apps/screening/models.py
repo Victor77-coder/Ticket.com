@@ -13,6 +13,18 @@ A feature 008 fez o mesmo com o par seguinte: `Payment` e `Ticket` nasceram
 na mesma migração que as constraints que os protegem, porque "pagamento
 aprovado DEVE emitir o ingresso; não existe estado intermediário durável em
 que o assento esteja preso sem dono" é a mesma exigência lida do outro lado.
+
+A 009 acrescenta `TicketShareLink` — de novo modelo e constraint na mesma
+migração, e aqui a consequência de separar seria menor que nas duas
+anteriores (nenhum assento é vendido duas vezes por causa de um link). A
+regra vale assim mesmo: abrir exceção nela é como as regras acabam.
+
+O QUE A 009 NÃO FAZ, E É O MAIS IMPORTANTE DAQUI: o token do link NÃO deriva
+do código do QR e não conhece a `TICKET_SIGNING_KEY`. São dois segredos com
+ciclos de vida independentes — revogar um convite não pode queimar uma
+entrada paga, e o ingresso não pode depender de link nenhum para valer na
+portaria. `services/ingressos.py` continua sem saber que link existe, e
+`TicketShareLink` continua sem saber que existe assinatura.
 """
 
 import uuid
@@ -370,7 +382,98 @@ class Ticket(models.Model):
     class Meta:
         verbose_name = "ingresso"
         verbose_name_plural = "ingressos"
+        # Ordenação por LUGAR, que é a certa dentro de UMA compra: dois
+        # ingressos da mesma reserva se leem como "F11 e F12".
+        #
+        # A lista de "Meus ingressos" da 009 precisa da outra ordenação — por
+        # horário de sessão — e a declara explicitamente. Herdar esta daria
+        # uma lista ordenada por poltrona: plausível, e errada.
         ordering = ["reserved_seat__seat__row", "reserved_seat__seat__number"]
 
     def __str__(self):
         return f"Ingresso {self.public_id} — {self.reserved_seat}"
+
+
+class TicketShareLink(models.Model):
+    """A autorização de leitura pública de UM ingresso.
+
+    Compartilhar ingresso é entregar o direito de entrar: a página do link
+    exibe o QR, porque uma página compartilhada sem ele seria decorativa. A
+    consequência é assumida, não contornada — o link é CREDENCIAL AO
+    PORTADOR, e daí saem as duas exigências que este modelo carrega: o token
+    é não adivinhável, e o dono pode revogá-lo e gerar outro.
+
+    O TOKEN NÃO É O CÓDIGO DO QR, e a distinção é a razão de este modelo
+    existir em vez de uma coluna em `Ticket`. Revogar um link não pode
+    invalidar o ingresso na catraca, e o ingresso não pode depender de link
+    para valer. Dois segredos, dois ciclos de vida: este não conhece a
+    `TICKET_SIGNING_KEY`, e `services/ingressos.py` não conhece este.
+
+    E A LINHA REVOGADA NUNCA É APAGADA. É o que faz duas coisas serem
+    estrutura em vez de sorte:
+      - "revogado nunca volta a valer" — o token morto continua ocupando o
+        espaço dele sob a `UNIQUE` da coluna, então nem o gerador nem um bug
+        de reatribuição conseguem ressuscitá-lo;
+      - token revogado e token inexistente respondem igual — os dois saem
+        como o mesmo `None` da consulta, sem `if` nenhum decidindo.
+    """
+
+    # CASCADE, e é a única do módulo — todo o resto usa PROTECT.
+    #
+    # PROTECT existe onde apagar destruiria histórico de venda: ingresso,
+    # pagamento, reserva. Um link não é histórico, é autorização de leitura.
+    # Se um dia um ingresso for apagado, seus links TÊM de morrer junto: um
+    # link sobrevivendo ao ingresso seria credencial órfã.
+    ticket = models.ForeignKey(
+        Ticket, related_name="share_links", on_delete=models.CASCADE
+    )
+
+    # `secrets.token_urlsafe(32)` — 256 bits, 43 caracteres. Preenchido num
+    # ponto só (services/compartilhamento.py) e nunca editado depois.
+    #
+    # Não deriva de NADA: nem da chave primária, nem do `public_id`, nem da
+    # reserva, nem do pagamento, e sobretudo nem do código assinado.
+    #
+    # `unique` ABSOLUTA, sem condição, incluindo os revogados — ver o
+    # docstring da classe.
+    token = models.CharField(max_length=64, unique=True, editable=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Nulo é o estado ativo. Preenchido é terminal: não há "reativar".
+    revoked_at = models.DateTimeField(null=True, blank=True, default=None)
+
+    class Meta:
+        verbose_name = "link de compartilhamento"
+        verbose_name_plural = "links de compartilhamento"
+        ordering = ["-created_at"]
+        constraints = [
+            # ÍNDICE PARCIAL. Terceiro capítulo da mesma história, e a forma
+            # muda por limitação do PostgreSQL, nunca por preferência:
+            #
+            #   007 — UNIQUE(sessão, assento), ABSOLUTA. O predicado natural
+            #         seria `expira_em > now()`, e índice parcial exige
+            #         predicado IMUTÁVEL: `now()` não é.
+            #   008 — UNIQUE(reserva) WHERE aprovado, PARCIAL. `status =
+            #         'approved'` é coluna comparada a literal, imutável.
+            #   009 — esta. `revoked_at IS NULL` é teste de nulidade sobre
+            #         coluna, imutável.
+            #
+            # É o `condition` que permite PRESERVAR os revogados. Uma
+            # UNIQUE(ticket) sem condição impediria gerar um link novo depois
+            # de revogar o anterior — justamente o que a feature promete ao
+            # dono. NÃO REMOVER O `condition` "para simplificar".
+            models.UniqueConstraint(
+                fields=["ticket"],
+                condition=models.Q(revoked_at__isnull=True),
+                name="um_link_ativo_por_ingresso",
+            ),
+        ]
+
+    def __str__(self):
+        estado = "revogado" if self.revoked_at else "ativo"
+        return f"Link {estado} — ingresso {self.ticket_id}"
+
+    @property
+    def is_active(self):
+        return self.revoked_at is None
