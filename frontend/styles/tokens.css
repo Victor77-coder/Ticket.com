@@ -21,14 +21,41 @@
   --cor-texto-suave: #a8a8bd;
   --cor-texto-fraco: #6e6e85;
 
-  /* --- Marca --- */
-  --cor-destaque: #ff5c39;
-  --cor-destaque-forte: #ff7a5c;
-  --cor-destaque-fraca: rgba(255, 92, 57, 0.14);
-  /* Texto sobre o botão laranja. Escura o bastante para contrastar com o
-   * destaque, e por isso não é nenhuma das cores de texto. Vivia literal em
-   * dois arquivos antes desta feature (R10). */
-  --cor-sobre-destaque: #150703;
+  /* --- Marca ---
+   *
+   * NEON DE FACHADA. A 006 fixou "sala escura, a arte do filme é a luz" e
+   * escolheu como destaque a luz de PROJEÇÃO — daí o laranja. A ideia
+   * continua certa; a fonte de luz é que mudou (feature 011).
+   *
+   * Um cinema à noite tem quatro luzes, e três já estavam ocupadas:
+   *   marquise (âmbar)      → --cor-alerta
+   *   saída (verde)         → --cor-sucesso
+   *   projeção (laranja)    → era esta, e ficava a ΔE 23.8 do --cor-erro
+   *   NEON DA FACHADA       → livre. É a luz que se vê ANTES de entrar,
+   *                            apropriada para quem vende a entrada.
+   *
+   * A cor não foi escolhida, SOBROU: proibições nomeadas, colisão com cor de
+   * estado, os quatro papéis funcionais e "não ser a cor padrão de
+   * tecnologia" deixam só esta faixa. Ver specs/011-marca-sem-laranja/
+   * research.md, R1 — e tests/tokens.test.ts, que congela as medidas.
+   *
+   * TROCAR QUALQUER VALOR AQUI EXIGE RODAR `npm run test -- tokens`. Nenhum
+   * outro teste do projeto percebe um contraste quebrado. */
+  --cor-destaque: #ff2e88;
+  /* MAIS CLARA que a base, e é contraintuitivo de propósito: ela é o CONTORNO
+   * DE FOCO GLOBAL (ver `:focus-visible` no fim deste arquivo) e o hover de
+   * botões já preenchidos com a base. Escurecer reduziria o contraste
+   * exatamente onde ele é obrigatório. */
+  --cor-destaque-forte: #ff5ca3;
+  --cor-destaque-fraca: rgba(255, 46, 136, 0.14);
+  /* Texto sobre o destaque. Escura o bastante para contrastar, e por isso não
+   * é nenhuma das cores de texto. Vivia literal em dois arquivos antes da 006.
+   *
+   * RECALIBRADA na 011, não herdada: o valor antigo era um quase-preto tingido
+   * de laranja e puxaria para marrom sujo sobre magenta. E precisa passar em
+   * DOIS fundos — a base em repouso e a `-forte` no hover, que é o estado em
+   * que a pessoa está quando vai clicar. */
+  --cor-sobre-destaque: #12040a;
 
   /* Fundo do quadro de trailer — preto real, não a superfície da interface:
    * a barra do vídeo precisa desaparecer contra ele. */
@@ -44,10 +71,15 @@
    * componente. */
   --cor-fundo-qr: #ffffff;
 
-  /* Vestígio do laranja nos fundos de substituição. Antes eram dois valores
-   * quase iguais (0.22 e 0.18) em arquivos diferentes — a diferença não era
-   * decisão, era deriva. */
-  --cor-destaque-vestigio: rgba(255, 92, 57, 0.2);
+  /* Vestígio do destaque nos fundos de substituição de cartaz. Antes eram dois
+   * valores quase iguais (0.22 e 0.18) em arquivos diferentes — a diferença
+   * não era decisão, era deriva.
+   *
+   * A OPACIDADE NÃO MUDOU na 011, e a de `--cor-destaque-fraca` também não:
+   * as duas foram calibradas na 006 e o que mudou foi a matiz. Alterá-las
+   * junto misturaria duas decisões e tornaria qualquer regressão difícil de
+   * atribuir. */
+  --cor-destaque-vestigio: rgba(255, 46, 136, 0.2);
 
   /* --- Superfícies translúcidas ---
    * Existem para flutuar sobre a arte do filme, onde uma superfície opaca
@@ -94,6 +126,19 @@
    * (Princípio V). Ver R1 em specs/006-visual-identity/research.md.
    */
   --fonte-base: var(--fonte-archivo), ui-sans-serif, system-ui, sans-serif;
+
+  /* A FAMÍLIA DA MARCA, e ela tem EXATAMENTE UM consumidor: o componente de
+   * marca no cabeçalho. Nenhum texto de interface pode usá-la — uma face de
+   * display em corpo de texto é pior que a atual, e a interface já tem a
+   * família certa desde a 006.
+   *
+   * Cabinet Grotesk, do Fontshare. Auto-hospedada em /fontes, sem requisição
+   * a terceiro em tempo de visita — Princípio VII aplicado a fontes, mesma
+   * regra que a 006 aplicou à família da interface.
+   *
+   * Licença versionada em public/fontes/FFL.txt: uso comercial permitido, e
+   * §01 concede explicitamente criar logos. Ver README. */
+  --fonte-marca: var(--fonte-cabinet), var(--fonte-archivo), ui-sans-serif, sans-serif;
 
   /* Escala com razão 1,25. Os valores anteriores não seguiam razão nenhuma —
    * 0.75, 0.875, 1, 1.25, 1.75, 2.5 — e saltos irregulares fazem a página
