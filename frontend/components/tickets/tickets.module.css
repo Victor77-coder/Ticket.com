@@ -97,3 +97,100 @@
   text-align: center;
   line-height: var(--altura-linha-base);
 }
+
+/* --- O painel de compartilhamento (feature 009) --- */
+
+.painel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  padding: var(--esp-5);
+}
+
+.painelTitulo {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-forte);
+  line-height: var(--altura-linha-apertada);
+}
+
+.painelTexto {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+  line-height: var(--altura-linha-base);
+  max-width: 60ch;
+}
+
+/* O endereço fica inteiro e selecionável: se a área de transferência for
+ * negada pelo navegador, é isto que resta para a pessoa copiar à mão. Um
+ * endereço truncado com reticências não serve para copiar. */
+.endereco {
+  background: var(--cor-superficie-elevada);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  padding: var(--esp-3);
+}
+
+.enderecoValor {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto);
+  word-break: break-all;
+  line-height: var(--altura-linha-base);
+  user-select: all;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-3);
+}
+
+.botaoPrimario,
+.botaoSecundario {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-forte);
+  padding: var(--esp-3) var(--esp-5);
+  border-radius: var(--raio-pilula);
+  transition: background var(--transicao-rapida), color var(--transicao-rapida);
+}
+
+.botaoPrimario {
+  color: var(--cor-sobre-destaque);
+  background: var(--cor-destaque);
+}
+
+.botaoPrimario:hover:not(:disabled),
+.botaoPrimario:focus-visible:not(:disabled) {
+  background: var(--cor-destaque-forte);
+}
+
+.botaoSecundario {
+  color: var(--cor-texto);
+  background: transparent;
+  border: 1px solid var(--cor-borda-forte);
+}
+
+.botaoSecundario:hover:not(:disabled),
+.botaoSecundario:focus-visible:not(:disabled) {
+  background: var(--cor-realce-sutil);
+}
+
+.botaoPrimario:disabled,
+.botaoSecundario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.aviso {
+  font-size: var(--texto-sm);
+  color: var(--cor-sucesso);
+  min-height: var(--esp-5);
+}
+
+.erro {
+  font-size: var(--texto-sm);
+  color: var(--cor-erro);
+  line-height: var(--altura-linha-base);
+}
