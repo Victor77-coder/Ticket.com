@@ -188,3 +188,41 @@ export function postReserva(
     sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {},
   );
 }
+
+// --- Pagamento e ingresso (feature 008) ----------------------------------
+
+/**
+ * A reserva do dono, com pagamento e ingressos quando já foi paga.
+ *
+ * É esta chamada que faz a confirmação sobreviver a um recarregamento: os
+ * ingressos não vivem em estado de componente, são lidos do servidor a cada
+ * visita (FR-022).
+ */
+export function fetchReserva(
+  sessionKey: string | undefined,
+  id: number,
+): Promise<ApiResultComStatus<Reserva>> {
+  return getJson<Reserva>(
+    `/api/v1/reservas/${id}/`,
+    sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {},
+  );
+}
+
+/**
+ * Cobra a reserva. Só o Route Handler `/api/pagar` chama isto.
+ *
+ * Este é o **único ponto do sistema por onde o número completo do cartão
+ * passa**, e ele passa sem parar: nada aqui guarda, registra ou ecoa o corpo
+ * (FR-011, R10).
+ */
+export function postPagamento(
+  sessionKey: string | undefined,
+  reserva: number,
+  corpo: { numero: string; nome: string; validade: string; cvv: string },
+): Promise<ApiResultComStatus<unknown>> {
+  return postJson<unknown>(
+    `/api/v1/reservas/${reserva}/pagamento/`,
+    corpo,
+    sessionKey ? { headers: { Cookie: `${COOKIE_SESSAO}=${sessionKey}` } } : {},
+  );
+}

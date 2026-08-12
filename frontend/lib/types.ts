@@ -181,12 +181,74 @@ export type LugarReservado = {
   numero: number;
 };
 
+/**
+ * A cobrança aprovada, como o comprador a vê.
+ *
+ * Só os quatro últimos dígitos e a bandeira: não há cobrança real, então
+ * guardar o número seria risco sem contrapartida (FR-011).
+ */
+export type Pagamento = {
+  cartao_final: string;
+  bandeira: string;
+  total: string;
+  pago_em: string;
+};
+
+/**
+ * Um ingresso — **um por lugar**, nunca um por reserva.
+ *
+ * `codigo` e `qr_svg` andam juntos: o código é a verdade assinada pelo
+ * servidor, o QR é uma representação dele. O texto fica visível porque a
+ * portaria exige digitação manual como alternativa sempre disponível, e um QR
+ * que não carrega não pode deixar a pessoa sem nada (FR-038).
+ */
+export type Ingresso = {
+  codigo: string;
+  /** `data:` URI — entra num `<img>` com `alt`, sem markup solto no DOM. */
+  qr_svg: string;
+  filme: string;
+  sessao: string;
+  sala: string;
+  assento: LugarReservado;
+};
+
 export type Reserva = {
   id: number;
   sessao: number;
   assentos: LugarReservado[];
   total: string;
-  /** Instante absoluto — o relógio do navegador pode estar errado. */
+  /**
+   * Instante absoluto — o relógio do navegador pode estar errado.
+   *
+   * Continua presente numa reserva paga, com o valor original e **sem
+   * significado de prazo**: reserva paga não vence. Quem decide não exibir a
+   * contagem é a tela, olhando `situacao`.
+   */
   expira_em: string;
-  situacao: "reservada" | "expirada";
+  situacao: "reservada" | "expirada" | "paga";
+  /** Só quando `situacao === "paga"`. */
+  pagamento?: Pagamento;
+  /** Só quando `situacao === "paga"`. Um por lugar reservado. */
+  ingressos?: Ingresso[];
+  detail?: string;
+};
+
+/** O corpo do `201` do pagamento aprovado. */
+export type PagamentoAprovado = {
+  situacao: "paga";
+  pagamento: Pagamento;
+  ingressos: Ingresso[];
+};
+
+/**
+ * O corpo do `402`.
+ *
+ * `expira_em` volta de propósito: é a prova observável de que a recusa **não
+ * mexeu no prazo** da reserva (FR-027).
+ */
+export type PagamentoRecusado = {
+  situacao: "recusada";
+  motivo: string;
+  detail: string;
+  expira_em: string;
 };
