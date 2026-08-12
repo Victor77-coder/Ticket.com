@@ -114,15 +114,33 @@ def _liberar_ou_recusar(sessao, assentos):
         .select_related("reservation", "seat")
     )
 
-    agora = timezone.now()
+    # Quem ainda ocupa é decidido pelo MESMO predicado que o mapa usa —
+    # `Reservation.OCUPANDO` —, com uma consulta sobre as reservas já
+    # bloqueadas, em vez da comparação de datas em Python que existia aqui.
+    #
+    # A comparação antiga olhava só `expires_at`, e por isso classificava uma
+    # reserva PAGA e vencida no relógio como linha morta. O passo seguinte a
+    # apagava e entregava o lugar VENDIDO a outra pessoa — sem violar
+    # `unico_assento_por_sessao`, porque apagar antes de inserir é operação
+    # legal para o banco. Nenhuma constraint pegava, e nenhum teste pegava,
+    # porque até a 008 nada conseguia produzir uma reserva paga.
+    #
+    # Ver R3 em specs/008-payment-ticket-issuance/research.md e
+    # tests/test_paid_seat_retention.py.
+    ids_ocupando = set(
+        Reservation.objects.filter(Reservation.OCUPANDO)
+        .filter(pk__in={o.reservation_id for o in ocupacoes})
+        .values_list("pk", flat=True)
+    )
+
     vencidas = []
     vivas = []
 
     for ocupacao in ocupacoes:
-        if ocupacao.reservation.expires_at <= agora:
-            vencidas.append(ocupacao)
-        else:
+        if ocupacao.reservation_id in ids_ocupando:
             vivas.append(ocupacao.seat)
+        else:
+            vencidas.append(ocupacao)
 
     if vivas:
         # A reserva inteira é recusada, nunca parcial: reservar "o que
@@ -132,6 +150,11 @@ def _liberar_ou_recusar(sessao, assentos):
     if vencidas:
         # A linha morta só é removida aqui, sob o bloqueio. É o que concilia
         # a constraint absoluta com a expiração, sem rotina agendada (R2).
+        #
+        # E "morta" nunca inclui reserva PAGA: a linha de uma compra
+        # concluída não é resto de intenção abandonada, é o lugar vendido.
+        # A garantia disso está na classificação acima, que só chega aqui o
+        # que `Reservation.OCUPANDO` deixou de fora.
         ReservedSeat.objects.filter(pk__in=[o.pk for o in vencidas]).delete()
 
 

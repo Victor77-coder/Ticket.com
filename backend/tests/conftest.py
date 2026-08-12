@@ -121,6 +121,36 @@ def make_reservation(db):
     return _make
 
 
+# --- Pagamento e ingresso (feature 008) -----------------------------------
+
+
+@pytest.fixture
+def make_paid_reservation(make_reservation):
+    """Uma reserva JÁ PAGA, montada sem passar pelo serviço de pagamento.
+
+    Existe para que a prova de R3 — o lugar vendido não volta ao estoque —
+    não dependa da fase seguinte estar pronta. O caminho de pagamento de
+    verdade, com bloqueio e constraint, é exercitado pelos testes que chamam
+    o serviço.
+
+    `minutes_left` negativo é o cenário que interessa: uma reserva paga cujo
+    prazo original JÁ PASSOU. É exatamente aí que a regra da 007, olhando só
+    `expires_at`, trata um lugar vendido como abandonado.
+    """
+
+    def _make(screening, customer, seats_list, minutes_left=-1):
+        from apps.screening.models import Reservation
+
+        reserva = make_reservation(
+            screening, customer, seats_list, minutes_left=minutes_left
+        )
+        reserva.status = Reservation.Status.PAID
+        reserva.save(update_fields=["status"])
+        return reserva
+
+    return _make
+
+
 @pytest.fixture
 def make_user(db):
     """Usuário com papel, para os testes de autorização."""

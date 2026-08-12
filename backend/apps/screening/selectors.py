@@ -5,9 +5,8 @@ Ficam fora das views para serem testáveis sem HTTP — mesmo padrão de
 """
 
 from django.db.models import Exists, OuterRef
-from django.utils import timezone
 
-from apps.screening.models import ReservedSeat, Screening, Seat
+from apps.screening.models import Reservation, ReservedSeat, Screening, Seat
 
 
 def get_sellable_screening(pk):
@@ -26,14 +25,22 @@ def get_sellable_screening(pk):
 
 
 def ocupacoes_vivas(screening=None):
-    """Ocupações cuja reserva ainda não venceu.
+    """Ocupações que tiram o lugar do estoque.
 
-    O vencimento é lido do relógio a cada consulta. Não há rotina agendada
-    marcando reservas como expiradas — se houvesse, existiria uma janela
-    entre o vencimento e a passagem da rotina, e nessa janela o lugar
-    apareceria tomado sem estar.
+    Duas coisas tiram: a reserva estar **paga**, ou o prazo dela ainda não
+    ter vencido. A regra mora em `Reservation.OCUPANDO` e é **consumida**
+    daqui, nunca copiada — antes da 008 ela estava escrita em três lugares, e
+    ganhar um segundo termo em duas cópias e não na terceira era o modo mais
+    provável de esta feature vender o mesmo lugar duas vezes.
+
+    O vencimento continua sendo lido do relógio a cada consulta. Não há
+    rotina agendada marcando reservas como expiradas — se houvesse, existiria
+    uma janela entre o vencimento e a passagem da rotina, e nessa janela o
+    lugar apareceria tomado sem estar.
     """
-    consulta = ReservedSeat.objects.filter(reservation__expires_at__gt=timezone.now())
+    consulta = ReservedSeat.objects.filter(
+        reservation__in=Reservation.objects.filter(Reservation.OCUPANDO)
+    )
     if screening is not None:
         consulta = consulta.filter(screening=screening)
     return consulta
