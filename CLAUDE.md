@@ -2,12 +2,12 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Plan: `specs/008-payment-ticket-issuance/plan.md`
-- Spec: `specs/008-payment-ticket-issuance/spec.md`
-- Research: `specs/008-payment-ticket-issuance/research.md`
-- Data model: `specs/008-payment-ticket-issuance/data-model.md`
-- Contracts: `specs/008-payment-ticket-issuance/contracts/`
-- Quickstart: `specs/008-payment-ticket-issuance/quickstart.md`
+- Plan: `specs/009-my-tickets-sharing/plan.md`
+- Spec: `specs/009-my-tickets-sharing/spec.md`
+- Research: `specs/009-my-tickets-sharing/research.md`
+- Data model: `specs/009-my-tickets-sharing/data-model.md`
+- Contracts: `specs/009-my-tickets-sharing/contracts/`
+- Quickstart: `specs/009-my-tickets-sharing/quickstart.md`
 
 Features anteriores, já implementadas:
 
@@ -23,25 +23,44 @@ Features anteriores, já implementadas:
   cor, espaçamento, tipografia, raio ou duração pode ficar fora dos tokens.
 
 - `specs/007-seat-selection/` — mapa da sala e reserva com prazo de 10 minutos, protegida por
-  `UNIQUE(sessão, assento)` em `ReservedSeat` (202 asserções no back-end, 116 no front). A
-  constraint é **absoluta, sem predicado**: o índice parcial era impossível porque `now()` não é
-  imutável.
+  `UNIQUE(sessão, assento)` em `ReservedSeat`. A constraint é **absoluta, sem predicado**: o índice
+  parcial era impossível porque `now()` não é imutável.
 
-**A feature 008 emite o ingresso, e aprovação e emissão são inseparáveis.** O Princípio II diz que
-"pagamento aprovado DEVE emitir o ingresso; não existe estado intermediário durável em que o
-assento esteja preso sem dono" — então as duas entram na mesma transação e na mesma migração, pelo
-mesmo motivo que a 007 criou modelo e constraint juntos. Duas constraints carregam a garantia:
-`UNIQUE(reserva) WHERE aprovado` (parcial — aqui o predicado é imutável, ao contrário da 007) e
-`UNIQUE(assento reservado)` no ingresso. O teste de concorrência é prova obrigatória e precisa
-**falhar** se qualquer uma for removida.
+- `specs/008-payment-ticket-issuance/` — pagamento simulado e emissão do ingresso, inseparáveis
+  (mesma transação, mesma migração). Duas constraints: `UNIQUE(reserva) WHERE aprovado` (parcial —
+  o predicado é imutável, ao contrário da 007) e `UNIQUE(assento reservado)` no ingresso. O código
+  do QR é assinado com `TICKET_SIGNING_KEY` — **segredo próprio, distinto da `DJANGO_SECRET_KEY`**,
+  sem valor padrão utilizável, que nunca chega ao front-end, verificado em `services/ingressos.py`,
+  um módulo **puro** que não importa modelo (é o que torna `num_queries == 0` verificável).
 
-**Armadilha herdada, corrigida nesta feature**: a 007 decide ocupação por `expires_at > now()`, em
-três cópias. Reserva paga não mexe em `expires_at` — sem o segundo termo (`status = paid`), o lugar
-vendido volta ao estoque e `_liberar_ou_recusar` **apaga a ocupação paga** sem violar constraint
-alguma. É a única falha da 008 que o banco aceita sem reclamar.
+**A feature 009 dá endereço permanente ao ingresso e um link para mostrá-lo a outra pessoa.** Duas
+decisões estruturam tudo:
 
-O código do QR é assinado com `TICKET_SIGNING_KEY` — **segredo próprio, distinto da
-`DJANGO_SECRET_KEY`**, sem valor padrão utilizável, que nunca chega ao front-end.
+1. **O token do link é distinto do código do QR**, e os ciclos de vida são independentes: revogar um
+   convite não pode queimar uma entrada paga. `TicketShareLink` não conhece a chave de assinatura, e
+   `services/ingressos.py` não conhece a existência de link nenhum. Teste obrigatório compara o
+   código antes e depois de revogar.
+2. **A página compartilhada é pública e mostra APENAS filme, sessão, sala, lugar e QR.** É servida
+   pelo `TicketSerializer` da 008 **sem alteração** — o risco não é o que ele expõe hoje, é a pressão
+   de crescimento, e por isso os campos da área do dono vão para um serializer separado. Teste de
+   não vazamento inspeciona a resposta inteira e é requisito, não diferencial.
+
+A constraint é `UNIQUE(ingresso) WHERE revogado_em IS NULL` — parcial, terceiro capítulo da mesma
+história: 007 absoluta porque `now()` não é imutável, 008 e 009 parciais porque os predicados são.
+Preservar os links revogados é o que faz "revogado nunca volta a valer" ser estrutura, não sorte.
+
+**Armadilha herdada desta feature**: toda consulta de sessão da 001 à 008 passa por `sellable()`
+(`published()` E `starts_at > now()`). É o filtro certo para **estoque** e errado para **histórico** —
+usá-lo aqui esvaziaria para sempre o grupo "já aconteceram" e faria sumir o ingresso da sessão
+cancelada, que é justamente sobre o qual o cliente precisa de explicação. Nenhuma constraint pega, e a
+linha errada parece mais idiomática que a certa.
+
+**Trade-off registrado**: o token do link fica em **texto claro** no banco, porque FR-028/FR-035
+exigem que o dono recopie o link depois e hash torna isso impossível. Mitigado com 256 bits,
+revogação imediata, `noindex` e `no-referrer`. Vai para o README pelo Princípio VI.
+
+**Nada de estado "já utilizado" na 009** — a transição e a garantia de validação única nascem juntas
+na feature da portaria.
 
 Project constitution (governa todas as features): `.specify/memory/constitution.md`
 <!-- SPECKIT END -->

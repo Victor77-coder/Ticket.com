@@ -190,8 +190,19 @@ vazamento de dado de gestão nas respostas públicas (Princípio IV), resiliênc
 (Princípio VII), a garantia de que a lista de sugestões nunca exibe o resultado de um termo já
 abandonado, a corrida de reserva — exatamente uma vence, e o teste **falha** se a constraint for
 removida (Princípio II) —, a corrida de pagamento, que emite um único conjunto de ingressos e
-**falha** se qualquer uma das duas garantias de banco for removida, e a rejeição de QR forjado,
-verificada **sem nenhuma consulta ao banco** (Princípio III).
+**falha** se qualquer uma das duas garantias de banco for removida, a rejeição de QR forjado,
+verificada **sem nenhuma consulta ao banco** (Princípio III), a ausência de vazamento na página de
+ingresso compartilhado, inspecionada por valor na resposta inteira (Princípio III), e a corrida de
+geração de link, que produz um único link ativo e **falha** sem o índice parcial.
+
+Três testes foram verificados **quebrando o código de propósito**, porque uma prova que passa sem a
+garantia que ela protege é pior do que prova nenhuma:
+
+| Garantia removida | O que passa a acontecer | Teste que falha |
+|---|---|---|
+| `condition` do índice de link ativo | 5 pedidos simultâneos criam **5** credenciais ativas | `test_share_link_concurrency.py` |
+| campo novo no serializer público | o campo aparece na página compartilhada | `test_share_link_leakage.py` |
+| `sellable()` na consulta de ingressos | somem o histórico e o ingresso de sessão cancelada | `test_my_tickets_api.py` |
 
 > Os testes ponta a ponta de pagamento **compram de verdade**, e lugar pago não volta ao estoque.
 > Rodar a suíte muitas vezes consome a grade semeada; `seed_demo` devolve o cenário ao início.
@@ -245,6 +256,42 @@ Uma reserva nunca gera dois conjuntos de ingressos, e a garantia também é do P
 parcial `UNIQUE(reserva) WHERE aprovado` no pagamento e `UNIQUE(assento reservado)` no ingresso.
 `backend/tests/test_payment_concurrency.py` prova isso com threads, e está verificado que ele
 **falha** se qualquer uma das duas for removida.
+
+**Meus ingressos e compartilhamento por link** (`specs/009-my-tickets-sharing/`) — até a 008 o
+ingresso existia e era **inalcançável**: saindo da confirmação da compra, o cliente não tinha
+caminho de volta. Agora ele tem endereço permanente em **`/meus-ingressos`**, alcançável pelo menu
+da conta (só para o papel cliente) e pela própria confirmação.
+
+A lista mostra **um item por lugar comprado**, cada um com seu QR e seu código em texto, separada
+em dois grupos: **Próximas sessões**, com a que acontece primeiro no topo, e **Já aconteceram**, da
+mais recente para a mais antiga. Os dois grupos vêm separados do servidor — a fronteira é decisão
+dele, não do relógio do navegador. Quem nunca comprou vê um estado vazio escrito para gente, com
+saída para o catálogo. Ingresso de sessão cancelada **continua na lista**, com aviso: some da venda,
+não do histórico.
+
+Cada ingresso tem endereço próprio, e é lá que mora o **link de compartilhamento**. A página do
+link é pública, abre sem conta nenhuma e mostra **apenas** filme, sessão, sala, lugar e o QR —
+nunca quem comprou, nunca os outros ingressos da mesma compra, nunca valor ou dado de pagamento.
+`backend/tests/test_share_link_leakage.py` inspeciona a resposta pública inteira **por valor** e
+falha se qualquer um desses aparecer; está verificado que ele **falha** quando um campo é
+acrescentado ao serializer público.
+
+**O link é credencial ao portador, e isso é assumido.** Compartilhar ingresso é entregar o direito
+de entrar — é para isso que a pessoa manda o ingresso a quem vai com ela, e uma página
+compartilhada sem o QR seria decorativa. Daí as duas contrapartidas: o token tem 256 bits de
+entropia, e o dono pode **revogar** o link a qualquer momento e gerar outro. Um link revogado nunca
+volta a valer, e responde exatamente como um link inventado — distinguir contaria a quem está
+adivinhando que um palpite chegou perto.
+
+O token do link é **distinto do código do QR**, e os dois têm ciclos de vida independentes:
+revogar um convite não pode queimar uma entrada paga.
+`backend/tests/test_ticket_signature.py` compara o código antes e depois de revogar e exige que
+seja byte a byte o mesmo.
+
+Um ingresso tem **no máximo um link ativo**, e a garantia é do PostgreSQL: índice parcial
+`UNIQUE(ingresso) WHERE revogado_em IS NULL`. `backend/tests/test_share_link_concurrency.py` prova
+com threads, e está verificado que ele **falha** sem a constraint — sem ela, cinco pedidos
+simultâneos criam cinco credenciais ativas, e o dono revogaria uma achando que revogou tudo.
 
 ---
 
@@ -368,9 +415,52 @@ inativa respondem "Usuário ou senha incorretos.". Não foi preciso unificar nad
 seguro assim — a versão manual é exatamente onde esse requisito vaza depois, quando alguém
 acrescenta um `if not user` com texto diferente e a enumeração de contas volta.
 
+**O token do link de compartilhamento fica em texto claro no banco.** O hábito correto é guardar
+segredo ao portador em hash, como se faz com senha e chave de API. Aqui a escolha é outra, e é
+deliberada.
+
+O motivo é de produto: o dono precisa **reencontrar e recopiar** o link ativo depois — abrir o
+ingresso noutro dia e mandar de novo para quem vai com ele. Com hash, o token existiria só no
+instante da criação: quem fechasse a aba perderia o link e teria de revogar e gerar outro. "Meu
+link" deixaria de ser algo que se tem para virar algo que se recebe uma vez.
+
+**O que se perde, dito sem eufemismo:** um vazamento do banco entrega links utilizáveis contra o
+servidor vivo, e a página compartilhada renderiza QR válido para eles. **O que não se perde:** a
+`TICKET_SIGNING_KEY` não está no banco, então um dump sozinho **não** permite forjar código nenhum
+— o alcance se limita aos ingressos que já têm link ativo, e o dono revoga.
+
+As mitigações que entraram junto: 256 bits de entropia (adivinhar é inviável), revogação imediata e
+definitiva, o token nunca aparece em resposta que não seja a do próprio dono, e a página pública
+declara `noindex` e `no-referrer` — o endereço **é** a credencial, e sem `no-referrer` ele vazaria
+no cabeçalho `Referer` de qualquer navegação a partir dali.
+
+Se a troca não se sustentar numa revisão, o caminho é mudar o requisito de recopiar o link — não
+guardar hash em silêncio e deixar o botão de copiar quebrado. Registrado em
+`specs/009-my-tickets-sharing/plan.md`, seção Complexity Tracking.
+
 ---
 
 ## Limitações conhecidas
+
+**A leitura do QR por um leitor de terceiro é verificada à mão.** O requisito é que um aplicativo
+leitor de QR decodifique o código da tela a 320px de largura. Automatizar isso exigiria uma
+biblioteca nativa de decodificação (`zbar` e afins) trazida ao projeto só para essa asserção.
+
+O que os testes automatizados cobrem no lugar: o QR é SVG vetorial (não pixeliza), renderiza com no
+mínimo 128px de lado a 320px de viewport, mantém o fundo claro do token `--cor-fundo-qr` — leitor
+precisa do contraste, e é por isso que essa superfície não segue o tema escuro —, e o código em
+texto está presente, inteiro e igual ao conteúdo assinado. A leitura em si está no percurso 3 do
+`specs/009-my-tickets-sharing/quickstart.md`, com celular.
+
+**O link de compartilhamento não expira por tempo.** Ele vale até ser revogado. Um prazo criaria um
+segundo motivo de "este link não funciona" para o avaliador distinguir do primeiro, sem substituir
+a revogação — que precisa existir de qualquer jeito, e é imediata.
+
+**Não há contador de aberturas do link.** Contar seria telemetria sobre quem recebeu o ingresso, e
+a feature existe justamente para que essa pessoa não precise se identificar.
+
+**Compartilhar não transfere titularidade.** O ingresso continua pertencendo a quem comprou; o link
+só exibe. Revenda entre usuários está explicitamente fora de escopo pelo Princípio I.
 
 **As áreas por papel não existem.** Os três papéis autenticam e o cabeçalho identifica cada um,
 mas organizador e portaria voltam para a mesma página de qualquer visitante — não há painel de
@@ -388,10 +478,14 @@ cinema — uma sala existe sem lugar associado —, então o seletor não teria 
 quando houver o conceito de praça no modelo. Registrado em
 `specs/002-site-header-navigation/spec.md`.
 
-**Não há área "Meus ingressos", link de compartilhamento nem tela de portaria.** O que existe hoje
-vai do catálogo até o ingresso emitido, visível na confirmação da compra e revisitável pelo mesmo
-endereço enquanto a sessão de navegação durar. A **lista** de todos os ingressos de um cliente, o
-link de compartilhamento e a validação na entrada são as próximas features.
+**Não há tela de portaria.** O que existe hoje vai do catálogo até o ingresso emitido, alcançável
+em "Meus ingressos" e compartilhável por link. A validação na entrada é a próxima feature.
+
+**O ingresso não tem estado "já utilizado", e a ausência é deliberada.** A transição para utilizado
+e a garantia de que um ingresso não é validado duas vezes nascem **juntas** na feature da portaria
+— mesma disciplina que fez a 007 criar a ocupação de assento com sua constraint na mesma migração,
+e a 008 criar pagamento e emissão na mesma transação. Exibir agora um selo que nada escreve seria
+tela pela metade, que o Princípio V proíbe.
 
 **O ingresso emitido não pode ser cancelado nem estornado.** `paga` é estado terminal nesta etapa.
 Cancelamento com devolução ao estoque está listado na constitution como item posterior ao
