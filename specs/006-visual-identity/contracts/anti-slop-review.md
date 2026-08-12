@@ -2,6 +2,16 @@
 
 **Feature**: `006-visual-identity` | **Date**: 2026-08-11
 
+> **⚠️ SUCEDIDO EM 2026-08-12 POR
+> [`specs/011-marca-sem-laranja/contracts/anti-slop-review.md`](../../011-marca-sem-laranja/contracts/anti-slop-review.md).**
+>
+> A feature 011 emendou o FR-020 desta spec: a paleta continua escura, mas o destaque deixou de ser
+> laranja. O item **"Laranja de projeção"** abaixo foi substituído por **"Neon de fachada"**, e o
+> sucessor acrescentou dois itens obrigatórios (tipografia de marca e marca gráfica).
+>
+> **Este documento não foi editado de propósito.** Ele é o registro de que a paleta um dia foi outra,
+> e o Princípio VI pede rastro, não estado final. Para a checagem válida, usar o sucessor.
+
 O SC-003 é o **único** critério desta feature que depende de julgamento humano. Todo o resto é
 varredura.
 

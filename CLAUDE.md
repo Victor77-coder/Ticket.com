@@ -2,12 +2,12 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Plan: `specs/010-gate-validation/plan.md`
-- Spec: `specs/010-gate-validation/spec.md`
-- Research: `specs/010-gate-validation/research.md`
-- Data model: `specs/010-gate-validation/data-model.md`
-- Contracts: `specs/010-gate-validation/contracts/`
-- Quickstart: `specs/010-gate-validation/quickstart.md`
+- Plan: `specs/011-marca-sem-laranja/plan.md`
+- Spec: `specs/011-marca-sem-laranja/spec.md`
+- Research: `specs/011-marca-sem-laranja/research.md`
+- Data model: `specs/011-marca-sem-laranja/data-model.md`
+- Contracts: `specs/011-marca-sem-laranja/contracts/`
+- Quickstart: `specs/011-marca-sem-laranja/quickstart.md`
 
 Features anteriores, já implementadas:
 
@@ -16,49 +16,41 @@ Features anteriores, já implementadas:
 - `specs/003-user-authentication/` — entrada, saída e sessão para os três papéis
 - `specs/004-home-movie-rows/` — trilhas Em cartaz, Em alta e Em breve na home
 - `specs/005-seed-and-carousel-tuning/` — carrossel de 3 e seed com 12 filmes à venda
-- `specs/006-visual-identity/` — linguagem visual e disciplina de tokens. Nenhum valor de cor,
-  espaçamento, tipografia, raio ou duração pode ficar fora dos tokens.
-- `specs/007-seat-selection/` — mapa da sala e reserva com prazo de 10 minutos
-- `specs/008-payment-ticket-issuance/` — pagamento simulado e emissão do ingresso, inseparáveis.
-  O código do QR é assinado com `TICKET_SIGNING_KEY` — segredo próprio, distinto da
-  `DJANGO_SECRET_KEY`, que nunca chega ao front-end — em `services/ingressos.py`, módulo **puro**
-  que não importa modelo (é o que torna `num_queries == 0` verificável).
-- `specs/009-my-tickets-sharing/` — área "Meus ingressos" e link de compartilhamento revogável.
-  O token do link é distinto do código do QR e os ciclos de vida são independentes.
+- `specs/006-visual-identity/` — ritmo, Archivo e disciplina de tokens. **NENHUM valor de cor,
+  espaçamento, tipografia, raio ou duração pode ficar fora dos tokens** — a regra segurou por
+  completo, e é o que torna a 011 barata.
+- `specs/007-seat-selection/` — mapa da sala e reserva com prazo, `UNIQUE(sessão, assento)`
+- `specs/008-payment-ticket-issuance/` — pagamento simulado e emissão, inseparáveis. Código do QR
+  assinado com `TICKET_SIGNING_KEY` em `services/ingressos.py`, módulo **puro** sem banco.
+- `specs/009-my-tickets-sharing/` — "Meus ingressos" e link revogável; token do link ≠ código do QR
+- `specs/010-gate-validation/` — validação na portaria, quatro desfechos, **fluxo ponta a ponta
+  fechado**. A garantia é `UPDATE ... WHERE used_at IS NULL` — sem constraint, o teste de
+  concorrência é a única defesa. A portaria tem **tela única**: pousa em `/portaria` ao entrar e não
+  alcança o catálogo (middleware que nega por padrão).
 
-**A feature 010 valida o ingresso na portaria e FECHA O FLUXO PONTA A PONTA.** É a etapa 5 da ordem
-obrigatória da constitution.
+**A feature 011 troca a cor da marca, dá tipografia própria ao nome e cria a logo. EMENDA o FR-020
+da 006** ("paleta escura com destaque laranja") — revoga a segunda metade, mantém a primeira.
 
-**A garantia muda de forma pela primeira vez.** 007, 008 e 009 fecharam invariantes com índices
-(`UNIQUE` absoluta, parcial, parcial). Aqui o invariante é de **transição** — "esta coluna só sai de
-nulo uma vez" —, e nenhum índice o expressa: uma `CHECK` enxerga o valor final, não a história. A
-garantia é `UPDATE ... SET used_at = now() WHERE id = ? AND used_at IS NULL`, e **o número de linhas
-afetadas é o desfecho**: 1 é válido, 0 é já utilizado.
+**A cor sai por ELIMINAÇÃO, não por gosto.** A restrição que ninguém antecipa: a marca não pode
+colidir com cor de estado. `--cor-alerta` é âmbar (38°), e isso **elimina o âmbar** — o candidato
+mais óbvio para um cinema — porque ele fica a 8° dela. Sobra o magenta: **`#ff2e88`**. Conceito:
+das quatro luzes de um cinema (marquise, saída, projeção, fachada), três já são cores de estado;
+sobrou o **neon da fachada**.
 
-**A armadilha desta feature é o `if` mais natural que existe:**
+**Os NOMES dos tokens não mudam, só os valores.** O laranja vive em 4 declarações num arquivo só;
+12 arquivos consomem os nomes em 28 usos. **Nenhum consumidor deve ser tocado** — se um precisar, um
+valor vazou dos tokens.
 
-    if ingresso.used_at is not None: return JA_UTILIZADO
-    ingresso.used_at = timezone.now(); ingresso.save()
+**A armadilha é de classe nova: trocar cor NÃO QUEBRA NADA.** Os 197 testes de front-end continuam
+verdes com o contorno de foco invisível, o texto do botão ilegível e o assento selecionado
+indistinguível do tomado. Nenhum teste mede contraste. Por isso existe `tests/tokens.test.ts`, que
+lê os tokens e mede: contraste WCAG, ΔE contra as cores de estado, e ausência da cor antiga.
 
-É leitura seguida de escrita. Passa em todo teste de uma thread só, **lê exatamente como a regra da
-spec**, e — ao contrário das três features anteriores — **o banco não reclama**, porque não há
-constraint para recusar. A única coisa entre o projeto e uma portaria furada é o teste de
-concorrência, que por isso vem antes do serviço. O desfecho DEVE vir do `rowcount`, nunca de um `if`
-sobre o objeto lido.
+**Dois tokens a vigiar**: `--cor-destaque-forte` é o **contorno de foco global** (`tokens.css:293`)
+e é mais clara que a base de propósito; `--cor-fundo-qr` continua **branco**, exceção deliberada da
+008 — harmonizá-lo com a marca faz a catraca parar de ler.
 
-**Ordem do pipeline** (só o último passo escreve): assinatura → ingresso existe → payload bate com o
-banco → **sessão da porta** → `UPDATE` condicional. "Sessão errada" vem antes de "já utilizado" e
-**não escreve** — o ingresso continua valendo na porta certa.
-
-**"Sessão errada" só existe porque a portaria declara a sessão da porta.** Inferir a sessão só pelo
-código torna o desfecho impossível: comparar a sessão do ingresso com ela mesma sempre dá igual.
-
-**A armadilha da 009 volta**: `sellable()` (= `published()` E `starts_at > now()`) esconde a sessão
-**em andamento**, que é exatamente a que a porta está recebendo. Regra: `sellable()` responde "dá
-para comprar?", e nenhuma outra pergunta.
-
-**O campo de uso NÃO pode entrar em `TicketSerializer` nem `MeuIngressoSerializer`** — uma linha, e
-"utilizado" aparece na página compartilhada **pública** da 009.
+**`--cor-sobre-destaque` precisa passar em DOIS fundos**: a base (repouso) e a `-forte` (hover).
 
 Project constitution (governa todas as features): `.specify/memory/constitution.md`
 <!-- SPECKIT END -->
