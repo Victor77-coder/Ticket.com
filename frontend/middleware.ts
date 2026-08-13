@@ -61,6 +61,9 @@ export const config = {
    * navegador até o Django — bloquear `/api/validar` para a portaria seria
    * bloquear exatamente o que ela veio fazer. A autorização deles é do
    * servidor.
+   * `saude` fica de fora para o health check do Render não esperar o Django:
+   * na primeira subida os dois serviços acordam juntos, e um check que chama
+   * a API impediria os dois de ficarem verdes.
    */
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|saude).*)"],
 };

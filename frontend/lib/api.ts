@@ -33,7 +33,7 @@ import type {
 } from "./types";
 
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:8000";
-const TIMEOUT_MS = 8000;
+const TIMEOUT_MS = Number(process.env.API_TIMEOUT_MS ?? 8000) || 8000;
 
 /** Nome do cookie de sessão, tanto no Django quanto no cookie que o Next emite. */
 export const COOKIE_SESSAO = "sessionid";
