@@ -54,12 +54,14 @@ services:
     plan: free
     region: oregon
     rootDir: frontend
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npx next start -p $PORT
     healthCheckPath: /saude
     envVars:
       - key: NODE_VERSION
         value: "20"
+      # Só no runtime. No build o Render também injeta isto, e o `npm ci`
+      # omitiria o TypeScript (devDependency) — o next.config.ts não carrega.
       - key: NODE_ENV
         value: production
       # Rede interna do Render — o navegador nunca vê este endereço.
