@@ -366,3 +366,52 @@
     width: var(--esp-4);
   }
 }
+
+/* --- Tipo de ingresso por lugar (014) --- */
+
+.linhas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  margin: var(--esp-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linha {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr auto;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.linhaLugar {
+  font-weight: var(--peso-forte);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Alterna entre dois estados nomeados POR PALAVRA, não por cor: quem vê
+   "Meia" sabe o que está comprando sem depender de destaque cromático. */
+.tipo {
+  justify-self: start;
+  padding: var(--esp-1) var(--esp-3);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pilula);
+  background: none;
+  color: var(--cor-texto-suave);
+  font-family: inherit;
+  font-size: var(--texto-xs);
+  cursor: pointer;
+}
+
+.tipo[aria-pressed="true"] {
+  border-color: var(--cor-destaque);
+  color: var(--cor-texto);
+  font-weight: var(--peso-forte);
+}
+
+.linhaValor {
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+  font-variant-numeric: tabular-nums;
+}

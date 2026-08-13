@@ -193,7 +193,15 @@ export type MapaSessao = {
 export type LugarReservado = {
   fileira: string;
   numero: number;
+  /** Presente na seleção em curso (014); ausente no que a API devolve. */
+  id?: number;
+  /** Só na resposta da reserva: o que o servidor gravou (014). */
+  tipo?: TipoDeIngresso;
+  valor?: string;
 };
+
+/** Os dois tipos de ingresso. Espelha `services/precos.TipoDeIngresso`. */
+export type TipoDeIngresso = "inteira" | "meia";
 
 /**
  * A cobrança aprovada, como o comprador a vê.
@@ -224,6 +232,8 @@ export type Ingresso = {
   sessao: string;
   sala: string;
   assento: LugarReservado;
+  /** Inteira ou meia (014). O operador da portaria pede documento na meia. */
+  tipo: TipoDeIngresso;
 };
 
 export type Reserva = {
@@ -320,6 +330,8 @@ export type Desfecho = {
     sessao: string;
     sala: string;
     assento: LugarReservado;
+    /** Informação de conferência (014) — NUNCA um quinto desfecho. */
+    tipo: TipoDeIngresso;
   };
   /** Só em `ja_utilizado` — é o que permite julgar quem está apresentando. */
   utilizado_em?: string;

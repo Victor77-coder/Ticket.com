@@ -17,7 +17,12 @@ import { COOKIE_SESSAO, postReserva } from "@/lib/api";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  let corpo: { sessao?: unknown; assentos?: unknown; chave_idempotencia?: unknown };
+  let corpo: {
+    sessao?: unknown;
+    assentos?: unknown;
+    meias?: unknown;
+    chave_idempotencia?: unknown;
+  };
   try {
     corpo = await request.json();
   } catch {
@@ -26,6 +31,14 @@ export async function POST(request: Request) {
 
   const sessao = Number(corpo.sessao);
   const assentos = Array.isArray(corpo.assentos) ? corpo.assentos.map(Number) : [];
+  // ESTE PROXY FILTRA O CORPO CAMPO A CAMPO, e é por isso que `meias` precisa
+  // ser nomeado aqui: um campo novo que só o serializer do Django conheça
+  // chegaria vazio, e a compra sairia toda inteira sem nenhum erro — defeito
+  // que passa em todo teste de unidade e só aparece ponta a ponta.
+  //
+  // A filtragem continua valendo a pena: ela é o que impede um corpo arbitrário
+  // do navegador de atravessar para a API.
+  const meias = Array.isArray(corpo.meias) ? corpo.meias.map(Number) : [];
   const chave = typeof corpo.chave_idempotencia === "string" ? corpo.chave_idempotencia : "";
 
   if (!Number.isInteger(sessao) || !chave) {
@@ -40,6 +53,7 @@ export async function POST(request: Request) {
   const resultado = await postReserva(sessionKey, {
     sessao,
     assentos,
+    meias,
     chave_idempotencia: chave,
   });
 

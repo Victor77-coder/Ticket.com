@@ -205,7 +205,13 @@ export function fetchSeatMap(id: number): Promise<ApiResultComStatus<MapaSessao>
  */
 export function postReserva(
   sessionKey: string | undefined,
-  corpo: { sessao: number; assentos: number[]; chave_idempotencia: string },
+  corpo: {
+    sessao: number;
+    assentos: number[];
+    /** Subconjunto de `assentos` que sai como meia (014). Vazio = tudo inteira. */
+    meias: number[];
+    chave_idempotencia: string;
+  },
 ): Promise<ApiResultComStatus<Reserva>> {
   return postJson<Reserva>(
     "/api/v1/reservas/",

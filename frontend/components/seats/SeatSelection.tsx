@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { totalPrevisto } from "@/lib/meia";
 import type { Assento, LugarReservado, MapaSessao, Reserva } from "@/lib/types";
 
 import ReservationPanel from "./ReservationPanel";
@@ -46,6 +47,10 @@ export default function SeatSelection({ mapa }: SeatSelectionProps) {
 
   const [selecionados, setSelecionados] = useState<LugarReservado[]>([]);
   const [ids, setIds] = useState<Set<number>>(new Set());
+  // Quais lugares saem como meia. CONJUNTO, e não campo em cada item: o padrão
+  // é inteira, e um conjunto vazio já significa "todos inteira" sem que nada
+  // precise ser preenchido. É a mesma forma que o corpo da reserva usa.
+  const [meias, setMeias] = useState<Set<number>>(new Set());
   const [aviso, setAviso] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [reserva, setReserva] = useState<Reserva | null>(null);
@@ -65,6 +70,13 @@ export default function SeatSelection({ mapa }: SeatSelectionProps) {
       const proximos = new Set(ids);
       proximos.delete(assento.id);
       setIds(proximos);
+      // O tipo morre junto com a escolha do lugar: uma meia pendurada num
+      // assento que saiu da seleção reapareceria se ele fosse escolhido de novo.
+      setMeias((atual) => {
+        const restantes = new Set(atual);
+        restantes.delete(assento.id);
+        return restantes;
+      });
       setSelecionados((atual) =>
         atual.filter((l) => !(l.fileira === fileira && l.numero === assento.numero)),
       );
@@ -80,7 +92,17 @@ export default function SeatSelection({ mapa }: SeatSelectionProps) {
     }
 
     setIds(new Set(ids).add(assento.id));
-    setSelecionados((atual) => [...atual, { fileira, numero: assento.numero }]);
+    setSelecionados((atual) => [...atual, { id: assento.id, fileira, numero: assento.numero }]);
+  }
+
+  /** Marca ou desmarca a meia de UM lugar já escolhido. */
+  function alternarMeia(id: number) {
+    setMeias((atual) => {
+      const proximos = new Set(atual);
+      if (proximos.has(id)) proximos.delete(id);
+      else proximos.add(id);
+      return proximos;
+    });
   }
 
   async function confirmar() {
@@ -99,6 +121,7 @@ export default function SeatSelection({ mapa }: SeatSelectionProps) {
         body: JSON.stringify({
           sessao: mapa.id,
           assentos: [...ids],
+          meias: [...meias],
           chave_idempotencia: chave,
         }),
       });
@@ -118,6 +141,7 @@ export default function SeatSelection({ mapa }: SeatSelectionProps) {
           // pessoa de tentar de novo contra um estado que já não existe.
           setIds(new Set());
           setSelecionados([]);
+          setMeias(new Set());
           setChave(novaChave());
           router.refresh();
         }
@@ -144,7 +168,14 @@ export default function SeatSelection({ mapa }: SeatSelectionProps) {
     );
   }
 
-  const total = ids.size * Number(mapa.preco);
+  // PREVISÃO, e o servidor é quem decide. Até a 014 esta linha era a terceira
+  // cópia de `preço × quantidade`; agora ela consome a mesma derivação que o
+  // back-end usa, espelhada em `lib/meia`. Nada daqui é enviado — o corpo da
+  // reserva manda quais lugares são meia, nunca quanto eles custam.
+  const total = totalPrevisto(
+    mapa.preco,
+    [...ids].map((id) => (meias.has(id) ? "meia" : "inteira")),
+  );
 
   return (
     <div className={estilos.compra} data-layout="compra">
@@ -164,6 +195,9 @@ export default function SeatSelection({ mapa }: SeatSelectionProps) {
             horario={formatarHorario(mapa.inicio)}
             sala={mapa.sala.nome}
             lugares={selecionados}
+            precoUnitario={mapa.preco}
+            meias={meias}
+            onAlternarMeia={alternarMeia}
             total={total}
             limite={mapa.limite_por_reserva}
             aviso={aviso}

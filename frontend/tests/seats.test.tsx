@@ -173,10 +173,10 @@ describe("seleção", () => {
     const [um, dois] = lugares();
 
     await usuario.click(um);
-    expect(screen.getByText(/1 lugar ·/)).toBeInTheDocument();
+    expect(screen.getByText("1 lugar")).toBeInTheDocument();
 
     await usuario.click(dois);
-    expect(screen.getByText(/2 lugares ·/)).toBeInTheDocument();
+    expect(screen.getByText("2 lugares")).toBeInTheDocument();
     expect(screen.getByText("R$ 64,00")).toBeInTheDocument();
   });
 
@@ -204,7 +204,7 @@ describe("seleção", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent(/máximo 2 lugares/);
     expect(tres).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByText(/2 lugares ·/)).toBeInTheDocument();
+    expect(screen.getByText("2 lugares")).toBeInTheDocument();
   });
 
   it("confirmar fica indisponível sem nenhum lugar escolhido", () => {
@@ -264,10 +264,17 @@ describe("operação por teclado", () => {
     // está desabilitado, e elemento desabilitado sai da ordem de tabulação.
     await usuario.tab();
     await usuario.keyboard("{Enter}");
-    await usuario.tab();
-    await usuario.tab();
 
-    expect(screen.getByRole("button", { name: /Confirmar lugares/ })).toHaveFocus();
+    // Desde a 014 o resumo tem um alvo a mais por lugar escolhido — o
+    // alternador de meia-entrada. Tabular até o fim continua alcançando o
+    // confirmar; o que este teste protege é a AUSÊNCIA de armadilha, não uma
+    // contagem fixa de tabulações.
+    const confirmar = screen.getByRole("button", { name: /Confirmar lugares/ });
+    for (let i = 0; i < 10 && document.activeElement !== confirmar; i += 1) {
+      await usuario.tab();
+    }
+
+    expect(confirmar).toHaveFocus();
   });
 });
 
