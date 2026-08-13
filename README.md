@@ -148,8 +148,9 @@ abre o endereço do front-end.
 
 O endereço no ar: <https://ticketcom-app.onrender.com>
 
-O Vercel não entra: ele não roda Django nem PostgreSQL. O Next chama a API pela URL pública do
-próprio Render, para o plano free acordar o Django no primeiro pedido do dia.
+O Vercel não entra: ele não roda Django nem PostgreSQL. O Next chama a API pela **rede interna**
+(`http://ticketcom-api:10000`). A URL pública, de dentro do Render, dá `ETIMEDOUT`. Quem acorda o
+Django no plano free é o navegador, na primeira visita.
 
 ### 1. Publicar este repositório
 
@@ -483,6 +484,20 @@ para uma tela o que o comando de seed já fazia em Python, e três regras que j�
 dono único em vez de segunda cópia: a geometria da sala, o mapeamento do TMDb e a leitura de
 ocupação viva.
 
+**Preço no ponto da decisão** — a página do filme anuncia **"Ingressos a partir de"** acima das
+abas, e **cada horário da grade carrega o seu próprio preço**. Antes disso o valor só aparecia
+depois de escolher a sessão, já no mapa de assentos: tarde demais para quem está comparando dois
+horários da mesma noite.
+
+"A partir de" e não um preço único porque sessões da mesma semana têm preços diferentes — anunciar
+um deles como se fosse o do filme seria promessa que a grade desmente duas linhas abaixo. O preço
+entra também no **nome acessível** do horário, para que quem navega por leitor de tela decida pelo
+mesmo par que quem vê a etiqueta. O valor já vinha do servidor desde a 007; nenhum contrato mudou.
+
+A mesma mudança deu **dono único ao formatador de moeda** (`frontend/lib/moeda.ts`), que estava
+copiado em cinco arquivos. Copiada, essa regra diverge em silêncio: basta alguém trocar a moeda num
+lugar para a mesma quantia sair escrita de dois jeitos em duas telas do mesmo fluxo.
+
 ---
 
 ## Decisões que podem estranhar numa leitura rápida
@@ -670,6 +685,16 @@ cinema — uma sala existe sem lugar associado —, então o seletor não teria 
 quando houver o conceito de praça no modelo. Registrado em
 `specs/002-site-header-navigation/spec.md`.
 
+**O "local" do evento é a sala, e isso é uma escolha de recorte.** O desafio pede data, local e
+preço na navegação. Data e preço aparecem na grade de horários; o local aparece como **nome da
+sala**, que é o cabeçalho sob o qual os horários se agrupam.
+
+A plataforma modela **um cinema**, não uma rede. Num modelo de um cinema só, um campo "local" na
+sessão teria o mesmo valor em todas as linhas do banco — informação que não distingue nada é ruído,
+e cobrá-la do organizador no formulário seria pedir digitação para produzir uma constante. O local
+vira campo de verdade junto com o conceito de praça, e aí ele **filtra**: é a mesma feature do
+seletor de localidade acima, não outra.
+
 **A leitura do QR pela câmera é verificada à mão.** Apontar uma câmera para um código real exige
 hardware. O automatizado cobre o resto do caminho: o mesmo código, entregue por digitação, produz o
 mesmo desfecho pelo mesmo caminho de servidor, e o percurso ponta a ponta da portaria roda inteiro
@@ -739,8 +764,19 @@ mirar o painel ativo em vez do primeiro.
 
 ## Uso de IA
 
-Este projeto foi desenvolvido com **Claude Code (Anthropic)** em um fluxo de spec-driven
-development. O que a IA fez e o que não fez:
+Este projeto foi desenvolvido com **duas ferramentas**, num fluxo de spec-driven development. Quem
+fez o quê está no próprio histórico, no trailer `Co-Authored-By` de cada commit — 144 do Claude
+Code, 29 do Cursor, e dá para conferir com:
+
+```bash
+git log --format="%(trailers:key=Co-Authored-By,valueonly)" | sort | uniq -c
+```
+
+**Claude Code (Anthropic)** — o fluxo Spec Kit inteiro (`specs/`, `.specify/`), o back-end desde os
+modelos até a portaria, a autenticação, o painel do organizador (013) e a maior parte dos testes.
+
+**Cursor** — as features 011 (identidade de marca) e 012 (telas de compra), a camada de front-end
+das reservas na 007, o deploy no Render e os ajustes de vitrine.
 
 **Com IA** — redação dos specs, planos e listas de tarefas em `specs/`; implementação do back-end
 (modelos, seletores, serializers, views, comandos de sincronização e seed) e do front-end
@@ -767,6 +803,16 @@ que uma IA faz mal:
   do mapa em duas colunas, variante `objeto` do ingresso, testes de apresentação e de contrato.
 - **Sem IA** — o recorte (três telas, catálogo congelado), a proibição de afrouxar o e2e da 007, e
   a decisão de não unificar o cartão de ingresso com meus ingressos e a página pública.
+
+**Na feature do painel do organizador (013)**:
+
+- **Com IA** — a grade em uma consulta, a busca de filme no TMDb pelo back-end, o formulário de
+  programar, a extração da geometria da sala para `services/salas.py`, e os testes de permissão, de
+  fronteira e de concorrência.
+- **Sem IA** — a decisão de **não criar coluna nenhuma** (o painel move para uma tela o que o seed
+  já fazia, e campo novo teria sido escopo escorregando); a de o organizador **não** ser confinado
+  como a portaria, embora pouse numa tela própria; e a de cancelar sessão **parar de vender e mais
+  nada** — sem estorno, sem apagar ingresso, sem devolver lugar pago.
 
 A cor, em particular, **não foi uma escolha estética**: as restrições eliminaram todos os candidatos
 menos um. Isso é verificável em `specs/011-marca-sem-laranja/research.md`, R1.

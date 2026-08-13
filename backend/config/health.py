@@ -6,10 +6,17 @@ A consulta ao banco é o mínimo: se o Postgres não está alcançável, esta
 instância não deve receber tráfego.
 """
 
+from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse
 
 
-def healthz(_request):
+def healthz(request):
     connection.ensure_connection()
-    return HttpResponse("ok", content_type="text/plain")
+    resposta = HttpResponse("ok", content_type="text/plain")
+    # O navegador da home pinge este endereço para acordar a API dormindo.
+    # Sem CORS a sonda falha em silêncio e a página recarrega para sempre.
+    origem = request.headers.get("Origin", "")
+    if origem in settings.CORS_ALLOWED_ORIGINS:
+        resposta["Access-Control-Allow-Origin"] = origem
+    return resposta
