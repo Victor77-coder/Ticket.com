@@ -153,19 +153,19 @@ e conferir fileiras, última fileira incompleta e acessibilidade na última file
 
 ### Testes da US4
 
-- [ ] T047 [P] [US4] Escrever `backend/tests/test_sala_paridade_seed.py`: uma sala criada pelo serviço e outra pelo caminho do seed com a mesma capacidade produzem fileira, número e tipo idênticos, lugar a lugar (SC-006, FR-017)
-- [ ] T048 [P] [US4] Escrever `backend/tests/test_programacao_salas.py` com: capacidade ausente/não numérica/≤ 0 → `400`; acima do teto → `400` com o teto **calculado** de `26 × SEATS_PER_ROW`; capacidade exatamente no teto → aceita; capacidade que não fecha a fileira deixa a última incompleta; sala menor que a cota → todos os lugares da última fileira acessíveis, sem falhar
-- [ ] T049 [P] [US4] Acrescentar em `backend/tests/test_programacao_salas.py` a troca de capacidade: sem ocupação viva → lugares refeitos (`200`); com reserva paga ou reserva viva não vencida → `409` e **nenhum** lugar apagado; com reserva vencida e não paga → permitido (FR-019, FR-020, FR-021)
+- [X] T047 [P] [US4] Escrever `backend/tests/test_sala_paridade_seed.py`: uma sala criada pelo serviço e outra pelo caminho do seed com a mesma capacidade produzem fileira, número e tipo idênticos, lugar a lugar (SC-006, FR-017)
+- [X] T048 [P] [US4] Escrever `backend/tests/test_programacao_salas.py` com: capacidade ausente/não numérica/≤ 0 → `400`; acima do teto → `400` com o teto **calculado** de `26 × SEATS_PER_ROW`; capacidade exatamente no teto → aceita; capacidade que não fecha a fileira deixa a última incompleta; sala menor que a cota → todos os lugares da última fileira acessíveis, sem falhar
+- [X] T049 [P] [US4] Acrescentar em `backend/tests/test_programacao_salas.py` a troca de capacidade: sem ocupação viva → lugares refeitos (`200`); com reserva paga ou reserva viva não vencida → `409` e **nenhum** lugar apagado; com reserva vencida e não paga → permitido (FR-019, FR-020, FR-021)
 
 ### Implementação da US4
 
-- [ ] T050 [US4] Implementar em `backend/apps/screening/services/salas.py` as funções `posicoes_da_sala(capacity, por_fileira=None)`, `lugares_acessiveis(posicoes, cota=None)` e `gerar_assentos(room)`, movendo a regra que hoje vive em `_seed_seats`/`_posicoes_da_sala`. `posicoes_da_sala` continua **truncando** no teto — a recusa é validação de entrada e mora no serializer (R1, nota da fronteira)
-- [ ] T051 [US4] Fazer `backend/apps/catalog/management/commands/seed_demo.py` chamar `gerar_assentos`, deixando `_seed_seats` sem regra própria — o comando continua dono do reset, não da geometria (FR-017)
-- [ ] T052 [US4] Implementar `alterar_capacidade(room, nova)` em `backend/apps/screening/services/salas.py`: dentro de uma transação, ler ocupação viva de todas as sessões da sala por `selectors.ocupacoes_vivas()` filtrado por `screening__room`, recusar com exceção que carrega a contagem, e só então apagar e recriar os `Seat` (R5)
-- [ ] T053 [US4] Acrescentar em `backend/apps/screening/serializers.py` a validação de capacidade (ausente, não numérica, ≤ 0, acima do teto) com as frases do contrato e o teto derivado de `settings.SEATS_PER_ROW`, nunca literal na string (FR-018)
-- [ ] T054 [US4] Implementar `POST programacao/salas/` e `PATCH programacao/salas/<id>/` em `backend/apps/screening/views.py` sob `IsOrganizer`, mapeando a recusa de ocupação para `409` com a frase que diz quantos lugares estão ocupados e o que fazer
-- [ ] T055 [US4] Criar `frontend/app/programacao/salas/page.tsx` com a lista (nome, capacidade, lugares, acessíveis), o estado vazio que convida a criar a primeira sala, e o controle de capacidade **desabilitado com explicação** quando `pode_trocar_capacidade` é falso — nunca escondido (FR-037)
-- [ ] T056 [US4] Criar `frontend/components/programacao/FormularioDeSala.tsx` e `frontend/app/api/programacao/salas/[id]/route.ts` repassando status e corpo sem alteração
+- [X] T050 [US4] Implementar em `backend/apps/screening/services/salas.py` as funções `posicoes_da_sala(capacity, por_fileira=None)`, `lugares_acessiveis(posicoes, cota=None)` e `gerar_assentos(room)`, movendo a regra que hoje vive em `_seed_seats`/`_posicoes_da_sala`. `posicoes_da_sala` continua **truncando** no teto — a recusa é validação de entrada e mora no serializer (R1, nota da fronteira)
+- [X] T051 [US4] Fazer `backend/apps/catalog/management/commands/seed_demo.py` chamar `gerar_assentos`, deixando `_seed_seats` sem regra própria — o comando continua dono do reset, não da geometria (FR-017)
+- [X] T052 [US4] Implementar `alterar_capacidade(room, nova)` em `backend/apps/screening/services/salas.py`: dentro de uma transação, ler ocupação viva de todas as sessões da sala por `selectors.ocupacoes_vivas()` filtrado por `screening__room`, recusar com exceção que carrega a contagem, e só então apagar e recriar os `Seat` (R5)
+- [X] T053 [US4] Acrescentar em `backend/apps/screening/serializers.py` a validação de capacidade (ausente, não numérica, ≤ 0, acima do teto) com as frases do contrato e o teto derivado de `settings.SEATS_PER_ROW`, nunca literal na string (FR-018)
+- [X] T054 [US4] Implementar `POST programacao/salas/` e `PATCH programacao/salas/<id>/` em `backend/apps/screening/views.py` sob `IsOrganizer`, mapeando a recusa de ocupação para `409` com a frase que diz quantos lugares estão ocupados e o que fazer
+- [X] T055 [US4] Criar `frontend/app/programacao/salas/page.tsx` com a lista (nome, capacidade, lugares, acessíveis), o estado vazio que convida a criar a primeira sala, e o controle de capacidade **desabilitado com explicação** quando `pode_trocar_capacidade` é falso — nunca escondido (FR-037)
+- [X] T056 [US4] Criar `frontend/components/programacao/FormularioDeSala.tsx` e `frontend/app/api/programacao/salas/[id]/route.ts` repassando status e corpo sem alteração
 
 **Checkpoint**: o organizador deixa de estar preso às duas salas do seed, e a regra da geometria tem
 dono único.

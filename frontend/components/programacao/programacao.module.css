@@ -376,3 +376,54 @@ button.acaoSecundaria {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* --- Salas -------------------------------------------------------------- */
+
+.linhaDeSala {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 10rem auto;
+  align-items: center;
+  gap: var(--esp-4);
+  padding: var(--esp-4) var(--esp-2);
+  border-bottom: 1px solid var(--cor-borda);
+  font-size: var(--texto-sm);
+}
+
+.salaNome {
+  font-weight: var(--peso-forte);
+  font-size: var(--texto-md);
+}
+
+.salaLugares {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.salaDetalhe {
+  color: var(--cor-texto-fraco);
+  font-size: var(--texto-xs);
+}
+
+.trocaDeCapacidade {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--esp-3);
+  justify-self: end;
+}
+
+.trocaDeCapacidade .campo {
+  min-width: 9rem;
+}
+
+@media (max-width: 48rem) {
+  .linhaDeSala {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trocaDeCapacidade {
+    justify-self: start;
+  }
+}

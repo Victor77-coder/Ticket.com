@@ -9,7 +9,6 @@ Idempotente: rodar de novo atualiza, não duplica.
 from datetime import timedelta
 from decimal import Decimal
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -17,7 +16,8 @@ from django.utils import timezone
 
 from apps.catalog.models import Movie
 from apps.catalog.selectors import HIGHLIGHTS_LIMIT
-from apps.screening.models import Payment, Reservation, Room, Screening, Seat, Ticket
+from apps.screening.models import Payment, Reservation, Room, Screening, Ticket
+from apps.screening.services import salas
 
 User = get_user_model()
 
@@ -168,71 +168,27 @@ class Command(BaseCommand):
             self.stdout.write(f"  grade anterior removida ({apagadas} sessão(ões))")
 
     def _seed_seats(self, rooms):
-        """Gera o mapa físico de cada sala a partir da capacidade.
+        """Gera o mapa físico de cada sala, pela regra de `services/salas.py`.
 
-        Fileiras de SEATS_PER_ROW lugares, identificadas por letra. Capacidade
-        que não fecha a fileira deixa a última incompleta — sem inventar
-        lugares que a sala não tem.
+        A GEOMETRIA NÃO MORA MAIS AQUI. Até a 013 este método continha a regra
+        — fileiras por letra, última fileira incompleta, acessibilidade no
+        fundo —, e o painel do organizador precisava dela. Copiá-la teria
+        criado duas verdades sobre onde ficam os lugares de acessibilidade, e a
+        primeira correção iria para um dos dois lados (FR-017, R1).
 
-        Os lugares de acessibilidade ficam na última fileira, que é a
-        convenção de sala real: é onde há espaço para cadeira de rodas sem
-        obstruir a passagem (R7).
+        O comando continua dono do RESET do cenário; a forma da sala é de quem
+        sabe formar sala.
 
         Idempotente por reconstrução: os assentos da sala são apagados e
         refeitos. Só é seguro porque `_reset_demo_state` já removeu as
         ocupações — sem isso, `ReservedSeat.seat` com PROTECT impediria.
         """
-        por_fileira = settings.SEATS_PER_ROW
         criados = []
 
         for room in rooms:
-            room.seats.all().delete()
-
-            posicoes = self._posicoes_da_sala(room.capacity, por_fileira)
-
-            # Os últimos lugares da última fileira. `min` protege a sala cuja
-            # última fileira tem menos lugares que a cota de acessibilidade.
-            ultima_letra = posicoes[-1][0] if posicoes else None
-            na_ultima = [p for p in posicoes if p[0] == ultima_letra]
-            acessiveis = {
-                p for p in na_ultima[-min(settings.ACCESSIBLE_SEATS_PER_ROOM, len(na_ultima)) :]
-            }
-
-            criados.extend(
-                Seat.objects.bulk_create(
-                    [
-                        Seat(
-                            room=room,
-                            row=letra,
-                            number=numero,
-                            kind=(
-                                Seat.Kind.ACCESSIBLE
-                                if (letra, numero) in acessiveis
-                                else Seat.Kind.COMMON
-                            ),
-                        )
-                        for letra, numero in posicoes
-                    ]
-                )
-            )
+            criados.extend(salas.gerar_assentos(room))
 
         return criados
-
-    @staticmethod
-    def _posicoes_da_sala(capacity, por_fileira):
-        """As posições (letra, número) de uma sala, na ordem de leitura.
-
-        Vinte e seis fileiras é o teto do alfabeto — bem acima de qualquer
-        sala do cenário, mas o corte explícito evita gerar identificação
-        ilegível em silêncio se a capacidade crescer.
-        """
-        teto = 26 * por_fileira
-        total = min(capacity, teto)
-
-        return [
-            (chr(ord("A") + indice // por_fileira), indice % por_fileira + 1)
-            for indice in range(total)
-        ]
 
     def _buscar_por_nome(self, fragmento):
         """Encontra um filme por fragmento do título, ou None.

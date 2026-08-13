@@ -21,6 +21,11 @@ from apps.screening.models import (
 )
 from apps.screening.services import ingressos as ingressos_service
 from apps.screening.services import programacao as programacao_service
+from apps.screening.services import salas as salas_service
+
+# A frase de capacidade ausente, zero ou negativa. Os três casos são o mesmo
+# problema para quem está criando a sala: não há capacidade.
+CAPACIDADE_INVALIDA = "Informe uma capacidade maior que zero."
 
 
 class SeatSerializer(serializers.Serializer):
@@ -649,4 +654,60 @@ class SessaoEditavelSerializer(SessaoInputSerializer):
     def get_fields(self):
         campos = super().get_fields()
         campos.pop("publicar", None)
+        return campos
+
+
+class SalaInputSerializer(serializers.Serializer):
+    """Nome e capacidade de uma sala.
+
+    A RECUSA DE CAPACIDADE MORA AQUI, e não na geometria: `posicoes_da_sala`
+    trunca em silêncio, que é o comportamento que o `seed_demo` sempre teve e
+    que a extração não podia mudar. Validar a entrada antes de chegar lá é o
+    que dá ao painel a recusa que FR-018 pede sem fazer o seed estourar por um
+    valor que ele aceita (R1).
+
+    O TETO É CALCULADO. Se `SEATS_PER_ROW` mudar, a frase muda junto — um "260"
+    digitado na string passaria a mentir no dia seguinte.
+    """
+
+    nome = serializers.CharField(
+        max_length=60,
+        error_messages={
+            "required": "Dê um nome à sala.",
+            "blank": "Dê um nome à sala.",
+        },
+    )
+    capacidade = serializers.IntegerField(
+        error_messages={
+            "required": CAPACIDADE_INVALIDA,
+            "invalid": CAPACIDADE_INVALIDA,
+        }
+    )
+
+    def validate_capacidade(self, valor):
+        if valor <= 0:
+            raise serializers.ValidationError(CAPACIDADE_INVALIDA)
+
+        teto = salas_service.teto_de_capacidade()
+        if valor > teto:
+            raise serializers.ValidationError(
+                f"A capacidade máxima é {teto} lugares "
+                f"({salas_service.FILEIRAS_MAXIMAS} fileiras de {settings.SEATS_PER_ROW})."
+            )
+        return valor
+
+
+class SalaEditavelSerializer(SalaInputSerializer):
+    """O `PATCH` — os dois campos opcionais, com as mesmas recusas.
+
+    Renomear é SEMPRE permitido e não toca em lugar nenhum; trocar a
+    capacidade refaz o mapa e tem pré-condição. Separar os dois em endpoints
+    diferentes daria dois endereços para o mesmo recurso — a validação
+    compartilhada e a regra de ocupação no serviço bastam.
+    """
+
+    def get_fields(self):
+        campos = super().get_fields()
+        for campo in campos.values():
+            campo.required = False
         return campos

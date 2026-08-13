@@ -5,6 +5,7 @@ O mapa é público e declara `AllowAny` explicitamente — o padrão do projeto 
 acesso público é decisão registrada aqui, não herança silenciosa.
 """
 
+from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -14,7 +15,7 @@ from rest_framework.views import APIView
 from apps.accounts.authentication import SessionAuthenticationSemCsrf
 from apps.accounts.views_base import ProgramacaoViewBase
 from apps.screening import selectors
-from apps.screening.models import Reservation, Screening
+from apps.screening.models import Reservation, Room, Screening
 from apps.screening.permissions import (
     IsCustomer,
     IsCustomerParaIngressos,
@@ -24,6 +25,8 @@ from apps.screening.permissions import (
 from apps.screening.serializers import (
     estado_do_link,
     SalaDoPainelSerializer,
+    SalaEditavelSerializer,
+    SalaInputSerializer,
     SessaoDaGradeSerializer,
     SessaoInputSerializer,
     SessaoDaPortaSerializer,
@@ -43,10 +46,12 @@ from apps.screening.services import (
     portaria,
     programacao,
     reservas,
+    salas,
 )
 
 SESSAO_NAO_ENCONTRADA = {"detail": "Sessão não encontrada."}
 RESERVA_NAO_ENCONTRADA = {"detail": "Reserva não encontrada."}
+SALA_NAO_ENCONTRADA = {"detail": "Sala não encontrada."}
 ENTRE_PARA_RESERVAR = {"detail": "Entre para reservar."}
 ENTRE_PARA_PAGAR = {"detail": "Entre para concluir o pagamento."}
 ENTRE_PARA_VER_INGRESSOS = {"detail": "Entre para ver seus ingressos."}
@@ -610,16 +615,76 @@ def _grupo_de(ingresso):
 
 
 class SalasView(ProgramacaoViewBase):
-    """GET /api/v1/programacao/salas/ — as salas, com o que decide a troca.
+    """GET e POST em /api/v1/programacao/salas/.
 
     Lista vazia devolve `200`: "nenhuma sala ainda" é o convite a criar a
     primeira, não a ausência de um recurso.
     """
 
     def get(self, request):
-        salas = selectors.salas_do_organizador()
-        dados = SalaDoPainelSerializer(salas, many=True).data
+        dados = SalaDoPainelSerializer(
+            selectors.salas_do_organizador(), many=True
+        ).data
         return Response({"count": len(dados), "results": dados})
+
+    def post(self, request):
+        """Cria a sala E os lugares dela, na mesma operação.
+
+        Nascem juntos porque uma sala sem lugares não serve para nada: ela não
+        pode receber sessão publicada (FR-028), e deixar a geração para um
+        segundo passo criaria um estado intermediário que a interface teria de
+        explicar.
+        """
+        entrada = SalaInputSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        dados = entrada.validated_data
+
+        with transaction.atomic():
+            sala = Room.objects.create(
+                name=dados["nome"], capacity=dados["capacidade"]
+            )
+            salas.gerar_assentos(sala)
+
+        return Response(_linha_da_sala(sala.pk), status=201)
+
+
+class SalaDetailView(ProgramacaoViewBase):
+    """PATCH /api/v1/programacao/salas/<id>/ — renomear ou trocar capacidade."""
+
+    def patch(self, request, pk):
+        sala = Room.objects.filter(pk=pk).first()
+        if sala is None:
+            return Response(SALA_NAO_ENCONTRADA, status=404)
+
+        entrada = SalaEditavelSerializer(data=request.data, partial=True)
+        entrada.is_valid(raise_exception=True)
+        dados = entrada.validated_data
+
+        # Renomear é SEMPRE permitido: o nome não afeta lugar nem venda.
+        if "nome" in dados:
+            sala.name = dados["nome"]
+            sala.save(update_fields=["name"])
+
+        if "capacidade" in dados and dados["capacidade"] != sala.capacity:
+            try:
+                salas.alterar_capacidade(sala, dados["capacidade"])
+            except salas.CapacidadeComOcupacao as recusa:
+                # 409, não 400: o pedido está correto, o estado da sala é que
+                # impede. É a mesma distinção que a 008 faz entre "corrija o
+                # formulário" e "esta reserva já foi paga".
+                return Response({"detail": recusa.mensagem}, status=409)
+
+        return Response(_linha_da_sala(sala.pk))
+
+
+def _linha_da_sala(pk):
+    """A sala relida pela consulta do painel, no MESMO formato do `GET`.
+
+    `lugares`, `acessiveis` e `ocupacao_viva` são anotações — o objeto
+    recém-salvo não as tem, e serializá-lo cru devolveria uma sala com os
+    campos que a tela usa faltando.
+    """
+    return SalaDoPainelSerializer(selectors.salas_do_organizador().get(pk=pk)).data
 
 
 class SessoesView(ProgramacaoViewBase):
