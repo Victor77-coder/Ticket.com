@@ -41,6 +41,7 @@ function criarIngresso(lugar: string, numero: number): Ingresso {
     sessao: new Date("2026-08-20T19:30:00Z").toISOString(),
     sala: "Sala 1",
     assento: { fileira: lugar, numero },
+    tipo: "inteira" as const,
   };
 }
 

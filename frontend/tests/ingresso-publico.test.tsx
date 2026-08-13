@@ -35,6 +35,7 @@ const INGRESSO: IngressoTipo = {
   sessao: new Date("2026-08-20T19:30:00Z").toISOString(),
   sala: "Sala 3",
   assento: { fileira: "F", numero: 12 },
+  tipo: "inteira" as const,
 };
 
 async function renderizar(resultado: unknown) {

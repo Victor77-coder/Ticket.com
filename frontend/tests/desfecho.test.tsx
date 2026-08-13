@@ -26,6 +26,7 @@ const INGRESSO = {
   sessao: new Date("2026-08-12T21:30:00Z").toISOString(),
   sala: "Sala 3",
   assento: { fileira: "F", numero: 12 },
+  tipo: "inteira" as const,
 };
 
 function criar(sobrescreve: Partial<DesfechoTipo>): DesfechoTipo {

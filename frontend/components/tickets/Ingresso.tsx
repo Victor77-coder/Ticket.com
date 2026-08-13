@@ -74,6 +74,15 @@ export default function Ingresso({
         <p className={estilos.detalhe}>{formatarHorario(ingresso.sessao)}</p>
         <p className={estilos.detalhe}>
           {ingresso.sala} · lugar <strong className={estilos.lugar}>{lugar}</strong>
+          {/* O tipo é escrito por EXTENSO, não por sigla nem cor: quem entra
+              com meia precisa saber que vai apresentar documento na porta, e
+              descobrir isso na catraca é tarde. */}
+          {ingresso.tipo === "meia" && (
+            <>
+              {" · "}
+              <strong className={estilos.lugar}>meia-entrada</strong>
+            </>
+          )}
         </p>
       </div>
 

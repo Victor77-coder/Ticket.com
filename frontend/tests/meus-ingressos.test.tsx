@@ -49,6 +49,7 @@ function criarIngresso(sobrescreve: Partial<MeuIngresso> = {}): MeuIngresso {
     sessao: new Date("2026-08-20T19:30:00Z").toISOString(),
     sala: "Sala 1",
     assento: { fileira: "A", numero: 3 },
+    tipo: "inteira" as const,
     ...sobrescreve,
   };
 }

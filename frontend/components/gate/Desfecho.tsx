@@ -79,6 +79,16 @@ export default function Desfecho({ desfecho }: { desfecho: DesfechoTipo }) {
               {desfecho.ingresso.assento.numero}
             </dd>
           </div>
+          {/* SÓ NA MEIA, e só como informação. O operador lê e pede o
+              documento — a plataforma vende, quem confere é ele. Este campo
+              não decide desfecho nenhum: os quatro continuam sendo os quatro,
+              e "meia sem documento" não existe no sistema (FR-024). */}
+          {desfecho.ingresso.tipo === "meia" && (
+            <div className={estilos.linha}>
+              <dt>Tipo</dt>
+              <dd>Meia-entrada — confira o documento</dd>
+            </div>
+          )}
           {desfecho.utilizado_em && (
             <div className={estilos.linha}>
               <dt>Usado às</dt>
