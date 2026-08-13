@@ -61,6 +61,16 @@ def _semear():
     return saida.getvalue()
 
 
+def _semear_com_force():
+    """A confirmação destrutiva que a 013 passou a exigir (FR-041).
+
+    Da segunda execução em diante o comando recusa apagar a grade sem ela.
+    """
+    saida = StringIO()
+    call_command("seed_demo", "--force", stdout=saida, stderr=saida)
+    return saida.getvalue()
+
+
 def _titulos_do_carrossel():
     return [m.title for m in get_highlighted_movies()]
 
@@ -338,7 +348,11 @@ def test_seed_refaz_o_cenario_mesmo_com_reserva_existente(catalogo):
     )
     ReservedSeat.objects.create(reservation=reserva, screening=sessao, seat=assento)
 
-    _semear()
+    # A partir da 013 o comando RECUSA apagar grade existente sem confirmação
+    # explícita (FR-041). O que este teste protege — a ordem de remoção que os
+    # PROTECT exigem — continua valendo, e continua sendo exercitada: é o que
+    # `--force` faz.
+    _semear_com_force()
 
     assert Reservation.objects.count() == 0
     assert ReservedSeat.objects.count() == 0
@@ -386,10 +400,89 @@ def test_seed_refaz_o_cenario_mesmo_com_compra_concluida(catalogo):
     )
     Ticket.objects.create(reserved_seat=ocupacao, payment=pagamento)
 
-    _semear()
+    # `--force` pelo mesmo motivo do teste anterior: a partir da 013, apagar
+    # uma grade existente exige confirmação explícita.
+    _semear_com_force()
 
     assert Ticket.objects.count() == 0
     assert Payment.objects.count() == 0
     assert Reservation.objects.count() == 0
     assert ReservedSeat.objects.count() == 0
     assert Seat.objects.count() == 100
+
+
+# --- A recusa destrutiva (feature 013: FR-041 a FR-044) -------------------
+
+
+@pytest.mark.django_db
+def test_primeira_execucao_em_base_vazia_roda_direto(catalogo):
+    """FR-044 — o caminho do avaliador não ganhou passo extra.
+
+    É a metade que importa da mudança: quem clona o projeto e roda o comando
+    pela primeira vez nunca vê o aviso.
+    """
+    saida = _semear()
+
+    assert Screening.objects.exists()
+    assert "--force" not in saida
+
+
+@pytest.mark.django_db
+def test_segunda_execucao_recusa_e_nao_apaga_nada(catalogo):
+    """FR-041 — a grade existente não é destruída em silêncio."""
+    _semear()
+    antes = list(Screening.objects.values_list("pk", flat=True))
+
+    saida = _semear()
+
+    assert list(Screening.objects.values_list("pk", flat=True)) == antes
+    assert "Nada foi alterado" in saida
+    assert "--force" in saida
+    # A contagem é o que permite decidir: "isto vai apagar dados" sem número
+    # não deixa ninguém julgar o risco.
+    assert str(len(antes)) in saida
+
+
+@pytest.mark.django_db
+def test_a_recusa_vale_para_sessao_de_qualquer_origem(catalogo, db):
+    """FR-042 — a detecção é conservadora porque não há marcador de origem.
+
+    Uma sessão criada fora do seed — como as que o painel do organizador cria
+    — conta igual. O comando não sabe distinguir, e trata as duas como perda
+    possível.
+    """
+    from apps.screening.models import Room
+
+    sala = Room.objects.create(name="Sala do painel", capacity=20)
+    Screening.objects.create(
+        movie=Movie.objects.first(),
+        room=sala,
+        starts_at=timezone.now() + timedelta(hours=5),
+        price=30,
+    )
+
+    saida = _semear()
+
+    assert Screening.objects.count() == 1
+    assert "Nada foi alterado" in saida
+
+
+@pytest.mark.django_db
+def test_com_force_apaga_e_recria_como_sempre(catalogo):
+    """FR-043 — com a confirmação, o comportamento é exatamente o de antes."""
+    _semear()
+    primeira = _titulos_do_carrossel()
+
+    saida = _semear_com_force()
+
+    assert _titulos_do_carrossel() == primeira
+    assert "Nada foi alterado" not in saida
+    assert Screening.objects.exists()
+
+
+@pytest.mark.django_db
+def test_force_em_base_vazia_tambem_roda(catalogo):
+    """A flag não exige que haja algo a apagar — ela só dispensa a pergunta."""
+    _semear_com_force()
+
+    assert Screening.objects.exists()

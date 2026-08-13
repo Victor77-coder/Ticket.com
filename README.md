@@ -122,6 +122,19 @@ docker compose exec backend python manage.py seed_demo
 Coloca **12 filmes à venda** e informa quais ficaram no carrossel e quais entraram só na trilha —
 a vitrine é conferível sem abrir o navegador.
 
+**Da segunda execução em diante, o comando recusa e explica.** A grade deixou de ter uma origem só:
+o painel do organizador também a produz, e o sistema **não registra de onde veio cada sessão**.
+Sem esse marcador, o comando não sabe distinguir o que ele mesmo criou do que você programou pela
+tela — então trata as duas coisas como perda possível, em vez de apagar em silêncio. Para recriar o
+cenário mesmo assim:
+
+```bash
+docker compose exec backend python manage.py seed_demo --force
+```
+
+A **primeira** execução, em base vazia, roda direto — não há nada a perder, e é o caminho de quem
+está montando o ambiente agora.
+
 ### 6. Abrir
 
 <http://localhost:5003>
@@ -132,12 +145,15 @@ a vitrine é conferível sem abrir o navegador.
 
 Todas com a senha **`desafio2026`**:
 
-| Papel | Usuário |
-|---|---|
-| Organizador | `organizador` |
-| Cliente | `cliente1` |
-| Cliente | `cliente2` |
-| Portaria | `portaria` |
+| Papel | Usuário | Pousa em |
+|---|---|---|
+| Organizador | `organizador` | `/programacao` — a grade dele |
+| Cliente | `cliente1` | `/` — o catálogo, porque ele entra para comprar |
+| Cliente | `cliente2` | `/` |
+| Portaria | `portaria` | `/portaria` — e não alcança o resto do site |
+
+Um destino pedido explicitamente sempre vence o pouso: quem foi conduzido à entrada ao tentar abrir
+uma página volta para aquela página.
 
 Entre pelo ícone de pessoa no canto direito do cabeçalho. Depois de entrar, o mesmo ponto passa a
 identificar você e oferece a saída.
@@ -397,6 +413,26 @@ que o filme já persiste; `GET /api/v1/filmes/<slug>/` ganha `trailers[]` aditiv
 Em tela larga o resumo fica ao lado do mapa; o ingresso emitido no pagamento ganha a variante
 `objeto`. **A home não mudou** — o achado da 011 sobre a primeira dobra permanece achado, não
 entregável desta feature. Nenhuma regra de reserva, pagamento ou validação foi reaberta.
+
+**Painel do organizador** (`specs/013-painel-do-organizador/`) — o terceiro papel ganhou a tela que
+nunca teve. O organizador **pousa em `/programacao`** ao entrar, vê a grade com os três estados
+(rascunho, publicada, cancelada), programa sessão escolhendo filme, sala, horário e preço, cria
+salas com o mapa de lugares nascendo junto, e busca filmes no TMDb **pelo back-end** — a chave da
+API nunca chega ao navegador.
+
+**A grade passou a ter duas origens.** Até aqui só o `seed_demo` a produzia; agora dá para montar um
+cenário próprio sem rodar comando nenhum, e a sessão publicada aparece no caminho de compra do
+cliente na hora. É por isso que recriar a demonstração passou a exigir `--force` (ver o passo 5 do
+setup).
+
+Diferente da portaria, o organizador **continua alcançando o catálogo público** — é ali que ele
+confere que a sessão que publicou apareceu à venda. Cliente e portaria que chamem a API de
+programação recebem `403`, nunca `401`: eles entraram, só têm outro papel.
+
+**Zero migração.** `Movie`, `Room`, `Seat` e `Screening` já bastavam desde a 001 — a feature move
+para uma tela o que o comando de seed já fazia em Python, e três regras que já existiam ganharam
+dono único em vez de segunda cópia: a geometria da sala, o mapeamento do TMDb e a leitura de
+ocupação viva.
 
 ---
 

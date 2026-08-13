@@ -201,13 +201,13 @@ histórico de venda.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T066 Acrescentar `--force` em `backend/apps/catalog/management/commands/seed_demo.py`: sem a flag, se `Screening.objects.exists()`, recusar e escrever o que seria apagado (sessões, reservas, ingressos) e como prosseguir; com a flag, comportamento idêntico ao de hoje. `_reset_demo_state` **não muda por dentro** (R9, FR-041 a FR-044)
-- [ ] T067 Atualizar `backend/tests/test_seed_demo.py`: base vazia roda direto sem passo extra; com grade existente recusa e nada é apagado; com `--force` apaga e recria como sempre (FR-044)
-- [ ] T068 [P] Acrescentar em `backend/tests/test_selectors.py` (ou arquivo irmão) a proibição 1 do contrato: nenhum serializer público ganhou `status`, `capacity`, contagem de vendidos ou `tmdb_id` — highlights, home, busca, detalhe do filme, mapa e portaria
-- [ ] T069 [P] Atualizar o `README.md` da raiz com a seção do painel, o pouso do organizador em `/programacao` e o aviso de que recriar o cenário passou a exigir `--force` (FR-040)
-- [ ] T070 [P] Conferir `frontend/tests/tokens.test.ts` contra `frontend/components/programacao/programacao.module.css` — nenhum valor de cor, espaçamento, tipografia, raio ou duração fora dos tokens; espaço novo nasce token (FR-039)
-- [ ] T071 Rodar `python manage.py makemigrations --check --dry-run` em `backend/` e confirmar que nada mudou de esquema (data-model.md, proibição 6 do contrato)
-- [ ] T072 Rodar a suíte inteira — `pytest` em `backend/`, `npm test` e `npm run test:e2e` em `frontend/` — conferindo em especial os pontos de não-regressão listados em `quickstart.md` §o que NÃO pode ter mudado (FR-038)
+- [X] T066 Acrescentar `--force` em `backend/apps/catalog/management/commands/seed_demo.py`: sem a flag, se `Screening.objects.exists()`, recusar e escrever o que seria apagado (sessões, reservas, ingressos) e como prosseguir; com a flag, comportamento idêntico ao de hoje. `_reset_demo_state` **não muda por dentro** (R9, FR-041 a FR-044)
+- [X] T067 Atualizar `backend/tests/test_seed_demo.py`: base vazia roda direto sem passo extra; com grade existente recusa e nada é apagado; com `--force` apaga e recria como sempre (FR-044)
+- [X] T068 [P] Acrescentar em `backend/tests/test_selectors.py` (ou arquivo irmão) a proibição 1 do contrato: nenhum serializer público ganhou `status`, `capacity`, contagem de vendidos ou `tmdb_id` — highlights, home, busca, detalhe do filme, mapa e portaria
+- [X] T069 [P] Atualizar o `README.md` da raiz com a seção do painel, o pouso do organizador em `/programacao` e o aviso de que recriar o cenário passou a exigir `--force` (FR-040)
+- [X] T070 [P] Conferir `frontend/tests/tokens.test.ts` contra `frontend/components/programacao/programacao.module.css` — nenhum valor de cor, espaçamento, tipografia, raio ou duração fora dos tokens; espaço novo nasce token (FR-039)
+- [X] T071 Rodar `python manage.py makemigrations --check --dry-run` em `backend/` e confirmar que nada mudou de esquema (data-model.md, proibição 6 do contrato)
+- [X] T072 Rodar a suíte inteira — `pytest` em `backend/`, `npm test` e `npm run test:e2e` em `frontend/` — conferindo em especial os pontos de não-regressão listados em `quickstart.md` §o que NÃO pode ter mudado (FR-038)
 - [ ] T073 Percorrer `specs/013-painel-do-organizador/quickstart.md` inteiro, incluindo as três provas de recorte e o caminho com `TMDB_API_KEY` inválida (SC-001, SC-003, SC-007)
 - [ ] T074 Revisão de código dirigida às cinco proibições do contrato: nenhum `exists()` como garantia de unicidade, nenhuma segunda geometria de sala, nenhum segundo mapeamento de TMDb, nenhuma chave no corpo, nenhum endpoint de programação fora do prefixo (contracts/programacao-api.md §proibições)
 

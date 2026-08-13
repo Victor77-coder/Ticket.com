@@ -68,8 +68,38 @@ TAMBEM_A_VENDA = ["moana"]
 class Command(BaseCommand):
     help = "Cria usuários, salas e sessões de demonstração."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--force",
+            action="store_true",
+            help=(
+                "Apaga a grade existente e recria o cenário. Necessário a "
+                "partir da segunda execução."
+            ),
+        )
+
     @transaction.atomic
     def handle(self, *args, **options):
+        # A GRADE PASSOU A TER OUTRA ORIGEM (013). Até o painel do organizador
+        # existir, toda sessão no banco vinha deste comando, e apagar tudo era
+        # correto. Agora pode haver programação feita por alguém, e apagá-la em
+        # silêncio seria perda de trabalho sem aviso (FR-041).
+        #
+        # A DETECÇÃO É CONSERVADORA DE PROPÓSITO: o sistema não registra a
+        # origem de uma sessão, e FR-042 proíbe criar esse registro — seria uma
+        # coluna nova numa feature que declara não ter migração, e um segundo
+        # conceito de "de quem é esta sessão" que nada mais consome. Sem
+        # marcador, "existe grade" significa existe QUALQUER sessão, e o
+        # comando trata as duas origens como perda possível.
+        #
+        # A consequência é aceita: da segunda execução em diante, recriar a
+        # demonstração sempre exige `--force`. A primeira, em base vazia, roda
+        # direto — é o caminho do avaliador, e ele nunca vê este aviso
+        # (FR-044).
+        if not options.get("force") and Screening.objects.exists():
+            self._recusar()
+            return
+
         users = self._seed_users()
         rooms = self._seed_rooms()
 
@@ -94,6 +124,35 @@ class Command(BaseCommand):
         screenings = self._seed_screenings(movies, rooms)
 
         self._report(users, rooms, seats, movies, screenings)
+
+    def _recusar(self):
+        """Diz o que seria apagado e como prosseguir — e não apaga nada.
+
+        A contagem é o ponto: "isto vai apagar dados" sem número não deixa
+        ninguém decidir. Ingressos e reservas aparecem porque são o que dói
+        perder, e a grade porque é o que o comando refaz.
+
+        NÃO PERGUNTA INTERATIVAMENTE. O comando roda em script e em CI, e um
+        `input()` travaria os dois esperando alguém que não está lá.
+        """
+        self.stdout.write(
+            self.style.WARNING("\nJá existe grade no banco. Nada foi alterado.\n")
+        )
+        self.stdout.write(
+            f"  {Screening.objects.count()} sessão(ões) · "
+            f"{Reservation.objects.count()} reserva(s) · "
+            f"{Ticket.objects.count()} ingresso(s) seriam apagados.\n"
+        )
+        self.stdout.write(
+            "O comando não distingue o que ele mesmo criou do que foi programado\n"
+            "pelo painel, então trata as duas coisas como perda possível.\n"
+        )
+        self.stdout.write(
+            self.style.MIGRATE_HEADING(
+                "Para recriar o cenário mesmo assim:\n"
+                "  python manage.py seed_demo --force\n"
+            )
+        )
 
     def _seed_users(self):
         created = []
