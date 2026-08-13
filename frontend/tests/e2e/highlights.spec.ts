@@ -14,12 +14,15 @@ test("descobre um filme, assiste ao trailer e chega às sessões", async ({ page
 
   const carrossel = page.getByRole("region", { name: "Filmes em cartaz" });
   await expect(carrossel).toBeVisible();
+  // Hover pausa a rotação (onMouseEnter). Sem isso o intervalo de 7s pode
+  // trocar o painel no meio do trailer e o clique cai num grupo inert.
+  await carrossel.hover();
 
-  const painelAtivo = carrossel.getByRole("group").filter({ visible: true }).first();
+  const painelAtivo = carrossel.locator('[role="group"]:not([inert])');
   await expect(painelAtivo.getByRole("heading")).toBeVisible();
 
   // O trailer abre dentro do painel, sem janela sobreposta e sem sair do site.
-  const botaoTrailer = page.getByRole("button", { name: "Trailer" }).first();
+  const botaoTrailer = painelAtivo.getByRole("button", { name: "Trailer" });
   if (await botaoTrailer.isVisible()) {
     await botaoTrailer.click();
 
@@ -27,15 +30,18 @@ test("descobre um filme, assiste ao trailer e chega às sessões", async ({ page
     await expect(video).toBeVisible();
     expect(page.url()).toContain("localhost:5003");
 
-    await page.getByRole("button", { name: "Fechar trailer" }).click();
+    await painelAtivo.getByRole("button", { name: "Fechar trailer" }).click();
     await expect(video).toHaveCount(0);
   }
 
   // "Ver ingressos" leva a uma página com sessões listadas.
-  await page.getByRole("link", { name: "Ver ingressos" }).first().click();
+  await painelAtivo.getByRole("link", { name: "Ver ingressos" }).click();
 
   await expect(page).toHaveURL(/\/filmes\//);
-  await expect(page.getByRole("heading", { name: "Sessões" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Sessões" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
 });
 
 test("navega pelo carrossel e fecha o ciclo", async ({ page }) => {

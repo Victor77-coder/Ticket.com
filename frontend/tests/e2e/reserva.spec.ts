@@ -24,7 +24,12 @@ async function entrar(page: import("@playwright/test").Page) {
 }
 
 async function abrirMapaDeUmaSessao(page: import("@playwright/test").Page) {
-  await page.getByRole("link", { name: "Ver ingressos" }).first().click();
+  const carrossel = page.getByRole("region", { name: "Filmes em cartaz" });
+  await carrossel.hover();
+  await carrossel
+    .locator('[role="group"]:not([inert])')
+    .getByRole("link", { name: "Ver ingressos" })
+    .click();
   await expect(page).toHaveURL(/\/filmes\//);
 
   // Uma interação da lista de sessões até o mapa (SC-001): a sessão inteira
@@ -59,7 +64,7 @@ test("filme → sessão → mapa → seleção → reserva confirmada", async ({
   });
   await expect(escolhido).toHaveAttribute("aria-pressed", "true");
 
-  await expect(page.getByText(/^1 lugar ·/)).toBeVisible();
+  await expect(page.getByText("1 lugar", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Confirmar lugares" }).click();
 

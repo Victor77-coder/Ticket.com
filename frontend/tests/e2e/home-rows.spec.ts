@@ -21,7 +21,10 @@ test.describe("trilhas da home", () => {
 
     await expect(page).toHaveURL(/\/filmes\//);
     await expect(page.getByRole("heading", { level: 1, name: titulo! })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Sessões" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Sessões" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
   test("a trilha Em alta não passa de 9 filmes", async ({ page }) => {

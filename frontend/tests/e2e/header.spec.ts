@@ -11,7 +11,12 @@ import { expect, test } from "@playwright/test";
 
 async function abrirPaginaDeFilme(page: import("@playwright/test").Page) {
   await page.goto("/");
-  await page.getByRole("link", { name: "Ver ingressos" }).first().click();
+  const carrossel = page.getByRole("region", { name: "Filmes em cartaz" });
+  await carrossel.hover();
+  await carrossel
+    .locator('[role="group"]:not([inert])')
+    .getByRole("link", { name: "Ver ingressos" })
+    .click();
   await expect(page).toHaveURL(/\/filmes\//);
 }
 
