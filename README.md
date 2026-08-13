@@ -144,12 +144,12 @@ está montando o ambiente agora.
 ## Deploy
 
 Front, API e Postgres sobem **no mesmo painel**, o [Render](https://render.com). O avaliador só
-abre o endereço do front-end. O Django continua invisível para o navegador — o Next fala com ele
-pela rede interna, o mesmo desenho do Compose.
+abre o endereço do front-end.
 
-O Vercel não entra: ele não roda Django nem PostgreSQL. Dividir em duas plataformas faria a
-primeira requisição do dia falhar — o front acordaria e a API ainda estaria dormindo, além do
-prazo de 8s.
+O endereço no ar: <https://ticketcom-app.onrender.com>
+
+O Vercel não entra: ele não roda Django nem PostgreSQL. O Next chama a API pela URL pública do
+próprio Render, para o plano free acordar o Django no primeiro pedido do dia.
 
 ### 1. Publicar este repositório
 
@@ -160,7 +160,9 @@ O Blueprint lê o `render.yaml` no GitHub. Commit e push da `main` (se ainda nã
 1. Entre em <https://dashboard.render.com> com a conta GitHub.
 2. **New** → **Blueprint**.
 3. Selecione este repositório.
-4. Quando pedir `TMDB_API_KEY`, cole a mesma chave do `.env` local.
+4. Quando pedir `TMDB_API_KEY`, cole a mesma chave do `.env` local. Se o Blueprint
+   já existir e a variável estiver vazia, preencha em **ticketcom-api → Environment**
+   e faça Manual Deploy desse serviço.
 5. Apply.
 
 O Render cria o Postgres, a API (`ticketcom-api`) e o site (`ticketcom-app`). No primeiro deploy a
@@ -386,10 +388,8 @@ que termina em recusa. A autorização de verdade continua no servidor, e é ela
 quando a portaria tenta reservar, pagar ou abrir ingressos de cliente.
 
 Cada papel tem ali o seu destino de trabalho: cliente vai para "Meus ingressos", portaria para a
-validação. O cliente, porém, **pousa na home** ao entrar — ele entra para comprar, e mandá-lo direto
-para a lista faria um cliente novo aterrissar no estado vazio. O organizador não tem item porque o
-painel dele ainda não existe, e apontar para uma tela que recusa por papel seria pior do que não ter
-o item.
+validação, organizador para "Programação". O cliente, porém, **pousa na home** ao entrar — ele entra
+para comprar, e mandá-lo direto para a lista faria um cliente novo aterrissar no estado vazio.
 
 Um destino pedido explicitamente sempre vence: quem foi conduzido à entrada ao tentar abrir uma
 página volta àquela página.
@@ -658,11 +658,6 @@ a feature existe justamente para que essa pessoa não precise se identificar.
 
 **Compartilhar não transfere titularidade.** O ingresso continua pertencendo a quem comprou; o link
 só exibe. Revenda entre usuários está explicitamente fora de escopo pelo Princípio I.
-
-**As áreas por papel não existem.** Os três papéis autenticam e o cabeçalho identifica cada um,
-mas organizador e portaria voltam para a mesma página de qualquer visitante — não há painel de
-organizador nem tela de validação. Eles chegam com as features que lhes dão conteúdo real; criar
-landings vazias agora contrariaria o Princípio V, que proíbe "em breve" na entrega.
 
 **Não há criação de conta nem recuperação de senha.** As quatro contas do seed são as únicas. O
 desafio não pede auto-cadastro e exclui recuperação de senha explicitamente.
