@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { agruparSessoesPorDia, diaCivil } from "@/lib/grade-sessoes";
+import { agruparSessoesPorDia, dataNumerica, diaCivil, hojeCivil, nomeDoDia } from "@/lib/grade-sessoes";
 import type { Screening } from "@/lib/types";
 
 function sessao(sobrescreve: Partial<Screening> & Pick<Screening, "id" | "starts_at" | "room_name">): Screening {
@@ -54,5 +54,20 @@ describe("agruparSessoesPorDia", () => {
     ]);
 
     expect(grade.map((d) => d.dia)).toEqual(["2026-08-12", "2026-08-13"]);
+  });
+});
+
+describe("rótulo do dia na grade", () => {
+  it("hoje também tem data numérica", () => {
+    const hoje = hojeCivil();
+    const [, mes, diaDoMes] = hoje.split("-");
+
+    expect(nomeDoDia(hoje)).toBe("hoje");
+    expect(dataNumerica(hoje)).toBe(`${diaDoMes}/${mes}`);
+  });
+
+  it("outro dia é o weekday abreviado e DD/MM", () => {
+    expect(nomeDoDia("2026-08-12")).toBe("qua");
+    expect(dataNumerica("2026-08-12")).toBe("12/08");
   });
 });

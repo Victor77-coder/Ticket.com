@@ -87,6 +87,30 @@ describe("grade de sessões", () => {
       "/sessoes/12",
     );
   });
+
+  it("hoje também mostra a data numérica abaixo do nome", () => {
+    const hoje = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+    const [, mes, diaDoMes] = hoje.split("-");
+
+    render(
+      <FilmeCliente
+        filme={filme({
+          screenings: [
+            sessao({ id: 10, starts_at: `${hoje}T19:00:00-03:00`, room_name: "Sala 1" }),
+          ],
+        })}
+      />,
+    );
+
+    const tab = screen.getByRole("tab", { name: new RegExp(`hoje\\s+${diaDoMes}/${mes}`, "i") });
+    expect(tab).toHaveTextContent("hoje");
+    expect(tab).toHaveTextContent(`${diaDoMes}/${mes}`);
+  });
 });
 
 describe("seções Sessões, Sobre e Trailers", () => {

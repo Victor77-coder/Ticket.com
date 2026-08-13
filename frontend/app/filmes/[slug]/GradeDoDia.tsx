@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import CartaoDeSessao from "@/components/sessao/CartaoDeSessao";
-import { agruparSessoesPorDia } from "@/lib/grade-sessoes";
+import { agruparSessoesPorDia, dataNumerica, nomeDoDia } from "@/lib/grade-sessoes";
 import type { Screening } from "@/lib/types";
 
 import styles from "./filme.module.css";
@@ -78,7 +78,8 @@ export default function GradeDoDia({
               className={ativo ? `${styles.dia} ${styles.diaAtivo}` : styles.dia}
               onClick={() => setDiaAtivo(item.dia)}
             >
-              {item.rotulo}
+              <span className={styles.diaNome}>{nomeDoDia(item.dia)}</span>
+              <span className={styles.diaData}>{dataNumerica(item.dia)}</span>
             </button>
           );
         })}

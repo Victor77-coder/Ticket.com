@@ -39,6 +39,29 @@ export function hojeCivil(): string {
   }).format(new Date());
 }
 
+/** `DD/MM` a partir do dia civil `YYYY-MM-DD`. */
+export function dataNumerica(dia: string): string {
+  const [, mes, diaDoMes] = dia.split("-");
+  return `${diaDoMes}/${mes}`;
+}
+
+/**
+ * "hoje", ou o dia da semana abreviado ("qua", "sáb").
+ *
+ * A caixa alta é apresentação: a página do filme aplica `text-transform`.
+ */
+export function nomeDoDia(dia: string): string {
+  if (dia === hojeCivil()) return "hoje";
+
+  const instante = new Date(`${dia}T12:00:00-03:00`);
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: FUSO,
+    weekday: "short",
+  })
+    .format(instante)
+    .replace(".", "");
+}
+
 /**
  * "Hoje", ou "seg 14/08".
  *
@@ -50,16 +73,7 @@ export function hojeCivil(): string {
  */
 export function rotuloDoDia(dia: string): string {
   if (dia === hojeCivil()) return "Hoje";
-
-  const instante = new Date(`${dia}T12:00:00-03:00`);
-  const semana = new Intl.DateTimeFormat("pt-BR", {
-    timeZone: FUSO,
-    weekday: "short",
-  })
-    .format(instante)
-    .replace(".", "");
-  const [, mes, diaDoMes] = dia.split("-");
-  return `${semana} ${diaDoMes}/${mes}`;
+  return `${nomeDoDia(dia)} ${dataNumerica(dia)}`;
 }
 
 export function agruparSessoesPorDia(sessoes: Screening[]): DiaDaGrade[] {

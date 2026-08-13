@@ -128,15 +128,30 @@
 }
 
 .dia {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-1);
   margin: 0;
   padding: var(--esp-2) var(--esp-3);
   border: 1px solid var(--cor-borda);
   border-radius: var(--raio-md);
   background: var(--cor-superficie);
   color: var(--cor-texto-suave);
-  font-size: var(--texto-sm);
-  font-weight: var(--peso-medio);
+  line-height: var(--altura-linha-apertada);
   cursor: pointer;
+}
+
+.diaNome {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.diaData {
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-medio);
 }
 
 .diaAtivo {
