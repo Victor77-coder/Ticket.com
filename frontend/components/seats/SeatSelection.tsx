@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { totalPrevisto } from "@/lib/meia";
+import { totalPrevisto, type TipoDeIngresso } from "@/lib/meia";
 import type { Assento, LugarReservado, MapaSessao, Reserva } from "@/lib/types";
 
 import ReservationPanel from "./ReservationPanel";
@@ -34,6 +34,7 @@ function novaChave() {
 
 function formatarHorario(iso: string) {
   return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     weekday: "short",
     day: "2-digit",
     month: "2-digit",
@@ -95,12 +96,12 @@ export default function SeatSelection({ mapa }: SeatSelectionProps) {
     setSelecionados((atual) => [...atual, { id: assento.id, fileira, numero: assento.numero }]);
   }
 
-  /** Marca ou desmarca a meia de UM lugar já escolhido. */
-  function alternarMeia(id: number) {
+  /** Escolhe o tipo de UM lugar já escolhido. Inteira tira do conjunto. */
+  function escolherTipo(id: number, tipo: TipoDeIngresso) {
     setMeias((atual) => {
       const proximos = new Set(atual);
-      if (proximos.has(id)) proximos.delete(id);
-      else proximos.add(id);
+      if (tipo === "meia") proximos.add(id);
+      else proximos.delete(id);
       return proximos;
     });
   }
@@ -197,7 +198,7 @@ export default function SeatSelection({ mapa }: SeatSelectionProps) {
             lugares={selecionados}
             precoUnitario={mapa.preco}
             meias={meias}
-            onAlternarMeia={alternarMeia}
+            onEscolherTipo={escolherTipo}
             total={total}
             limite={mapa.limite_por_reserva}
             aviso={aviso}

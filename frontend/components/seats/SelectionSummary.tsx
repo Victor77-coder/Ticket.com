@@ -1,6 +1,6 @@
 "use client";
 
-import { valorDoLugar } from "@/lib/meia";
+import { valorDoLugar, type TipoDeIngresso } from "@/lib/meia";
 import { formatarPreco } from "@/lib/moeda";
 import type { LugarReservado } from "@/lib/types";
 
@@ -23,7 +23,7 @@ export type SelectionSummaryProps = {
   precoUnitario: string;
   /** Ids marcados como meia (014). Vazio = tudo inteira. */
   meias: Set<number>;
-  onAlternarMeia: (id: number) => void;
+  onEscolherTipo: (id: number, tipo: TipoDeIngresso) => void;
   total: number;
   limite: number;
   aviso: string | null;
@@ -48,7 +48,7 @@ export default function SelectionSummary({
   lugares,
   precoUnitario,
   meias,
-  onAlternarMeia,
+  onEscolherTipo,
   total,
   limite,
   aviso,
@@ -79,31 +79,53 @@ export default function SelectionSummary({
             <p className={estilos.resumoLugares}>
               {lugares.length === 1 ? "1 lugar" : `${lugares.length} lugares`}
             </p>
+            <p className={estilos.dicaTipo}>Tipo de ingresso em cada lugar</p>
 
-            {/* UMA LINHA POR LUGAR, com o tipo ao lado do nome dele. Um seletor
-                único para a compra inteira não serviria: o caso comum da meia é
-                justamente a família em que uma pessoa paga meia e a outra não. */}
+            {/* UMA LINHA POR LUGAR, com as DUAS opções à vista. Um interruptor
+                que troca o próprio rótulo esconde a escolha; um seletor único
+                para a compra inteira também não serviria: o caso comum da meia
+                é a família em que uma pessoa paga meia e a outra não. */}
             <ul className={estilos.linhas}>
               {lugares.map((lugar) => {
                 const meia = lugar.id !== undefined && meias.has(lugar.id);
+                const lugarNome = `${lugar.fileira}${lugar.numero}`;
                 return (
-                  <li key={`${lugar.fileira}${lugar.numero}`} className={estilos.linha}>
-                    <span className={estilos.linhaLugar}>
-                      {lugar.fileira}
-                      {lugar.numero}
-                    </span>
-                    <button
-                      type="button"
-                      className={estilos.tipo}
-                      aria-pressed={meia}
-                      onClick={() => lugar.id !== undefined && onAlternarMeia(lugar.id)}
-                      aria-label={`Meia-entrada para o lugar ${lugar.fileira}${lugar.numero}`}
+                  <li key={lugarNome} className={estilos.linha}>
+                    <span className={estilos.linhaLugar}>{lugarNome}</span>
+                    <div
+                      className={estilos.tipos}
+                      role="group"
+                      aria-label={`Tipo do ingresso ${lugarNome}`}
                     >
-                      {meia ? "Meia" : "Inteira"}
-                    </button>
-                    <span className={estilos.linhaValor}>
-                      {formatarMoeda(valorDoLugar(precoUnitario, meia ? "meia" : "inteira"))}
-                    </span>
+                      <button
+                        type="button"
+                        className={estilos.tipo}
+                        aria-pressed={!meia}
+                        aria-label={`Inteira para o lugar ${lugarNome}`}
+                        onClick={() =>
+                          lugar.id !== undefined && onEscolherTipo(lugar.id, "inteira")
+                        }
+                      >
+                        <span className={estilos.tipoNome}>Inteira</span>
+                        <span className={estilos.tipoValor}>
+                          {formatarMoeda(valorDoLugar(precoUnitario, "inteira"))}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className={estilos.tipo}
+                        aria-pressed={meia}
+                        aria-label={`Meia para o lugar ${lugarNome}`}
+                        onClick={() =>
+                          lugar.id !== undefined && onEscolherTipo(lugar.id, "meia")
+                        }
+                      >
+                        <span className={estilos.tipoNome}>Meia</span>
+                        <span className={estilos.tipoValor}>
+                          {formatarMoeda(valorDoLugar(precoUnitario, "meia"))}
+                        </span>
+                      </button>
+                    </div>
                   </li>
                 );
               })}

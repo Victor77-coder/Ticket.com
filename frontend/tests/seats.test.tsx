@@ -221,6 +221,65 @@ describe("seleção", () => {
     expect(screen.getByText("A Odisseia")).toBeInTheDocument();
     expect(screen.getByText(/Sala 1/)).toBeInTheDocument();
   });
+
+  it("o horário do resumo usa o fuso de São Paulo, não o do processo", () => {
+    // 18:30Z é 15:30 em São Paulo. Sem timeZone fixo, o SSR (UTC) e o
+    // cliente (UTC-3) hidratam textos diferentes — o erro de hidratação
+    // que apareceu no resumo da seleção.
+    render(
+      <SeatSelection
+        mapa={criarMapa({
+          inicio: "2026-08-13T18:30:00.000Z",
+          fileiras: [criarFileira("A", 2)],
+        })}
+      />,
+    );
+
+    expect(screen.getByText(/15:30/)).toBeInTheDocument();
+  });
+});
+
+// --- Tipo de ingresso (FR-015, FR-016) -------------------------------------
+
+describe("tipo de ingresso", () => {
+  it("mostra inteira e meia à vista, com inteira já escolhida", async () => {
+    const usuario = userEvent.setup();
+    render(<SeatSelection mapa={criarMapa({ fileiras: [criarFileira("A", 2)] })} />);
+
+    await usuario.click(lugares()[0]);
+
+    expect(screen.getByText("Tipo de ingresso em cada lugar")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Inteira para o lugar A1" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Meia para o lugar A1" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  it("marcar um lugar como meia baixa o total", async () => {
+    const usuario = userEvent.setup();
+    render(<SeatSelection mapa={criarMapa({ fileiras: [criarFileira("A", 2)] })} />);
+
+    await usuario.click(lugares()[0]);
+    await usuario.click(lugares()[1]);
+
+    expect(screen.getByText("R$ 64,00")).toBeInTheDocument();
+
+    await usuario.click(screen.getByRole("button", { name: "Meia para o lugar A1" }));
+
+    expect(screen.getByRole("button", { name: "Meia para o lugar A1" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Inteira para o lugar A2" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByText("R$ 48,00")).toBeInTheDocument();
+  });
 });
 
 // --- Teclado (FR-011, SC-008) ----------------------------------------------
@@ -265,10 +324,9 @@ describe("operação por teclado", () => {
     await usuario.tab();
     await usuario.keyboard("{Enter}");
 
-    // Desde a 014 o resumo tem um alvo a mais por lugar escolhido — o
-    // alternador de meia-entrada. Tabular até o fim continua alcançando o
-    // confirmar; o que este teste protege é a AUSÊNCIA de armadilha, não uma
-    // contagem fixa de tabulações.
+    // Desde a 014 o resumo tem dois alvos a mais por lugar escolhido — inteira
+    // e meia. Tabular até o fim continua alcançando o confirmar; o que este
+    // teste protege é a AUSÊNCIA de armadilha, não uma contagem fixa.
     const confirmar = screen.getByRole("button", { name: /Confirmar lugares/ });
     for (let i = 0; i < 10 && document.activeElement !== confirmar; i += 1) {
       await usuario.tab();

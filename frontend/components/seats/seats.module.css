@@ -366,46 +366,70 @@
 .linhas {
   display: flex;
   flex-direction: column;
-  gap: var(--esp-2);
+  gap: var(--esp-3);
   margin: var(--esp-3) 0 0;
   padding: 0;
   list-style: none;
 }
 
+.dicaTipo {
+  margin: var(--esp-2) 0 0;
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-fraco);
+}
+
 .linha {
   display: grid;
-  grid-template-columns: 2.5rem 1fr auto;
-  align-items: center;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  align-items: start;
   gap: var(--esp-2);
 }
 
 .linhaLugar {
+  padding-top: var(--esp-2);
   font-weight: var(--peso-forte);
   font-variant-numeric: tabular-nums;
 }
 
-/* Alterna entre dois estados nomeados POR PALAVRA, não por cor: quem vê
-   "Meia" sabe o que está comprando sem depender de destaque cromático. */
+/* As duas opções ficam à vista. Quem vê "Inteira" e "Meia" lado a lado
+ * escolhe de verdade; um interruptor que troca o próprio texto esconde
+ * a outra metade da escolha. A opção ativa se distingue por borda e peso,
+ * não por preenchimento. */
+.tipos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--esp-1);
+}
+
 .tipo {
-  justify-self: start;
-  padding: var(--esp-1) var(--esp-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-1);
+  padding: var(--esp-2) var(--esp-3);
   border: 1px solid var(--cor-borda);
-  border-radius: var(--raio-pilula);
+  border-radius: var(--raio-md);
   background: none;
   color: var(--cor-texto-suave);
   font-family: inherit;
-  font-size: var(--texto-xs);
   cursor: pointer;
 }
 
 .tipo[aria-pressed="true"] {
   border-color: var(--cor-destaque);
   color: var(--cor-texto);
+}
+
+.tipoNome {
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-medio);
+}
+
+.tipo[aria-pressed="true"] .tipoNome {
   font-weight: var(--peso-forte);
 }
 
-.linhaValor {
-  color: var(--cor-texto-suave);
+.tipoValor {
   font-size: var(--texto-sm);
   font-variant-numeric: tabular-nums;
 }
