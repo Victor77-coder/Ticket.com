@@ -24,6 +24,7 @@ export function nomearLugares(assentos: { fileira: string; numero: number }[]) {
 
 function formatarHorario(iso: string) {
   return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     weekday: "long",
     day: "2-digit",
     month: "2-digit",

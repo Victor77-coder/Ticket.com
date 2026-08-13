@@ -30,6 +30,7 @@ const APRESENTACAO = {
 
 function horario(iso: string) {
   return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(iso));
@@ -37,6 +38,7 @@ function horario(iso: string) {
 
 function diaEHora(iso: string) {
   return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
