@@ -39,6 +39,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.screening.models import Payment, Reservation, Screening, Ticket
+from apps.screening.services import precos
 
 
 # --- Entrada e saída --------------------------------------------------------
@@ -185,13 +186,21 @@ def autorizar(numero):
 
 
 def total_da_reserva(reserva):
-    """Calculado pelo SERVIDOR, sempre.
+    """Calculado pelo SERVIDOR, sempre — e delegado ao dono da regra.
 
     Valor vindo do cliente não é aceito em nenhuma forma, nem para
     conferência — aceitar "só para conferir" é como o desconto de 99% entra
     (FR-003).
+
+    A CONTA MUDOU DE FORMA NA 014. Era `preço da sessão × quantidade`, e essa
+    multiplicação não sobrevive à meia-entrada: dois lugares da mesma sessão
+    passam a poder custar valores diferentes. Agora é a SOMA dos valores
+    gravados em cada lugar, e quem soma é `services/precos.py`.
+
+    Esta função continua existindo porque `pagamentos` é quem congela o valor no
+    `Payment.amount` — mas ela deixou de CONTER a regra e passou a consumi-la.
     """
-    return reserva.screening.price * reserva.seats.count()
+    return precos.total_da_reserva(reserva)
 
 
 def _revalidar(reserva, cliente):
