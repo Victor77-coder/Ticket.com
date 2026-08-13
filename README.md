@@ -1,28 +1,27 @@
-# Plataforma de Ingressos de Cinema
+# ticket.com — Plataforma de Ingressos de Cinema
 
-Venda e validação de ingressos de cinema — catálogo vindo do TMDb, sessões, mapa de assentos,
-pagamento simulado, ingresso com QR assinado e validação na portaria. **O fluxo ponta a ponta está
-fechado.** Resposta ao Desafio Elite Dev 2026 (Verzel).
+Resposta ao Desafio Elite Dev 2026 (Verzel). Venda e validação de ingressos: catálogo do TMDb,
+sessões, mapa de assentos, pagamento simulado, ingresso com QR e portaria.
 
-O projeto é conduzido por especificação: cada feature nasce de um spec, um plano e uma lista de
-tarefas versionados em [`specs/`](./specs/), sob as regras de
-[`.specify/memory/constitution.md`](./.specify/memory/constitution.md).
+**No ar:** <https://ticketcom-app.onrender.com>
+
+No plano gratuito do Render a primeira visita do dia pode levar cerca de um minuto — o serviço
+dorme após 15 minutos parado. Depois disso responde normal. As credenciais estão na seção
+[Dados de teste](#dados-de-teste).
 
 ---
 
-## Stack
+## Documentação — configurar e executar
+
+### O que sobe
 
 | Camada | Tecnologia |
 |---|---|
 | Back-end | Django 5 + Django REST Framework (Python 3.12) |
 | Front-end | Next.js 15 (App Router) + React 19 |
 | Banco | PostgreSQL 16 |
-| Catálogo externo | TMDb — consumido **apenas** pelo back-end |
+| Catálogo | TMDb — consumido **apenas** pelo back-end |
 | Orquestração | Docker Compose |
-
----
-
-## Portas
 
 | Serviço | Endereço |
 |---|---|
@@ -30,18 +29,14 @@ tarefas versionados em [`specs/`](./specs/), sob as regras de
 | API | <http://localhost:8000> |
 | PostgreSQL | `localhost:5438` |
 
-A 5438 evita colidir com um PostgreSQL local em 5432. A interface usa 5003 e **não** 5000: no
-macOS o AirPlay Receiver escuta na 5000 e o `ControlCenter` intercepta a requisição antes do
-Docker, respondendo 403.
-
----
-
-## Setup
+A porta **5438** evita colidir com um PostgreSQL local em 5432. A interface usa **5003** e não
+5000: no macOS o AirPlay Receiver escuta na 5000 e o `ControlCenter` intercepta a requisição
+antes do Docker, respondendo 403.
 
 ### Pré-requisitos
 
 - Docker e Docker Compose
-- Uma chave de API do TMDb — <https://www.themoviedb.org/settings/api>
+- Uma chave de API do TMDb: <https://www.themoviedb.org/settings/api>
 
 ### 1. Variáveis de ambiente
 
@@ -49,7 +44,7 @@ Docker, respondendo 403.
 cp .env.example .env
 ```
 
-Preencher no `.env`:
+Preencha no `.env`:
 
 ```bash
 POSTGRES_DB=ingressos
@@ -62,8 +57,7 @@ DJANGO_SECRET_KEY=<gere uma>
 DJANGO_DEBUG=True
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend
 
-# Assina o código em QR do ingresso. Gere com o MESMO comando acima, mas
-# PRECISA SER UM VALOR DIFERENTE da DJANGO_SECRET_KEY — ver abaixo.
+# Gere com o MESMO comando, mas PRECISA SER UM VALOR DIFERENTE da DJANGO_SECRET_KEY.
 TICKET_SIGNING_KEY=<gere outra>
 
 TMDB_API_KEY=<sua chave do TMDb>
@@ -72,17 +66,13 @@ NEXT_PUBLIC_SITE_PORT=5003
 API_BASE_URL=http://backend:8000
 ```
 
-`DJANGO_SECRET_KEY`, `TICKET_SIGNING_KEY` e `TMDB_API_KEY` nunca são commitados. O `.env.example`
-traz só os nomes.
+`DJANGO_SECRET_KEY`, `TICKET_SIGNING_KEY` e `TMDB_API_KEY` nunca são commitados. O
+`.env.example` traz só os nomes.
 
-**Sem `TICKET_SIGNING_KEY` o back-end não sobe**, e isso é intencional: um valor padrão em código
-viraria o segredo real de todo mundo que não leu esta seção, e o QR passaria a ser forjável por
-quem leu o repositório.
-
-**Por que ela é separada da `DJANGO_SECRET_KEY`**: são dois raios de comprometimento diferentes.
-Vazar a chave da aplicação compromete sessões; vazar a do ingresso compromete a catraca. Usar a
-mesma nas duas faz um incidente virar dois. Há teste que **falha** se um código assinado com a
-`DJANGO_SECRET_KEY` for aceito.
+**Sem `TICKET_SIGNING_KEY` o back-end não sobe.** Um valor padrão em código viraria o segredo
+real de todo mundo que não leu esta seção, e o QR passaria a ser forjável por quem leu o
+repositório. Ela é separada da `DJANGO_SECRET_KEY` de propósito: vazar a chave da aplicação
+compromete sessões; vazar a do ingresso compromete a catraca.
 
 ### 2. Subir os serviços
 
@@ -96,8 +86,8 @@ docker compose up -d --build
 docker compose exec backend python manage.py migrate
 ```
 
-Isso também cria a extensão `unaccent` do PostgreSQL, exigida pela busca do cabeçalho — é o que
-permite digitar "cacador" e encontrar "Caçador". Conferir:
+Isso também cria a extensão `unaccent` do PostgreSQL, exigida pela busca (digitar "cacador"
+encontra "Caçador"). Conferir:
 
 ```bash
 docker compose exec db psql -U ingressos -d ingressos -c "\dx unaccent"
@@ -109,9 +99,12 @@ docker compose exec db psql -U ingressos -d ingressos -c "\dx unaccent"
 docker compose exec backend python manage.py sync_tmdb --limit 20
 ```
 
-Persiste título, sinopse, arte, duração, gênero, classificação indicativa brasileira e a chave do
-trailer. **Depois deste passo o TMDb pode ficar fora do ar sem afetar a navegação nem a compra.**
-O comando é idempotente.
+Persiste título, sinopse, arte, duração, gênero, classificação indicativa e a chave do trailer.
+Depois deste passo o TMDb pode ficar fora do ar sem afetar a navegação nem a compra. O comando
+é idempotente.
+
+Se a chave estiver vazia ou inválida, o comando falha e o catálogo permanece vazio — não há
+filmes de fallback no repositório.
 
 ### 5. Semear o cenário de demonstração
 
@@ -119,72 +112,129 @@ O comando é idempotente.
 docker compose exec backend python manage.py seed_demo
 ```
 
-Coloca **12 filmes à venda** e informa quais ficaram no carrossel e quais entraram só na trilha —
-a vitrine é conferível sem abrir o navegador.
+Cria as quatro contas, duas salas e **12 sessões publicadas** com ingressos disponíveis. A
+primeira execução, em base vazia, roda direto.
 
-**Da segunda execução em diante, o comando recusa e explica.** A grade deixou de ter uma origem só:
-o painel do organizador também a produz, e o sistema **não registra de onde veio cada sessão**.
-Sem esse marcador, o comando não sabe distinguir o que ele mesmo criou do que você programou pela
-tela — então trata as duas coisas como perda possível, em vez de apagar em silêncio. Para recriar o
-cenário mesmo assim:
+Da segunda execução em diante o comando **recusa e explica**. A grade também pode ser produzida
+pelo painel do organizador, e o sistema não registra de onde veio cada sessão — então trata
+qualquer grade existente como perda possível, em vez de apagar em silêncio. Para recriar:
 
 ```bash
 docker compose exec backend python manage.py seed_demo --force
 ```
 
-A **primeira** execução, em base vazia, roda direto — não há nada a perder, e é o caminho de quem
-está montando o ambiente agora.
+`--force` apaga reservas, pagamentos e ingressos da demonstração e remonta a grade. Use isso
+depois de percorrer o fluxo várias vezes (lugar pago não volta ao estoque).
 
 ### 6. Abrir
 
 <http://localhost:5003>
 
+Entre pelo ícone de pessoa no canto direito do cabeçalho. Depois de entrar, o mesmo ponto
+identifica você e oferece a saída.
+
+### Percurso sugerido para avaliação
+
+1. **Cliente** (`cliente1`) — home → filme → horário → assentos → pagamento com
+   `4242 4242 4242 4242` → QR em "Meus ingressos".
+2. **Portaria** (`portaria`) — pousa em `/portaria`. Escolha a sessão da porta e valide pelo
+   código em texto do ingresso (a câmera também funciona em `localhost` e no deploy HTTPS).
+3. **Organizador** (`organizador`) — pousa em `/programacao`. Confira a grade, publique outra
+   sessão se quiser; ela aparece à venda na hora.
+4. **Segundo cliente** (`cliente2`) — entre e tente o mesmo assento já vendido: a reserva
+   recusa. Ou compre outro lugar e compartilhe o ingresso por link.
+
+O pagamento é simulado. O desfecho é decidido pelo **número do cartão**:
+
+| Número | Desfecho |
+|---|---|
+| `4242 4242 4242 4242` | Aprovado — emite os ingressos |
+| `4000 0000 0000 9995` | Recusado — saldo insuficiente |
+| `4000 0000 0000 0069` | Recusado — cartão expirado |
+| `4000 0000 0000 0002` | Recusado — banco recusou |
+
+Qualquer outro número bem formado (16 dígitos, Luhn válido) também é aprovado. Validade e CVV
+são conferidos quanto à forma e **não** participam da decisão. Número mal formado é erro de
+preenchimento, não recusa de cobrança — a tela usa frases diferentes.
+
+**A recusa não devolve o lugar.** A reserva segue viva até o vencimento original de dez minutos,
+para trocar de cartão sem perder o assento.
+
+### Testes (opcional)
+
+```bash
+docker compose exec backend pytest
+docker compose exec frontend npm run test
+```
+
+Ponta a ponta, **a partir do host** (não do contêiner — ver [O que não funciona como
+esperado](#o-que-não-funciona-como-esperado)):
+
+```bash
+cd frontend && npm install && npx playwright install chromium && npx playwright test --workers=2
+```
+
+`--workers=2` não é detalhe: com o número padrão o servidor de desenvolvimento do Next satura
+e alguns testes caem por timeout.
+
+---
+
+## Dados de teste
+
+Todas as contas usam a senha **`desafio2026`**:
+
+| Papel | Usuário | Para onde vai ao entrar |
+|---|---|---|
+| Organizador | `organizador` | `/programacao` — a grade dele |
+| Cliente | `cliente1` | `/` — o catálogo, para comprar |
+| Cliente | `cliente2` | `/` |
+| Portaria | `portaria` | `/portaria` — e não alcança o resto do site |
+
+O seed também cria **Sala 1** (60 lugares) e **Sala 2** (40 lugares) e publica sessões futuras
+de 12 filmes importados do TMDb (entre eles *A Odisseia*, *Homem-Aranha* e *Minions* no
+carrossel). Há ingressos disponíveis nessas sessões.
+
+Não há criação de conta nem recuperação de senha. Estas quatro contas são as únicas. O desafio
+não pede auto-cadastro.
+
 ---
 
 ## Deploy
 
-Front, API e Postgres sobem **no mesmo painel**, o [Render](https://render.com). O avaliador só
+Front, API e Postgres sobem no mesmo painel, o [Render](https://render.com). O avaliador só
 abre o endereço do front-end.
 
-O endereço no ar: <https://ticketcom-app.onrender.com>
+**Endereço no ar:** <https://ticketcom-app.onrender.com>
 
-O Vercel não entra: ele não roda Django nem PostgreSQL. No plano free um web service **não
-recebe** tráfego da rede interna, então o Next chama a API pela URL pública. A primeira visita
-do dia acorda o Django pelo navegador (~1 min).
+O Vercel não entra neste projeto: ele não roda Django nem PostgreSQL. No plano gratuito um web
+service **não recebe** tráfego da rede interna, então o Next chama a API pela URL pública. A
+primeira visita do dia acorda o Django pelo navegador (~1 min).
 
-### 1. Publicar este repositório
+Credenciais: as mesmas da tabela [Dados de teste](#dados-de-teste).
 
-O Blueprint lê o `render.yaml` no GitHub. Commit e push da `main` (se ainda não foram).
+A câmera da portaria funciona no deploy — o endereço é HTTPS.
 
-### 2. Criar o Blueprint
+### Como foi publicado (e como republicar)
 
-1. Entre em <https://dashboard.render.com> com a conta GitHub.
-2. **New** → **Blueprint**.
-3. Selecione este repositório.
-4. Quando pedir `TMDB_API_KEY`, cole a mesma chave do `.env` local. Se o Blueprint
-   já existir e a variável estiver vazia, preencha em **ticketcom-api → Environment**
-   e faça Manual Deploy desse serviço.
-5. Apply.
+O Blueprint lê o `render.yaml` no GitHub.
 
-O Render cria o Postgres, a API (`ticketcom-api`) e o site (`ticketcom-app`). No primeiro deploy a
-API importa o catálogo, semeia as quatro contas e sobe a grade. Os deploys seguintes só migram —
-não apagam o que o organizador programou.
+1. Publique este repositório no GitHub (branch `main`).
+2. Em <https://dashboard.render.com>: **New** → **Blueprint** → selecione o repositório.
+3. Quando pedir `TMDB_API_KEY`, cole a mesma chave do `.env` local. Se o Blueprint já existir
+   e a variável estiver vazia, preencha em **ticketcom-api → Environment** e faça Manual Deploy
+   desse serviço.
+4. Apply.
 
-### 3. Abrir
+O Render cria o Postgres (`ticketcom-db`), a API (`ticketcom-api`) e o site (`ticketcom-app`).
+No primeiro deploy a API importa o catálogo, semeia as quatro contas e sobe a grade. Os deploys
+seguintes só migram — não apagam o que o organizador programou.
 
-<https://ticketcom-app.onrender.com>
+Se o Render acrescentar um sufixo no nome (URL diferente da documentada), copie o endereço
+**público do front** e atualize na API as variáveis `SITE_URL`, `CORS_ALLOWED_ORIGINS` e
+`CSRF_TRUSTED_ORIGINS`. Sem isso o link de compartilhamento do ingresso aponta para o host
+errado.
 
-Se o Render acrescentar um sufixo no nome (URL diferente dessa), copie o endereço **público do
-front** e atualize na API as variáveis `SITE_URL`, `CORS_ALLOWED_ORIGINS` e `CSRF_TRUSTED_ORIGINS`.
-Sem isso o link de compartilhamento do ingresso aponta para o host errado.
-
-Credenciais: as mesmas da tabela **abaixo** (`desafio2026`).
-
-**A primeira abertura do dia pode levar cerca de um minuto.** No plano free o serviço dorme após
-15 minutos parado; o Render acorda os dois processos no primeiro pedido. Depois disso responde
-normal. A câmera da portaria funciona — o endereço é HTTPS.
-
-### 4. Conferir
+### Conferir no ar
 
 - Home com carrossel e trilhas
 - Entrar como `cliente1` → comprar → QR
@@ -193,694 +243,236 @@ normal. A câmera da portaria funciona — o endereço é HTTPS.
 
 ---
 
-## Credenciais de seed
+## O que não funciona como esperado
 
-Todas com a senha **`desafio2026`**:
+Estes pontos existem de propósito ou são limitações conhecidas. Nenhum impede percorrer o
+fluxo de avaliação.
 
-| Papel | Usuário | Pousa em |
-|---|---|---|
-| Organizador | `organizador` | `/programacao` — a grade dele |
-| Cliente | `cliente1` | `/` — o catálogo, porque ele entra para comprar |
-| Cliente | `cliente2` | `/` |
-| Portaria | `portaria` | `/portaria` — e não alcança o resto do site |
+**A primeira abertura do dia no Render pode levar cerca de um minuto.** No plano gratuito o
+serviço dorme após 15 minutos parado. Espere o carregamento; depois responde normal. Não é
+falha da aplicação.
 
-Um destino pedido explicitamente sempre vence o pouso: quem foi conduzido à entrada ao tentar abrir
-uma página volta para aquela página.
+**A câmera da portaria só funciona em contexto seguro** (`https` ou `localhost`). Em
+`http://localhost:5003/portaria` na própria máquina, funciona. Abrindo **pelo IP da rede
+local** — o gesto natural para testar com o celular — ela **não** funciona, e nenhuma
+configuração da aplicação muda isso. A digitação manual do código fica visível o tempo todo,
+lado a lado com a câmera. No deploy HTTPS a câmera funciona.
 
-Entre pelo ícone de pessoa no canto direito do cabeçalho. Depois de entrar, o mesmo ponto passa a
-identificar você e oferece a saída.
+**Lugar pago não volta ao estoque.** Percorrer o fluxo de compra várias vezes esgota a sessão
+usada. Localmente: `docker compose exec backend python manage.py seed_demo --force`. No
+Render a grade do primeiro deploy permanece; escolha outro filme/horário ou publique uma
+sessão nova como organizador.
 
----
+**A expiração da reserva não é demonstrável ao vivo.** O prazo é fixo em dez minutos e não é
+lido do ambiente — um prazo configurável viraria "dois segundos" na demonstração e a garantia
+deixaria de ser a mesma que roda em produção.
 
-## Cartões de teste
+**Não há criação de conta nem recuperação de senha.** Só as quatro contas do seed.
 
-O pagamento é **simulado**: não há transação financeira real nem provedor externo. O desfecho é
-decidido pelo **número do cartão**, por esta tabela — **determinístico, nunca por sorteio**, para
-que os dois caminhos sejam exercitáveis de propósito por quem avalia.
+**Não há seletor de localidade.** O domínio modela um cinema, não uma rede: uma sala existe
+sem cidade associada, então o seletor não teria o que filtrar.
 
-| Número | Desfecho | O que aparece na tela |
-|---|---|---|
-| `4242 4242 4242 4242` | **Aprovado** | os ingressos, um por lugar, com QR |
-| `4000 0000 0000 9995` | Recusado | Não havia saldo suficiente neste cartão. Tente outro cartão. |
-| `4000 0000 0000 0069` | Recusado | Este cartão está expirado. Use um cartão com validade em dia. |
-| `4000 0000 0000 0002` | Recusado | O banco emissor recusou a cobrança. Tente outro cartão ou fale com o banco. |
+**O "local" do evento é o nome da sala.** Data e preço aparecem na grade de horários; o local
+é o cabeçalho sob o qual os horários se agrupam. Um campo "local" na sessão teria o mesmo
+valor em todas as linhas.
 
-Qualquer outro número bem formado (16 dígitos com verificador de Luhn válido) é **aprovado**, para
-que não seja preciso consultar esta tabela só para ver o caminho feliz. Validade e código de
-segurança são conferidos quanto à forma e **não** participam da decisão — quem decide é o número.
+**Não há cota legal de meia-entrada** (40% dos lugares). A meia é comprável; a conferência do
+documento é humana e acontece na porta. A portaria mostra o tipo para o operador pedir o
+documento — o tipo nunca é condição de entrada.
 
-Número mal formado é **erro de preenchimento**, não recusa de cobrança: são coisas diferentes, e a
-tela diz isso com palavras diferentes. Numa você corrige o que digitou, na outra troca de cartão.
+**Não há cancelamento nem estorno de ingresso pago.** `paga` é estado terminal nesta entrega.
 
-**A recusa não devolve o lugar.** A reserva segue viva até o vencimento original de dez minutos,
-para que dê para trocar de cartão sem perder o assento. O raciocínio por trás disso está em
-*Decisões que podem estranhar numa leitura rápida*.
+**`/filmes/{slug-inexistente}` responde HTTP 200 em vez de 404.** A página "Filme não
+encontrado" é exibida, mas o Next.js não troca o status depois que a renderização dinâmica
+começou a ser transmitida. Afeta rastreadores, não o usuário.
 
----
+**Os testes ponta a ponta não rodam dentro do contêiner.** A imagem do front-end é Alpine
+(musl) e os navegadores do Playwright são compilados para glibc. Rode a partir do host, com a
+aplicação no ar.
 
-## Testes
+**O limite de tentativas de login vive em cache local.** Reiniciar o back-end zera os
+bloqueios.
 
-```bash
-docker compose exec backend pytest
-docker compose exec frontend npm run test
-```
-
-Ponta a ponta (ver a ressalva em Limitações conhecidas):
-
-```bash
-cd frontend && npx playwright test --workers=2
-```
-
-`--workers=2` não é detalhe: com o número padrão o servidor de desenvolvimento do Next satura e
-alguns testes caem por timeout. Verificado que passam sozinhos.
-
-Os testes obrigatórios são os que a constitution exige como prova: acesso público e ausência de
-vazamento de dado de gestão nas respostas públicas (Princípio IV), resiliência à queda do TMDb
-(Princípio VII), a garantia de que a lista de sugestões nunca exibe o resultado de um termo já
-abandonado, a corrida de reserva — exatamente uma vence, e o teste **falha** se a constraint for
-removida (Princípio II) —, a corrida de pagamento, que emite um único conjunto de ingressos e
-**falha** se qualquer uma das duas garantias de banco for removida, a rejeição de QR forjado,
-verificada **sem nenhuma consulta ao banco** (Princípio III), a ausência de vazamento na página de
-ingresso compartilhado, inspecionada por valor na resposta inteira (Princípio III), e a corrida de
-geração de link, que produz um único link ativo e **falha** sem o índice parcial.
-
-Dez verificações foram feitas **quebrando o código de propósito**, porque uma prova que passa sem a
-garantia que ela protege é pior do que prova nenhuma:
-
-| Garantia removida | O que passa a acontecer | Teste que falha |
-|---|---|---|
-| `condition` do índice de link ativo | 5 pedidos simultâneos criam **5** credenciais ativas | `test_share_link_concurrency.py` |
-| campo novo no serializer público | o campo aparece na página compartilhada | `test_share_link_leakage.py` |
-| `sellable()` na consulta de ingressos | somem o histórico e o ingresso de sessão cancelada | `test_my_tickets_api.py` |
-| escrita condicional → `if` + `save()` na portaria | **quatro** pessoas entram com o mesmo ingresso | `test_gate_concurrency.py` |
-| `sellable()` na lista de sessões da portaria | some a sessão **em andamento**, que é a que a porta recebe | `test_gate_api.py` |
-| campo de uso no serializer do ingresso | "utilizado" aparece na página compartilhada pública | `test_share_link_leakage.py` |
-| contorno de foco escurecido | **a suíte inteira passa verde** com o foco de teclado invisível | `tokens.test.ts` |
-| marca trocada pelo âmbar | ΔE 16 do alerta — marca confundível com cor de estado | `tokens.test.ts` |
-| vestígio da cor antiga num componente | um respingo laranja num sistema magenta | `tokens.test.ts` |
-| ícone de aba deixado para trás | favicon com a cor antiga, invisível durante o desenvolvimento | `tokens.test.ts` |
-| omitir `trailers` no detalhe do filme | a aba Trailers não distingue vazio de campo faltando | `test_filme_detalhe.py` |
-| `--cor-fundo-qr` harmonizado com a marca | a catraca deixa de ler o QR no ingresso-objeto | `tokens.test.ts` |
-
-> Os testes ponta a ponta de pagamento **compram de verdade**, e lugar pago não volta ao estoque.
-> Rodar a suíte muitas vezes consome a grade semeada; `seed_demo` devolve o cenário ao início.
-
----
-
-## O que está pronto
-
-**Carrossel de destaques** (`specs/001-movie-highlights-carousel/`) — 5 filmes em cartaz na home,
-com trailer reproduzido dentro do próprio painel e botão que leva à página de sessões do filme.
-
-**Cabeçalho global** (`specs/002-site-header-navigation/`) — faixa persistente em todas as páginas
-com a identidade **ticket.com**, que leva à home, e busca de filmes por título com sugestões
-ancoradas ao campo. A busca ignora acento e caixa, encontra por trecho do título e é operável só
-pelo teclado.
-
-**Autenticação** (`specs/003-user-authentication/`) — entrada, saída e sessão para os três papéis.
-O ponto de conta no cabeçalho convida a entrar quando não há sessão e identifica o usuário quando
-há. Depois de entrar, o visitante volta para a página de onde partiu.
-
-**Trilhas da home** (`specs/004-home-movie-rows/`) — três faixas horizontais de cartazes abaixo do
-carrossel: **Em cartaz** (o que dá para comprar agora), **Em alta** e **Em breve**, as duas
-últimas vindas do TMDb. Cada cartaz leva à página do filme; quando não há sessão, a página informa
-a data de estreia e explica o motivo.
-
-**Escolha de assentos** (`specs/007-seat-selection/`) — mapa da sala a partir da sessão, seleção
-com limite de seis lugares e reserva com prazo de dez minutos. O mapa é público; reservar exige
-entrar, e só o papel cliente reserva — organizador e portaria recebem recusa **do servidor**.
-Passado o prazo, os lugares voltam ao estoque sem nenhuma rotina agendada: a liberação é por
-consulta, o que elimina a janela entre o vencimento e a passagem de um processo.
-
-O mesmo lugar nunca é vendido duas vezes, e a garantia é do PostgreSQL: `UNIQUE(sessão, assento)`
-na tabela de ocupação. A corrida perdedora falha no banco, não numa checagem prévia em Python.
-`backend/tests/test_reservation_concurrency.py` prova isso com duas threads e conexões separadas —
-e está verificado que ele **falha** se a constraint for removida.
-
-**Pagamento simulado e emissão do ingresso** (`specs/008-payment-ticket-issuance/`) — a reserva é
-revisada, cobrada de forma simulada e, se aprovada, vira ingresso na **mesma transação**. Um
-ingresso **por assento**, não por reserva: quem entra na sala é uma pessoa por lugar. Cada um traz
-seu código em QR e o mesmo código em texto, para a digitação manual que a portaria vai exigir.
-
-Os dois caminhos são exercitáveis de propósito pelos cartões da tabela acima. Só o papel cliente
-paga, e só o dono paga a sua — organizador e portaria recebem `403` **do servidor**.
-
-O código do QR é assinado com `TICKET_SIGNING_KEY`, segredo próprio que nunca chega ao navegador,
-e a assinatura é conferida **antes de qualquer consulta ao banco**. Código adulterado, código
-assinado com outro segredo e código assinado com a `DJANGO_SECRET_KEY` são todos rejeitados, com
-teste para cada caso.
-
-Uma reserva nunca gera dois conjuntos de ingressos, e a garantia também é do PostgreSQL: índice
-parcial `UNIQUE(reserva) WHERE aprovado` no pagamento e `UNIQUE(assento reservado)` no ingresso.
-`backend/tests/test_payment_concurrency.py` prova isso com threads, e está verificado que ele
-**falha** se qualquer uma das duas for removida.
-
-**Meus ingressos e compartilhamento por link** (`specs/009-my-tickets-sharing/`) — até a 008 o
-ingresso existia e era **inalcançável**: saindo da confirmação da compra, o cliente não tinha
-caminho de volta. Agora ele tem endereço permanente em **`/meus-ingressos`**, alcançável pelo menu
-da conta (só para o papel cliente) e pela própria confirmação.
-
-A lista mostra **um item por lugar comprado**, cada um com seu QR e seu código em texto, separada
-em dois grupos: **Próximas sessões**, com a que acontece primeiro no topo, e **Já aconteceram**, da
-mais recente para a mais antiga. Os dois grupos vêm separados do servidor — a fronteira é decisão
-dele, não do relógio do navegador. Quem nunca comprou vê um estado vazio escrito para gente, com
-saída para o catálogo. Ingresso de sessão cancelada **continua na lista**, com aviso: some da venda,
-não do histórico.
-
-Cada ingresso tem endereço próprio, e é lá que mora o **link de compartilhamento**. A página do
-link é pública, abre sem conta nenhuma e mostra **apenas** filme, sessão, sala, lugar e o QR —
-nunca quem comprou, nunca os outros ingressos da mesma compra, nunca valor ou dado de pagamento.
-`backend/tests/test_share_link_leakage.py` inspeciona a resposta pública inteira **por valor** e
-falha se qualquer um desses aparecer; está verificado que ele **falha** quando um campo é
-acrescentado ao serializer público.
-
-**O link é credencial ao portador, e isso é assumido.** Compartilhar ingresso é entregar o direito
-de entrar — é para isso que a pessoa manda o ingresso a quem vai com ela, e uma página
-compartilhada sem o QR seria decorativa. Daí as duas contrapartidas: o token tem 256 bits de
-entropia, e o dono pode **revogar** o link a qualquer momento e gerar outro. Um link revogado nunca
-volta a valer, e responde exatamente como um link inventado — distinguir contaria a quem está
-adivinhando que um palpite chegou perto.
-
-O token do link é **distinto do código do QR**, e os dois têm ciclos de vida independentes:
-revogar um convite não pode queimar uma entrada paga.
-`backend/tests/test_ticket_signature.py` compara o código antes e depois de revogar e exige que
-seja byte a byte o mesmo.
-
-Um ingresso tem **no máximo um link ativo**, e a garantia é do PostgreSQL: índice parcial
-`UNIQUE(ingresso) WHERE revogado_em IS NULL`. `backend/tests/test_share_link_concurrency.py` prova
-com threads, e está verificado que ele **falha** sem a constraint — sem ela, cinco pedidos
-simultâneos criam cinco credenciais ativas, e o dono revogaria uma achando que revogou tudo.
-
-**Validação na portaria** (`specs/010-gate-validation/`) — **é esta feature que fecha o fluxo ponta
-a ponta**: catálogo → sessão → assento → pagamento → ingresso → **entrada**.
-
-O operador entra com a conta `portaria` e **já pousa na tela de validação** — ela tem uma tela só e
-não navega pelo site, então cair no catálogo de filmes seria cair no lugar errado. Depois disso, o
-**menu da conta** o traz de volta a qualquer momento ("Validar ingressos").
-
-**A portaria não alcança o catálogo.** Ela tem uma tela só, e o cabeçalho dela não oferece busca nem
-caminho de volta à home — tentar abrir qualquer outra página devolve à validação. A regra vive num
-middleware que **nega por padrão**: qualquer página nova nasce coberta, sem ninguém precisar
-lembrar.
-
-Vale dizer o que isso **não** é: não é segurança. O catálogo é público — um visitante vê as mesmas
-páginas, e a portaria veria tudo bastando sair da conta. É produto: evita oferecer a ela uma viagem
-que termina em recusa. A autorização de verdade continua no servidor, e é ela que devolve `403`
-quando a portaria tenta reservar, pagar ou abrir ingressos de cliente.
-
-Cada papel tem ali o seu destino de trabalho: cliente vai para "Meus ingressos", portaria para a
-validação, organizador para "Programação". O cliente, porém, **pousa na home** ao entrar — ele entra
-para comprar, e mandá-lo direto para a lista faria um cliente novo aterrissar no estado vazio.
-
-Um destino pedido explicitamente sempre vence: quem foi conduzido à entrada ao tentar abrir uma
-página volta àquela página.
-
-Na tela, o operador escolhe **qual sessão aquela porta está recebendo** e
-valida — pela câmera ou digitando o código escrito no ingresso. Cada apresentação produz um de
-**quatro desfechos**, distinguíveis por símbolo e título antes de qualquer cor: **pode entrar**,
-**já foi usado** (com a hora do primeiro uso), **ingresso de outra sessão** (com a sessão a que ele
-pertence, para o operador orientar a pessoa) e **não reconhecido**.
-
-**A escolha da sessão da porta não é conveniência de interface.** Sem ela o desfecho "sessão errada"
-seria **impossível**: o código carrega a sessão a que o ingresso pertence, e comparar esse valor com
-ele mesmo sempre dá igual. Entregar três desfechos onde a constitution exige quatro seria tela pela
-metade.
-
-Um ingresso legítimo apresentado na porta errada **não é consumido** — continua valendo na porta
-certa. E "sessão errada" vem **antes** de "já utilizado" na ordem de decisão, porque é essa a
-informação que muda o que o operador faz.
-
-Um ingresso nunca é validado duas vezes, e **aqui a garantia muda de forma**: as três features
-anteriores fecharam seus invariantes com índices `UNIQUE`. Este invariante é de **transição** —
-"esta coluna só sai de nulo uma vez" —, e nenhum índice o expressa: uma `CHECK` enxerga o valor
-final, não a história. A garantia é a forma da escrita,
-`UPDATE ... WHERE used_at IS NULL`, e **o número de linhas afetadas é o desfecho**. Continua sendo o
-banco decidindo: o segundo `UPDATE` bloqueia, reavalia o predicado contra a versão nova e afeta zero
-linhas.
-
-`backend/tests/test_gate_concurrency.py` prova com threads, e está verificado que ele **falha**
-quando a escrita condicional é trocada pelo `if` natural — com **quatro** validações resultando em
-"pode entrar". Sem constraint atrás dele, este teste é a única defesa da garantia, e por isso foi
-escrito antes do serviço.
-
-O código forjado é rejeitado **sem nenhuma consulta ao registro de ingressos**, reusando a
-verificação que a feature de pagamento já deixou pronta em módulo puro.
-
-**Identidade de marca** (`specs/011-marca-sem-laranja/`) — a paleta continua escura, mas o destaque
-deixou de ser laranja, o nome ganhou tipografia própria e a marca ganhou desenho. **Esta feature
-emenda o FR-020 da 006**, que exigia "paleta escura com destaque laranja": revoga a segunda metade da
-frase e mantém a primeira.
-
-**A cor não foi escolhida — sobrou.** Quatro restrições em ordem deixam uma região só do círculo
-cromático, e a segunda é a que ninguém antecipa: **a marca não pode colidir com cor de estado.** O
-sistema já tem sucesso (verde), alerta (âmbar) e erro (coral). Isso **elimina o âmbar** — que era o
-candidato mais óbvio para um cinema, com marquise e canhoto de ingresso —, porque ele fica a **8° do
-`--cor-alerta`** e adotá-lo exigiria mover uma cor de estado. O azul tem a melhor separação de todas
-e perde assim mesmo: é o azul padrão de todo software e vizinho do índigo vetado.
-
-Sobra o magenta, **`#ff2e88`**, e o que a região significa neste domínio tem nome. Um cinema à noite
-tem quatro luzes — marquise (âmbar), saída (verde), projeção (laranja) e fachada. As três primeiras
-já são cores de estado; sobrou o **neon da fachada**, que por acaso é a luz que se vê *antes de
-entrar*, para uma marca cuja função é vender a entrada.
-
-**Medido, e vale registrar:** a paleta antiga **já falhava** o limite de distância de estado — o
-laranja ficava a ΔE 23.8 do `--cor-erro`, abaixo do mínimo de 25. Ela era, dos candidatos avaliados,
-a mais confundível com uma cor de estado.
-
-**A troca custou quatro valores num arquivo.** É a disciplina de tokens da 006 sendo colhida: o
-laranja vivia em 4 declarações, e 12 arquivos consumiam apenas os nomes, em 28 usos. **Nenhum
-consumidor precisou ser tocado.**
-
-O nome sai em **Cabinet Grotesk** (Fontshare), auto-hospedada, com a licença versionada em
-`frontend/public/fontes/FFL.txt` — uso comercial permitido, e o §01 concede explicitamente criar
-logos. A marca gráfica é o **`t` inicial com o ponto do `.com`**, em geometria própria: o nome tem
-uma única pontuação, e ela já era elemento de marca desde a 002. Não é ícone de ingresso nem
-claquete, que seriam intercambiáveis com os de qualquer outro cinema.
-
-**Telas de compra** (`specs/012-telas-de-compra/`) — a página do filme, o mapa de assentos e o
-pagamento foram recompostos. Sessões viram grade por dia e sala no cliente; Sobre e Trailers usam o
-que o filme já persiste; `GET /api/v1/filmes/<slug>/` ganha `trailers[]` aditivo (highlights não).
-Em tela larga o resumo fica ao lado do mapa; o ingresso emitido no pagamento ganha a variante
-`objeto`. **A home não mudou** — o achado da 011 sobre a primeira dobra permanece achado, não
-entregável desta feature. Nenhuma regra de reserva, pagamento ou validação foi reaberta.
-
-**Painel do organizador** (`specs/013-painel-do-organizador/`) — o terceiro papel ganhou a tela que
-nunca teve. O organizador **pousa em `/programacao`** ao entrar, vê a grade com os três estados
-(rascunho, publicada, cancelada), programa sessão escolhendo filme, sala, horário e preço, cria
-salas com o mapa de lugares nascendo junto, e busca filmes no TMDb **pelo back-end** — a chave da
-API nunca chega ao navegador.
-
-**A grade passou a ter duas origens.** Até aqui só o `seed_demo` a produzia; agora dá para montar um
-cenário próprio sem rodar comando nenhum, e a sessão publicada aparece no caminho de compra do
-cliente na hora. É por isso que recriar a demonstração passou a exigir `--force` (ver o passo 5 do
-setup).
-
-Diferente da portaria, o organizador **continua alcançando o catálogo público** — é ali que ele
-confere que a sessão que publicou apareceu à venda. Cliente e portaria que chamem a API de
-programação recebem `403`, nunca `401`: eles entraram, só têm outro papel.
-
-**Zero migração.** `Movie`, `Room`, `Seat` e `Screening` já bastavam desde a 001 — a feature move
-para uma tela o que o comando de seed já fazia em Python, e três regras que já existiam ganharam
-dono único em vez de segunda cópia: a geometria da sala, o mapeamento do TMDb e a leitura de
-ocupação viva.
-
-**Cartão de sessão e meia-entrada** (`specs/014-cartao-de-sessao-e-meia-entrada/`) — a grade de
-horários virou **cartão por sala**, com cabeçalho, régua e duas ações no topo: **Assentos** e
-**Preços**. Cada uma abre uma sobreposição de leitura.
-
-**Assentos** mostra a lotação — livres e ocupados, distinguíveis sem depender de cor, com a
-contagem de quantos restam — e um caminho para o mapa real. Ele é **somente leitura**: nenhum
-assento ali é acionável, porque selecionar continua acontecendo no mapa da 007. Um segundo caminho
-de reserva duplicaria a regra que `UNIQUE(sessão, assento)` protege. E ele consome **o mesmo
-endpoint de mapa** que a seleção já usava, sem endpoint novo e sem segunda leitura de ocupação.
-
-**Preços** mostra inteira e meia daquela sessão, com a nota de que a meia é conferida na entrada
-mediante documento. Os dois painéis fecham por `Esc` e por botão, prendem o foco enquanto abertos e
-**devolvem o foco à ação que os abriu** — a falha invisível para quem usa mouse, e a razão de o
-componente de sobreposição existir em vez de uma biblioteca.
-
-**O preço saiu do horário e do topo da página.** As duas coisas existiram por algumas horas durante
-esta feature e foram removidas por decisão de produto: repetir em doze chips o que a ação "Preços"
-mostra transforma a grade num mural de números. O alvo do horário voltou a ser sobre **horário**.
-
-**A meia-entrada passou a ser comprável**, e é a primeira mudança no que se cobra desde a 008. Ao
-escolher lugares, cada um pode ser marcado como meia; o padrão é sempre inteira. O total é
-recalculado e cobrado pelo servidor.
-
-**A parte técnica é uma simplificação, não um acréscimo.** A regra `preço × quantidade` estava
-escrita **três vezes** — em `services/pagamentos`, no serializer da reserva e no navegador. Ensinar
-meia-entrada às três seria o caminho natural e errado. Em vez disso, `ReservedSeat` passou a
-**gravar** o tipo e o valor de cada lugar, e o total virou **soma de uma coluna**: as duas cópias do
-back-end deixaram de precisar saber que tipos existem. `services/precos.py` é o dono único da regra,
-e `frontend/lib/meia.ts` é espelho da prévia — os dois compartilham a **mesma tabela de casos** nos
-testes, então concordarem é verificado, não presumido.
-
-A meia é metade **arredondada para baixo**, e o valor arredondado é o que vai para a coluna: exibido
-e cobrado não podem divergir porque são a mesma linha.
-
-**A portaria não mudou.** Continua com **exatamente quatro desfechos**. O tipo aparece para o
-operador pedir o documento — a plataforma vende, quem confere é a pessoa na porta, como em qualquer
-cinema. Há teste que falha se um quinto desfecho aparecer.
-
-Uma migração, e ela é a única da feature. `backend/tests/test_payment_concurrency.py` foi estendido
-com **tipos mistos na mesma reserva**: sem isso, a garantia mais cara do projeto continuaria verde
-cobrindo só o caso em que todos os lugares custam igual.
-
-A feature também deu **dono único ao formatador de moeda** (`frontend/lib/moeda.ts`), que estava
-copiado em cinco arquivos.
-
----
-
-## Decisões que podem estranhar numa leitura rápida
-
-**A recusa de pagamento não libera o assento na hora.** O Princípio II da constitution diz
-"pagamento recusado DEVE liberar o assento", e à primeira vista isto contraria a regra. Não
-contraria, e a leitura está registrada em `specs/008-payment-ticket-issuance/spec.md`.
-
-O critério é a frase seguinte do próprio princípio: "não existe estado intermediário durável em que
-o assento esteja preso sem dono". Depois de uma recusa o assento tem **dono** — a mesma reserva, do
-mesmo cliente — e tem **prazo correndo**, o vencimento original, intocado. Nenhum dos dois defeitos
-que a cláusula previne acontece, e quem devolve o lugar ao estoque continua sendo o vencimento, por
-consulta, sem rotina agendada.
-
-Liberar na recusa seria pior para quem compra e não melhoraria a integridade: quem digitou o cartão
-errado perderia o lugar para outra pessoa entre uma tentativa e a seguinte. A resposta de recusa
-devolve `expira_em` justamente para que a ausência de mudança no prazo seja observável de fora.
-
-**O código do QR é assinado, não cifrado, e não é guardado em coluna.** Ele é derivado do ingresso
-quando pedido. Guardá-lo criaria a chance de a coluna e a chave discordarem depois de uma rotação,
-e não há o que ganhar: a assinatura é o que impede forjar, não o sigilo do conteúdo.
-
-O conteúdo carrega a identidade da **sessão** além da do ingresso, e isso é para a feature seguinte:
-sem ela, um ingresso legítimo apresentado na porta errada seria indistinguível de um código
-inventado, e a portaria não teria como produzir o desfecho "sessão errada" que o Princípio III
-exige. Entrou agora porque acrescentá-lo depois invalidaria todo código já emitido.
-
-**O ingresso não tem campo "utilizado".** A marcação de uso e a garantia de validação única nascem
-juntas na feature da portaria — o mesmo cuidado que a 007 teve ao criar a ocupação de assento e sua
-constraint na mesma migração. Uma coluna de estado que nada transiciona e nada protege seria
-convite para alguém marcá-la sem a garantia atrás.
-
-**A busca do navegador passa por um proxy do Next (`/api/busca`), não pelo Django direto.** Dentro
-do Docker Compose o front-end alcança o back-end por `http://backend:8000` — um nome que só resolve
-dentro da rede do Compose e que o navegador não consegue usar. O proxy mantém uma única verdade
-sobre onde a API está, evita CORS no caminho quente da digitação e impede que o endereço do
-back-end entre no bundle.
-
-**A busca usa a extensão `unaccent`, não uma coluna normalizada.** Guardar uma cópia normalizada
-do título criaria um segundo ponto de verdade para manter em sincronia com o TMDb. E o full-text
-do PostgreSQL não serve: ele trabalha por palavra e não encontra "matr" dentro de "Matrix", que é
-justamente o que a busca por trecho exige.
-
-**A busca devolve filmes sem sessão à venda; o carrossel não os destaca.** As duas regras divergem
-de propósito. Destaque é promessa de compra — apontar para uma página sem nada comprável seria a
-tela pela metade que a constitution proíbe. Busca é navegação: esconder um filme que existe no
-site faria a pessoa procurar pelo nome exato e ouvir "nada encontrado".
-
-**O wordmark tem `aria-label` aparentemente redundante.** Não é: o nome é dividido em dois
-elementos para o tratamento tipográfico, e o algoritmo de nome acessível insere um espaço na
-fronteira entre eles. Sem o rótulo, o leitor de tela anuncia "ticket .com".
-
-**A trilha usa `scroll-snap` nativo; o carrossel foi escrito à mão.** Parece incoerência e é o
-contrário. O carrossel precisa fechar ciclo — do último volta ao primeiro — e rotacionar sozinho
-pausando em três situações distintas; `scroll-snap` exigiria clonar slides e não dá esse controle.
-A trilha não faz nenhuma das duas coisas, e sem esses requisitos o CSS entrega gesto de toque,
-inércia e rolagem por teclado de graça e melhor do que qualquer código nosso. Repetir o padrão do
-carrossel ali seria coerência aparente pagando em código e em acessibilidade pior.
-
-**"Em alta" só mostra filme com sessão marcada.** O TMDb devolve os filmes mais comentados da
-semana, e a trilha não exibe todos: filtra pelos que já têm sessão publicada e futura na
-plataforma. A consequência foi medida antes de aplicar e é significativa — com o catálogo atual a
-trilha cai de 9 para 3 filmes, e os três já aparecem em "Em cartaz" logo acima. A trilha deixa de
-ser descoberta de catálogo e vira "o que está bombando entre o que dá para comprar". Foi decisão
-consciente: num site de ingressos, mandar o visitante para um filme sem nada à venda é atrito sem
-contrapartida. As alternativas descartadas — ordenar em vez de filtrar, ou marcar com um selo —
-estão em `specs/004-home-movie-rows/research.md` (R11), caso a decisão precise ser revista.
-
-**"Em cartaz" significa comprável, não "em exibição nos cinemas".** O TMDb tem uma lista chamada
-`now_playing`, e a trilha **não** vem dela: vem das sessões publicadas na plataforma. Num site de
-ingressos, uma faixa chamada "Em cartaz" que leva a filmes sem sessão à venda é promessa quebrada.
-As trilhas Em alta e Em breve, essas sim, vêm do TMDb — elas prometem descoberta, não compra.
-
-**A busca combina debounce, `AbortController` e uma guarda por número de sequência.** Os dois
-primeiros não bastam: uma resposta já decodificada pode chegar depois de uma mais nova, e a lista
-passaria a mostrar o resultado de um termo já apagado. A guarda por sequência é o que fecha essa
-janela.
-
-**A tipografia é Archivo, não Inter, Roboto ou a fonte do sistema.** Archivo é fonte variável com
-eixo de largura, o que significa que o título do filme sai expandido e o corpo sai normal **do
-mesmo arquivo** — não há duas famílias a casar, e a coerência é estrutural em vez de fruto de bom
-gosto. O corte expandido evoca cartaz de mostra de cinema, que é o oposto do genérico de
-streaming. Licença **SIL Open Font License**: uso comercial, modificação e redistribuição
-embutida, sem exigir atribuição na interface — a mais fácil de defender num repositório público.
-
-A fonte é baixada em tempo de build e servida pelo próprio domínio, sem requisição a terceiro em
-tempo de visita. É o mesmo raciocínio que mantém o TMDb fora do caminho de leitura, aplicado a
-fontes. O fallback ajustado por métrica é o que impede o texto de saltar quando ela chega.
-
-**O ritmo vertical tem dois níveis, e a diferença é o ponto.** O respiro entre o painel de
-destaques e a primeira trilha é maior que entre trilhas consecutivas. Antes os dois eram o mesmo
-valor, e era por isso que a home lia como lista uniforme em vez de página com hierarquia.
-
-**Três gestos de movimento, e só três**: elevação do cartaz, transição do painel, deslocamento da
-trilha. Retorno de pressão e brilho de carregamento são categorias distintas, com justificativa
-própria. Todo movimento anima apenas `transform` — a barra do indicador do carrossel usa `scaleX`
-em vez de animar `width`, e o brilho do esqueleto atravessa por `transform` em vez de repintar a
-área a cada quadro.
-
-**O cookie de sessão é emitido pelo Next, não repassado do Django.** Repassar o `Set-Cookie` de
-origem faria o `Domain` e o `Path` dependerem de como o Django enxerga o host, divergindo entre
-desenvolvimento e deploy. Emitindo aqui, o navegador enxerga uma origem só — e aí o `SameSite=Lax`
-vira defesa real contra requisição forjada, em vez de exigir propagar o par
-`csrftoken`/`X-CSRFToken` através do proxy, que é onde esse arranjo costuma quebrar em silêncio.
-A sessão continua sendo do Django: hash de senha, invalidação no logout e prazo de validade são
-dele.
-
-**As rotas de reserva usam uma `SessionAuthentication` que não exige CSRF.** Parece o atalho que
-abre um buraco, e é o contrário: a proteção continua onde ela funciona. O navegador nunca chama o
-Django direto — ele chama o Next, na mesma origem, e o Next repassa o cookie numa requisição
-servidor-a-servidor, que não carrega credencial ambiente de navegador nenhuma. Exigir
-`X-CSRFToken` nesse salto não protege contra site de terceiro; só quebra o proxy. É a mesma
-decisão que o login já tinha tomado com `csrf_exempt`, agora explícita em
-`apps/accounts/authentication.py`. O que defende contra requisição forjada é o cookie
-`httpOnly` + `SameSite=Lax` emitido pelo próprio Next.
-
-**As três recusas de entrada produzem a mesma frase.** Usuário inexistente, senha errada e conta
-inativa respondem "Usuário ou senha incorretos.". Não foi preciso unificar nada à mão: o
-`authenticate()` do Django devolve `None` nos três casos, e os caminhos convergem sozinhos. É mais
-seguro assim — a versão manual é exatamente onde esse requisito vaza depois, quando alguém
-acrescenta um `if not user` com texto diferente e a enumeração de contas volta.
-
-**O token do link de compartilhamento fica em texto claro no banco.** O hábito correto é guardar
-segredo ao portador em hash, como se faz com senha e chave de API. Aqui a escolha é outra, e é
-deliberada.
-
-O motivo é de produto: o dono precisa **reencontrar e recopiar** o link ativo depois — abrir o
-ingresso noutro dia e mandar de novo para quem vai com ele. Com hash, o token existiria só no
-instante da criação: quem fechasse a aba perderia o link e teria de revogar e gerar outro. "Meu
-link" deixaria de ser algo que se tem para virar algo que se recebe uma vez.
-
-**O que se perde, dito sem eufemismo:** um vazamento do banco entrega links utilizáveis contra o
-servidor vivo, e a página compartilhada renderiza QR válido para eles. **O que não se perde:** a
-`TICKET_SIGNING_KEY` não está no banco, então um dump sozinho **não** permite forjar código nenhum
-— o alcance se limita aos ingressos que já têm link ativo, e o dono revoga.
-
-As mitigações que entraram junto: 256 bits de entropia (adivinhar é inviável), revogação imediata e
-definitiva, o token nunca aparece em resposta que não seja a do próprio dono, e a página pública
-declara `noindex` e `no-referrer` — o endereço **é** a credencial, e sem `no-referrer` ele vazaria
-no cabeçalho `Referer` de qualquer navegação a partir dali.
-
-Se a troca não se sustentar numa revisão, o caminho é mudar o requisito de recopiar o link — não
-guardar hash em silêncio e deixar o botão de copiar quebrado. Registrado em
-`specs/009-my-tickets-sharing/plan.md`, seção Complexity Tracking.
-
----
-
-## Limitações conhecidas
-
-**A composição da primeira dobra ainda é convencional para o gênero.** A feature de identidade
-entregou cor, tipografia de marca e logo, e a checagem anti-slop passou — mas com uma ressalva
-registrada: arte em tela cheia, título grande à esquerda, sinopse curta, dois botões e trilha abaixo
-é o arranjo de qualquer catálogo de streaming. A 012 recomôs filme, assentos e pagamento e **deixou
-a home intocada de propósito**. Está registrado como achado em
-`specs/011-marca-sem-laranja/contracts/anti-slop-review.md`.
-
-**A leitura do QR por um leitor de terceiro é verificada à mão.** O requisito é que um aplicativo
-leitor de QR decodifique o código da tela a 320px de largura. Automatizar isso exigiria uma
-biblioteca nativa de decodificação (`zbar` e afins) trazida ao projeto só para essa asserção.
-
-O que os testes automatizados cobrem no lugar: o QR é SVG vetorial (não pixeliza), renderiza com no
-mínimo 128px de lado a 320px de viewport, mantém o fundo claro do token `--cor-fundo-qr` — leitor
-precisa do contraste, e é por isso que essa superfície não segue o tema escuro —, e o código em
-texto está presente, inteiro e igual ao conteúdo assinado. A leitura em si está no percurso 3 do
-`specs/009-my-tickets-sharing/quickstart.md`, com celular.
-
-**O link de compartilhamento não expira por tempo.** Ele vale até ser revogado. Um prazo criaria um
-segundo motivo de "este link não funciona" para o avaliador distinguir do primeiro, sem substituir
-a revogação — que precisa existir de qualquer jeito, e é imediata.
-
-**Não há contador de aberturas do link.** Contar seria telemetria sobre quem recebeu o ingresso, e
-a feature existe justamente para que essa pessoa não precise se identificar.
-
-**Compartilhar não transfere titularidade.** O ingresso continua pertencendo a quem comprou; o link
-só exibe. Revenda entre usuários está explicitamente fora de escopo pelo Princípio I.
-
-**Não há criação de conta nem recuperação de senha.** As quatro contas do seed são as únicas. O
-desafio não pede auto-cadastro e exclui recuperação de senha explicitamente.
-
-**O limite de tentativas vive em cache local.** Reiniciar o back-end zera os bloqueios. Aceitável
-no escopo de avaliação; num deploy real o cache seria compartilhado entre instâncias.
-
-**Não há seletor de localidade**, embora tenha sido pedido. O domínio não representa cidade nem
-cinema — uma sala existe sem lugar associado —, então o seletor não teria o que filtrar. Ele volta
-quando houver o conceito de praça no modelo. Registrado em
-`specs/002-site-header-navigation/spec.md`.
-
-**O "local" do evento é a sala, e isso é uma escolha de recorte.** O desafio pede data, local e
-preço na navegação. Data e preço aparecem na grade de horários; o local aparece como **nome da
-sala**, que é o cabeçalho sob o qual os horários se agrupam.
-
-A plataforma modela **um cinema**, não uma rede. Num modelo de um cinema só, um campo "local" na
-sessão teria o mesmo valor em todas as linhas do banco — informação que não distingue nada é ruído,
-e cobrá-la do organizador no formulário seria pedir digitação para produzir uma constante. O local
-vira campo de verdade junto com o conceito de praça, e aí ele **filtra**: é a mesma feature do
-seletor de localidade acima, não outra.
-
-**A leitura do QR pela câmera é verificada à mão.** Apontar uma câmera para um código real exige
-hardware. O automatizado cobre o resto do caminho: o mesmo código, entregue por digitação, produz o
-mesmo desfecho pelo mesmo caminho de servidor, e o percurso ponta a ponta da portaria roda inteiro
-pela via digitada. A leitura em si está no percurso 5 do
-`specs/010-gate-validation/quickstart.md`.
-
-**A câmera da portaria só funciona em contexto seguro.** `getUserMedia` exige `https` ou
-`localhost`. Abrindo `http://localhost:5003/portaria` na própria máquina, a câmera funciona. Abrindo
-**pelo IP da rede local** — que é o gesto natural para testar com o celular — ela **não** funciona, e
-nenhuma configuração da aplicação muda isso.
-
-O que torna isso aceitável em vez de um buraco: a constitution já exige que a digitação manual esteja
-"sempre disponível". A exigência que parecia redundante é justamente a que mantém a portaria
-funcionando no cenário mais provável de demonstração. O campo de digitação fica visível o tempo todo,
-lado a lado com a câmera — nunca escondido atrás da falha dela.
-
-**O cliente não vê o estado de uso do ingresso.** O campo existe no modelo desde a feature da
-portaria, mas "Meus ingressos" e a página compartilhada continuam exatamente como a feature anterior
-as entregou. Exibir "utilizado" ao cliente é decisão de produto que não era preciso tomar para fechar
-o fluxo — e a página compartilhada é **pública**, então o campo lá teria consequência real.
-`test_share_link_leakage.py` lista o campo entre os proibidos.
-
-**Não há registro de qual operador validou.** Seria auditoria, e nenhum dos quatro desfechos depende
-disso. Contador de leituras e telemetria também estão fora: contar quantas vezes um link foi aberto é
-informação sobre quem recebeu o ingresso.
-
-**Não há validação offline.** Validar sem rede exigiria decidir o uso no aparelho e reconciliar
-depois — e reconciliação é exatamente onde a validação única se perde.
-— mesma disciplina que fez a 007 criar a ocupação de assento com sua constraint na mesma migração,
-e a 008 criar pagamento e emissão na mesma transação. Exibir agora um selo que nada escreve seria
-tela pela metade, que o Princípio V proíbe.
-
-**Não há cota de meia-entrada.** A lei brasileira limita a meia a 40% dos lugares; este sistema não
-implementa a cota. Implementá-la exigiria disponibilidade **por tipo** dentro da mesma sessão, com
-corrida e constraint próprias — uma feature do tamanho da 007. Está registrado como fora de escopo
-em `specs/014-cartao-de-sessao-e-meia-entrada/spec.md`, e não como esquecimento.
-
-**A meia não pergunta o motivo** (estudante, idoso, professor) e não coleta documento. Perguntar
-exigiria guardar categoria de documento, que é dado pessoal sem contrapartida nesta entrega. A
-conferência é humana e acontece na porta — é assim no cinema real, e é por isso que o tipo aparece
-no desfecho da portaria.
-
-**A prévia de assentos é um retrato, não uma transmissão.** O painel mostra o estado do instante em
-que abriu e não se atualiza sozinho. Ocupação em tempo real continua sendo item separado. A verdade
-permanece sendo a reserva: quem seguir para o mapa e tentar um lugar já vendido recebe a recusa que
-a 007 já dava.
-
-**A câmera e o `<dialog>`**: o ambiente de teste (jsdom 25) não implementa `<dialog>`, então a
-sobreposição guarda as chamadas de `showModal`/`close`. No navegador o caminho nativo é o que roda;
-o guarda só evita que o componente estoure onde a API não existe.
-
-**O ingresso emitido não pode ser cancelado nem estornado.** `paga` é estado terminal nesta etapa.
-Cancelamento com devolução ao estoque está listado na constitution como item posterior ao
-fechamento do fluxo.
-
-**Lugar pago não volta ao estoque, nem depois de o prazo original vencer.** É o comportamento
-correto — o lugar está vendido —, mas tem uma consequência prática na demonstração: percorrer o
-fluxo de compra várias vezes esgota a sessão usada. Para voltar ao cenário conhecido, rode
-`docker compose exec backend python manage.py seed_demo` de novo.
-
-**A expiração da reserva não é demonstrável ao vivo.** O prazo é fixo em dez minutos e não é lido
-do ambiente — um prazo configurável viraria "dois segundos" na demonstração e a garantia deixaria
-de ser a mesma que roda em produção. Esperar dez minutos parado também não é demonstração. Para
-ver o comportamento, force o vencimento no banco seguindo
-`specs/007-seat-selection/quickstart.md`; quem **prova** o comportamento são
-`test_reserva_vencida_aparece_livre_no_mapa` e `test_outro_cliente_reserva_lugares_vencidos`, em
-`backend/tests/test_reservation_api.py`.
-
-**`/filmes/{slug-inexistente}` responde HTTP 200 em vez de 404.** A página correta — "Filme não
-encontrado" — é exibida, mas o Next.js não consegue trocar o status depois que a renderização
-dinâmica começou a ser transmitida. Verificado também no build de produção, então não é artefato
-do modo de desenvolvimento. Afeta rastreadores, não o usuário.
-
-**Os testes ponta a ponta não rodam dentro do contêiner.** A imagem do front-end é Alpine (musl) e
-os navegadores do Playwright são compilados para glibc. Rode a partir do host, com a aplicação no
-ar: `cd frontend && npm install && npx playwright install chromium && npx playwright test`.
-
-**Um teste e2e da feature 001 falha de forma intermitente** —
-`highlights.spec.ts › descobre um filme, assiste ao trailer e chega às sessões`. O teste usa
-`.first()` para achar o botão "Ver ingressos", que pega sempre o painel 0; se o carrossel
-rotacionar durante o passo do trailer, esse painel sai da viewport e o clique falha. É falha do
-teste, não do produto: verificado que ela ocorre igualmente com o cabeçalho removido. O ajuste é
-mirar o painel ativo em vez do primeiro.
+**A leitura do QR por um aplicativo de terceiro é verificada à mão** (celular apontado para a
+tela). Os testes automatizados cobrem que o QR é SVG, tem contraste de fundo claro e que o
+código em texto é o mesmo conteúdo assinado.
 
 ---
 
 ## Uso de IA
 
-Este projeto foi desenvolvido com **duas ferramentas**, num fluxo de spec-driven development. Quem
-fez o quê está no próprio histórico, no trailer `Co-Authored-By` de cada commit — 144 do Claude
-Code, 29 do Cursor, e dá para conferir com:
+O desafio pede para contar as ferramentas, em que partes entraram, e o que foi feito sem
+IA. Isso não é disclaim; é o rastro de como o projeto foi conduzido. A frase que importa
+está na constitution: *"o problema não é a IA ter feito, é ninguém ter escolhido nada."*
+
+Este projeto foi escrito **spec-driven**. Nenhuma feature entrou no código sem uma
+especificação, um plano e uma lista de tarefas. Esses artefatos estão versionados no
+repositório — não foram descartados depois que o código compilou.
+
+A IA redigiu e implementou. As decisões foram minhas. Cada saída foi revisada por mim
+contra a spec e contra a constitution **antes** de entrar no Git.
+
+### Ferramentas
+
+| Ferramenta | Onde entrou |
+|---|---|
+| **[Spec Kit](https://github.com/github/spec-kit)** | O método. Constitution, `/speckit-specify`, `/speckit-plan`, `/speckit-tasks`, `/speckit-implement`. Produziu a pasta [`specs/`](./specs/) e [`.specify/`](./.specify/). |
+| **Claude Code** (Anthropic, Claude Opus) | A maior parte do fluxo Spec Kit, o back-end (modelos, serviços, serializers, views, comandos), autenticação, pagamento, portaria, painel do organizador (013), meia-entrada (014) e a maior parte dos testes. |
+| **Cursor** | Identidade de marca (011), telas de compra (012), a camada de front-end das reservas (007), o deploy no Render, ajustes de vitrine e este README. |
+
+Quem fez o quê está no próprio histórico, no trailer `Co-Authored-By` de cada commit.
+Conferir:
 
 ```bash
 git log --format="%(trailers:key=Co-Authored-By,valueonly)" | sort | uniq -c
 ```
 
-**Claude Code (Anthropic)** — o fluxo Spec Kit inteiro (`specs/`, `.specify/`), o back-end desde os
-modelos até a portaria, a autenticação, o painel do organizador (013) e a maior parte dos testes.
+Hoje: da ordem de 160 commits com Claude Code e 30 com Cursor, além do commit inicial do
+template do Spec Kit. Não houve um commit gigante no último dia.
 
-**Cursor** — as features 011 (identidade de marca) e 012 (telas de compra), a camada de front-end
-das reservas na 007, o deploy no Render e os ajustes de vitrine.
+Não usei BMAD, PRD separado nem gerador de tela colado no enunciado do desafio. O equivalente
+ao PRD é a constitution + as 14 specs.
 
-**Com IA** — redação dos specs, planos e listas de tarefas em `specs/`; implementação do back-end
-(modelos, seletores, serializers, views, comandos de sincronização e seed) e do front-end
-(carrossel, página de filme, cabeçalho e busca); redação dos testes; este README.
+### Como conduzi a ferramenta
 
-**Sem IA** — a definição do domínio e do escopo; a escolha da stack; as decisões de produto que
-aparecem como "Decisões que podem estranhar" acima; a decisão de tirar o seletor de localidade do
-escopo e de deixar login para uma feature própria; e a revisão de cada saída contra a constitution
-antes do commit.
+A ordem, em cada uma das 14 features, foi a mesma. A ferramenta **não** recebia "faça um
+sistema de ingressos". Recebia um recorte.
 
-**Na feature de identidade (011)**, vale detalhar porque "escolher a cor" soa como o tipo de coisa
-que uma IA faz mal:
+1. **Eu definia o recorte** — o que entra, o que fica congelado, o que a constitution
+   proíbe reabrir. Isso ia para `/speckit-specify` como enunciado curto, muitas vezes com
+   captura de tela ou com a frase da feature anterior que tinha deixado um buraco.
+2. **A IA redigia spec, pesquisa, plano e tarefas.** Eu lia. Recusava o que dilatava o
+   escopo. Emendava fronteiras. Só então autorizava `/speckit-implement`.
+3. **A IA escrevia o código e os testes.** Eu revisava o diff contra a spec e contra os
+   sete princípios. Trabalho que desfazia uma decisão minha era revertido — inclusive
+   código que a própria feature tinha acabado de produzir.
+4. **O rastro ficou no Git.** Spec, plano, pesquisa, contratos, checklist e quickstart de
+   cada feature estão em `specs/00N-…/`. O contexto que a ferramenta lia a cada sessão está
+   em [`CLAUDE.md`](./CLAUDE.md) (bloco gerido pelo Spec Kit) e na constitution.
 
-- **Com IA** — a medição (contraste WCAG, ΔE em CIELAB) que aplicou as restrições e eliminou os
-  candidatos; o teste que congela essas medidas; o desenho da marca em SVG; a redação.
-- **Sem IA** — o pedido de trocar o laranja e as proibições anti-slop, que vieram do autor; e o
-  julgamento final da checagem anti-slop, que é humano por definição — inclusive a ressalva
-  registrada lá de que a **composição** da primeira dobra ainda é convencional para o gênero, e que
-  a identidade hoje é carregada pela paleta e pela tipografia, não pelo layout.
+A constitution prevalece sobre a sugestão da ferramenta. Está escrito nela: produzir código
+não autoriza ignorar os princípios; o output deve ser revisado contra ela antes do commit.
+Isso não é ornamentação — foi o que impediu, por exemplo, a 013 de criar coluna nova e a
+014 de abrir um segundo caminho de reserva.
 
-**Na feature das telas de compra (012)**:
+### Artefatos versionados
 
-- **Com IA** — agrupamento de sessões no cliente, campo `trailers[]` aditivo, ilha de abas, layout
-  do mapa em duas colunas, variante `objeto` do ingresso, testes de apresentação e de contrato.
-- **Sem IA** — o recorte (três telas, catálogo congelado), a proibição de afrouxar o e2e da 007, e
-  a decisão de não unificar o cartão de ingresso com meus ingressos e a página pública.
+| Artefato | Onde está | Para que serve |
+|---|---|---|
+| Constitution | [`.specify/memory/constitution.md`](./.specify/memory/constitution.md) | As regras que a ferramenta foi obrigada a obedecer. Sete princípios, stack, o que está fora de escopo, portões de qualidade. |
+| Spec, plano, pesquisa, tarefas, contratos, checklist e quickstart | [`specs/001`](./specs/001-movie-highlights-carousel/) … [`specs/014`](./specs/014-cartao-de-sessao-e-meia-entrada/) | Uma pasta por feature. A pesquisa registra a decisão, o motivo e o que foi **descartado**. |
+| Contexto da ferramenta | [`CLAUDE.md`](./CLAUDE.md) | O que o agente lia ao abrir a sessão: feature atual, o que já estava fechado, as fronteiras que não podia cruzar. |
+| Histórico | `git log` | Commits incrementais, mensagem descritiva, `Co-Authored-By` da ferramenta daquela fatia. |
 
-**Na feature do painel do organizador (013)**:
+A pasta `specs/` é a evidência de que a ferramenta não escolheu sozinha. Quem avalia pode
+abrir qualquer `research.md` e ver a alternativa que foi recusada, não só a que entrou.
 
-- **Com IA** — a grade em uma consulta, a busca de filme no TMDb pelo back-end, o formulário de
-  programar, a extração da geometria da sala para `services/salas.py`, e os testes de permissão, de
-  fronteira e de concorrência.
-- **Sem IA** — a decisão de **não criar coluna nenhuma** (o painel move para uma tela o que o seed
-  já fazia, e campo novo teria sido escopo escorregando); a de o organizador **não** ser confinado
-  como a portaria, embora pouse numa tela própria; e a de cancelar sessão **parar de vender e mais
-  nada** — sem estorno, sem apagar ingresso, sem devolver lugar pago.
+### O que foi feito sem IA
 
-**Na feature do cartão de sessão e meia-entrada (014)**:
+- O domínio (cinema, não show genérico) e o recorte do desafio: fluxo ponta a ponta fechado
+  **antes** de qualquer profundidade.
+- A stack: Django + Next.js + PostgreSQL, depois de descartar Nuxt — o PDF exige React.
+- A constitution inteira. A IA não inventou os sete princípios; ela foi obrigada a
+  obedecê-los. A ordem de construção (auth → compra → ingresso → portaria → só então o
+  painel) também.
+- Mapa de assentos em vez de venda por quantidade.
+- Pagamento simulado com cartões **determinísticos**, não sorteio — para os dois caminhos
+  serem exercitáveis de propósito.
+- A portaria com exatamente quatro desfechos. O tipo do ingresso (inteira/meia) informa o
+  operador; nunca é condição de entrada.
+- O organizador pousa no painel mas **não** é confinado como a portaria: ele precisa ver o
+  catálogo público para conferir que a sessão que publicou apareceu à venda.
+- A meia-entrada ser **comprável**, não só informativa. Tomada depois de ver o custo das
+  duas opções lado a lado na spec 014.
+- O painel de assentos da grade ser **somente leitura**. Selecionar continua no mapa da
+  007; um segundo caminho de reserva duplicaria a regra que `UNIQUE(sessão, assento)`
+  protege.
+- Tirar o preço do chip de horário e do topo da página depois de ver a grade montada. A
+  informação estava repetida e a grade virava um mural de números. Essa decisão **desfez**
+  trabalho da IA feito horas antes; está no histórico, não escondida.
+- A cor da marca. As restrições (não colidir com cor de estado, contraste, anti-slop)
+  eliminaram os outros candidatos; a medição foi da IA; o julgamento de adotar o que
+  sobrou — e a ressalva de que a composição da home ainda é convencional — foram meus.
+  [`specs/011-marca-sem-laranja/research.md`](./specs/011-marca-sem-laranja/research.md), R1.
+- Não criar coluna nenhuma no painel do organizador (013). Não haver seletor de localidade.
+  Não haver auto-cadastro. Não haver cota legal de meia. Cancelar sessão = parar de vender,
+  e mais nada.
+- A revisão de cada spec, de cada diff e da checagem anti-slop. Interface autoral é
+  princípio da constitution (V) e é humano por definição.
 
-- **Com IA** — a spec, o plano e os nove pontos de pesquisa; o cartão e os dois painéis; a
-  sobreposição com devolução de foco; a migração escrita à mão com o passo de dados; o serviço de
-  preços e a substituição das três cópias da regra pelo valor gravado; os testes, incluindo a
-  extensão do teste de concorrência com tipos mistos.
-- **Sem IA** — a captura de tela que originou a feature e a escolha de qual visual adotar; a decisão
-  de que a **meia seria comprável** e não apenas informativa, tomada depois de ver o custo das duas
-  opções lado a lado; a decisão de que o painel de assentos seria **somente leitura**; e a decisão
-  de **remover o preço do chip de horário e do topo da página** depois de ver a grade montada — o
-  preço tinha sido acrescentado na mesma manhã, e foi retirado por deixar a grade parecendo um mural
-  de números.
+### O que a IA fez
 
-Vale registrar que a terceira decisão **desfez** trabalho feito horas antes, e isso está no histórico
-de commits em vez de escondido: ver a tela pronta é o que revelou que a informação estava repetida.
+Redação dos artefatos em `specs/` a partir do recorte que eu dei. Implementação de back-end
+e front-end. Testes — inclusive as provas de concorrência que **falham** se a garantia do
+banco for removida. Medição de contraste e ΔE na 011. O deploy no Render (Cursor). Este
+README, a partir das seções que o desafio pede.
 
-A cor, em particular, **não foi uma escolha estética**: as restrições eliminaram todos os candidatos
-menos um. Isso é verificável em `specs/011-marca-sem-laranja/research.md`, R1.
+### Decisões que parecem estranhas numa leitura rápida
 
-O histórico de commits e os artefatos em `specs/` são o rastro dessas decisões.
+O desafio avisa que muita escolha se justifica quando se conta como se chegou nela. Estas
+são as que mais pedem esse contexto. Nenhuma foi "a IA preferiu assim".
+
+**A recusa de pagamento não libera o assento na hora.** O Princípio II diz "pagamento
+recusado DEVE liberar o assento". Depois da recusa o assento **continua com dono** (a mesma
+reserva) e **continua com prazo** (os dez minutos originais). Nenhum dos dois defeitos que
+o princípio previne acontece — assento preso sem dono, ou sem prazo. Liberar na recusa
+faria quem digitou o cartão errado perder o lugar entre uma tentativa e a seguinte. A
+leitura está registrada em
+[`specs/008-payment-ticket-issuance/spec.md`](./specs/008-payment-ticket-issuance/spec.md),
+não implementada em silêncio. Se não se sustentar em revisão, o caminho é emendar a
+constitution.
+
+**O código do QR é assinado, não cifrado, e não é guardado em coluna.** Ele é derivado do
+ingresso quando pedido. Guardá-lo criaria a chance de a coluna e a chave discordarem depois
+de uma rotação. A assinatura impede forjar; o sigilo do conteúdo não é o que protege a
+catraca. O conteúdo carrega a identidade da sessão para a portaria conseguir o desfecho
+"sessão errada" — sem isso, um ingresso legítimo na porta errada seria indistinguível de um
+código inventado.
+
+**O token do link de compartilhamento fica em texto claro no banco.** O hábito correto é
+guardar segredo ao portador em hash. Aqui o dono precisa **reencontrar e recopiar** o link
+depois. Com hash, o token existiria só no instante da criação: fechar a aba perderia o
+link. O que se perde num dump do banco são os links já ativos — não a chave de assinatura,
+então um dump sozinho **não** permite forjar QR. Mitigações: 256 bits, revogação definitiva,
+`noindex`/`no-referrer`. Registrado em
+[`specs/009-my-tickets-sharing/plan.md`](./specs/009-my-tickets-sharing/plan.md).
+
+**O cookie de sessão é emitido pelo Next, não repassado do Django.** Repassar o `Set-Cookie`
+de origem faria `Domain` e `Path` dependerem de como o Django enxerga o host, divergindo
+entre Docker e Render. Emitindo no Next, o navegador enxerga uma origem só e o
+`SameSite=Lax` vira defesa real. A sessão continua sendo do Django: hash de senha,
+invalidação e prazo são dele.
+
+**"Em cartaz" significa comprável, não "em exibição nos cinemas".** O TMDb tem `now_playing`,
+e a trilha **não** vem dela: vem das sessões publicadas na plataforma. Num site de
+ingressos, uma faixa com esse nome que leva a filme sem sessão à venda é promessa quebrada.
+"Em alta" só mostra filme com sessão marcada pelo mesmo motivo. As alternativas (ordenar em
+vez de filtrar, selo "indisponível") estão em
+[`specs/004-home-movie-rows/research.md`](./specs/004-home-movie-rows/research.md) (R11).
+
+**A trilha usa `scroll-snap` nativo; o carrossel foi escrito à mão.** Parece incoerência.
+O carrossel precisa fechar ciclo e rotacionar sozinho pausando em três situações;
+`scroll-snap` exigiria clonar slides. A trilha não faz nenhuma das duas coisas, e o CSS
+entrega gesto de toque, inércia e teclado de graça. Repetir o padrão do carrossel ali
+seria coerência aparente pagando em código. R1 da mesma pesquisa.
+
+**`seed_demo` recusa da segunda execução em diante.** Até a 013, toda sessão vinha do
+comando e apagar tudo era correto. Agora o organizador também produz a grade, e o sistema
+**não registra a origem** de cada sessão (criar essa coluna na 013 teria sido escopo
+escorregando). Sem marcador, "existe grade" significa existe qualquer sessão, e o comando
+pede `--force` em vez de apagar trabalho alheio em silêncio.
+
+**A portaria não alcança o catálogo; o organizador alcança.** Não é assimetria de segurança
+— o catálogo é público. É produto: a portaria tem uma tela só, e cair no carrossel de
+filmes seria cair no lugar errado. O organizador precisa da vitrine pública para conferir
+o que publicou. A autorização de verdade continua no servidor (`403` por papel).
+
+**A 011 trocou quatro valores e a home não mudou.** A disciplina de tokens da 006 fez a
+troca de cor caber num arquivo. A composição da primeira dobra (arte em tela cheia, título
+à esquerda, dois botões) é o arranjo de qualquer catálogo de streaming — registrado como
+achado da checagem anti-slop, não como entregável da 012. A 012 recompôs filme, assentos e
+pagamento e **deixou a home intocada de propósito**.
+
+Cada uma dessas escolhas tem a alternativa descartada escrita ao lado, na spec ou na
+pesquisa da feature. Abrir `specs/` e ler o `research.md` é ver o processo, não só o
+resultado.
