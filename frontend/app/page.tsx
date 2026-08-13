@@ -1,6 +1,7 @@
 import { fetchHighlights, fetchHomeRows } from "@/lib/api";
 import { HighlightsCarousel } from "@/components/highlights/HighlightsCarousel";
 import { MovieRow } from "@/components/rows/MovieRow";
+import { RecarregarAoAcordar } from "@/components/RecarregarAoAcordar";
 import destaques from "@/components/highlights/highlights.module.css";
 import trilhas from "@/components/rows/rows.module.css";
 
@@ -27,10 +28,11 @@ export default async function HomePage() {
           </h1>
           <p className={trilhas.avisoTexto}>
             {falhou
-              ? "O servidor não respondeu agora. Atualize a página em alguns instantes — a programação volta assim que o serviço for restabelecido."
+              ? "O servidor está acordando. A página atualiza sozinha em instantes."
               : "A programação da próxima semana ainda não foi publicada. Volte em breve para ver as estreias."}
           </p>
         </section>
+        {falhou && <RecarregarAoAcordar />}
       </main>
     );
   }

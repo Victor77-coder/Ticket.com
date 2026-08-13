@@ -89,6 +89,17 @@ async function pedir<T>(
       return { ok: true, data: undefined as T, status: 204 };
     }
 
+    // O Render, no plano free, responde 200 com HTML de "acordando" enquanto
+    // a API ainda não escuta. Tratar isso como JSON quebra a home na hora.
+    const tipo = response.headers.get("content-type") ?? "";
+    if (!tipo.includes("application/json")) {
+      return {
+        ok: false,
+        error: "O servidor está acordando.",
+        status: response.status,
+      };
+    }
+
     return { ok: true, data: (await response.json()) as T, status: response.status };
   } catch (error) {
     const abortou = error instanceof Error && error.name === "AbortError";
