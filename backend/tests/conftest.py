@@ -102,17 +102,38 @@ def make_reservation(db):
     chamam o serviço, nunca por esta fixture.
     """
 
-    def _make(screening, customer, seats_list, minutes_left=10):
+    def _make(screening, customer, seats_list, minutes_left=10, meias=()):
         from apps.screening.models import Reservation, ReservedSeat
+        from apps.screening.services import precos
 
         reserva = Reservation.objects.create(
             screening=screening,
             customer=customer,
             expires_at=timezone.now() + timedelta(minutes=minutes_left),
         )
+
+        # O valor é DERIVADO pelo mesmo serviço que o caminho real usa, e não
+        # escrito à mão: uma fixture que grava valor inventado esconderia
+        # divergência entre a regra de preço e o que os testes assumem.
+        pedidas = set(meias)
         ReservedSeat.objects.bulk_create(
             [
-                ReservedSeat(reservation=reserva, screening=screening, seat=s)
+                ReservedSeat(
+                    reservation=reserva,
+                    screening=screening,
+                    seat=s,
+                    ticket_type=(
+                        precos.TipoDeIngresso.MEIA
+                        if s.pk in pedidas
+                        else precos.TipoDeIngresso.INTEIRA
+                    ),
+                    unit_price=precos.valor_do_lugar(
+                        screening.price,
+                        precos.TipoDeIngresso.MEIA
+                        if s.pk in pedidas
+                        else precos.TipoDeIngresso.INTEIRA,
+                    ),
+                )
                 for s in seats_list
             ]
         )
@@ -138,11 +159,11 @@ def make_paid_reservation(make_reservation):
     `expires_at`, trata um lugar vendido como abandonado.
     """
 
-    def _make(screening, customer, seats_list, minutes_left=-1):
+    def _make(screening, customer, seats_list, minutes_left=-1, meias=()):
         from apps.screening.models import Reservation
 
         reserva = make_reservation(
-            screening, customer, seats_list, minutes_left=minutes_left
+            screening, customer, seats_list, minutes_left=minutes_left, meias=meias
         )
         reserva.status = Reservation.Status.PAID
         reserva.save(update_fields=["status"])
@@ -160,18 +181,19 @@ def make_tickets(make_paid_reservation):
     pode existir ingresso sem pagamento aprovado.
     """
 
-    def _make(screening, customer, seats_list, minutes_left=-1):
-        from decimal import Decimal
-
+    def _make(screening, customer, seats_list, minutes_left=-1, meias=()):
         from apps.screening.models import Payment, Ticket
+        from apps.screening.services import precos
 
         reserva = make_paid_reservation(
-            screening, customer, seats_list, minutes_left=minutes_left
+            screening, customer, seats_list, minutes_left=minutes_left, meias=meias
         )
         pagamento = Payment.objects.create(
             reservation=reserva,
             status=Payment.Status.APPROVED,
-            amount=Decimal(screening.price) * len(seats_list),
+            # Soma dos valores gravados, como o serviço faz — e não
+            # `preço × quantidade`, que deixaria de valer com tipos mistos.
+            amount=precos.total_da_reserva(reserva),
             card_last4="4242",
             card_brand="visa",
         )

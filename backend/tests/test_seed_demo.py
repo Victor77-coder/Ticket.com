@@ -346,7 +346,9 @@ def test_seed_refaz_o_cenario_mesmo_com_reserva_existente(catalogo):
         customer=get_user_model().objects.get(username="cliente1"),
         expires_at=timezone.now() + timedelta(minutes=10),
     )
-    ReservedSeat.objects.create(reservation=reserva, screening=sessao, seat=assento)
+    ReservedSeat.objects.create(
+        reservation=reserva, screening=sessao, seat=assento, unit_price=sessao.price
+    )
 
     # A partir da 013 o comando RECUSA apagar grade existente sem confirmação
     # explícita (FR-041). O que este teste protege — a ordem de remoção que os
@@ -389,7 +391,7 @@ def test_seed_refaz_o_cenario_mesmo_com_compra_concluida(catalogo):
         status=Reservation.Status.PAID,
     )
     ocupacao = ReservedSeat.objects.create(
-        reservation=reserva, screening=sessao, seat=assento
+        reservation=reserva, screening=sessao, seat=assento, unit_price=sessao.price
     )
     pagamento = Payment.objects.create(
         reservation=reserva,

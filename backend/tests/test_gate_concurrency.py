@@ -98,7 +98,7 @@ def cenario_isolado(django_db_setup, django_db_blocker):
             expires_at=timezone.now() + timezone.timedelta(minutes=10),
         )
         ocupacao = ReservedSeat.objects.create(
-            reservation=reserva, screening=sessao, seat=assento
+            reservation=reserva, screening=sessao, seat=assento, unit_price=sessao.price
         )
         pagamento = Payment.objects.create(
             reservation=reserva,
