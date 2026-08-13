@@ -97,15 +97,18 @@
   border-color: var(--cor-destaque-forte);
 }
 
+/* Quando o estado fala por símbolo, o número sai do caminho. O rótulo
+ * acessível continua com fileira e número. */
+.selecionado .numero,
+.tomado .numero,
+.acessibilidade .numero {
+  opacity: 0;
+}
+
 /* Estado 2 — SELECIONADO: preenchido + marca de conferido. */
 .selecionado {
   background: var(--cor-destaque);
   border-color: var(--cor-destaque);
-}
-
-.selecionado .numero {
-  color: var(--cor-sobre-destaque);
-  font-weight: var(--peso-forte);
 }
 
 .selecionado::after {
@@ -123,7 +126,6 @@
     82% 34%,
     43% 76%
   );
-  opacity: 0.85;
 }
 
 /* Estado 3 — TOMADO: preenchido escuro + traço diagonal. */
@@ -131,10 +133,6 @@
   background: var(--cor-assento-tomado);
   border-color: var(--cor-assento-tomado);
   cursor: not-allowed;
-}
-
-.tomado .numero {
-  opacity: 0;
 }
 
 .tomado::after {
@@ -151,10 +149,6 @@
   border-style: dashed;
   border-color: var(--cor-texto-suave);
   cursor: not-allowed;
-}
-
-.acessibilidade .numero {
-  opacity: 0;
 }
 
 .acessibilidade::after {
