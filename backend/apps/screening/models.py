@@ -35,6 +35,8 @@ from django.db.models import Q
 from django.db.models.functions import Now
 from django.utils import timezone
 
+from apps.screening.services import precos
+
 
 class Room(models.Model):
     name = models.CharField(max_length=60)
@@ -246,6 +248,41 @@ class ReservedSeat(models.Model):
     )
     seat = models.ForeignKey(Seat, related_name="occupations", on_delete=models.PROTECT)
 
+    # --- O que a 014 acrescentou, e por que são DUAS colunas -----------------
+    #
+    # À primeira vista uma basta: o tipo determina o valor, dado o preço da
+    # sessão. Não basta, e as duas servem a leitores diferentes.
+    #
+    #   `ticket_type` é o que a PORTARIA confere — o operador pede documento de
+    #   quem entra com meia. Inferi-lo comparando `unit_price` com
+    #   `screening.price` faria a catraca depender de aritmética decimal, e numa
+    #   sessão de preço zero inteira e meia ficariam indistinguíveis.
+    #
+    #   `unit_price` é o que a COMPRA soma. Derivá-lo na leitura significaria que
+    #   mudar o preço da sessão reescreve o total de uma compra já paga. Hoje a
+    #   013 impede editar sessão publicada, mas então a proteção estaria na regra
+    #   de outra feature, não aqui.
+    #
+    # NENHUMA `CHECK` amarra o valor ao preço da sessão. A tentação é escrever
+    # "meia DEVE ser metade da inteira", e ela congelaria a regra de preço no
+    # esquema: preço por assento ou promoção de terça passariam a exigir
+    # migração. A garantia de que o valor gravado está certo é do serviço
+    # (`services/precos.py`, dono único) e dos testes — é a mesma forma da 010,
+    # onde nem todo invariante é expressável como índice.
+    #
+    # As duas nascem no `bulk_create` de `services/reservas.py` e NUNCA são
+    # editadas: trocar o tipo depois mudaria o valor devido de uma reserva com
+    # prazo correndo, ou o valor de uma cobrança fechada.
+    ticket_type = models.CharField(
+        max_length=8,
+        choices=precos.TipoDeIngresso.choices,
+        # Padrão NO BANCO, e não só no serializer: é o que faz "ninguém paga
+        # menos por omissão" valer para todo caminho de escrita, inclusive o
+        # `seed_demo` e o shell.
+        default=precos.TipoDeIngresso.INTEIRA,
+    )
+    unit_price = models.DecimalField(max_digits=8, decimal_places=2)
+
     class Meta:
         verbose_name = "assento reservado"
         verbose_name_plural = "assentos reservados"
@@ -301,9 +338,13 @@ class Payment(models.Model):
     decline_reason = models.CharField(
         max_length=32, choices=DeclineReason.choices, blank=True, default=""
     )
-    # Congelado no instante da cobrança, calculado pelo servidor a partir do
-    # preço da sessão e da quantidade de lugares. Valor vindo do cliente não é
-    # aceito em nenhuma forma, nem para conferência (FR-003).
+    # Congelado no instante da cobrança, calculado pelo servidor. Valor vindo do
+    # cliente não é aceito em nenhuma forma, nem para conferência (FR-003).
+    #
+    # A ORIGEM MUDOU NA 014: era `preço da sessão × quantidade de lugares`, e
+    # passou a ser a SOMA dos `unit_price` gravados em cada `ReservedSeat`. A
+    # multiplicação não sobrevive à meia-entrada — dois lugares da mesma sessão
+    # podem custar valores diferentes.
     amount = models.DecimalField(max_digits=8, decimal_places=2)
 
     # SÓ ISTO do cartão. Não há cobrança real, então guardar o número não tem
