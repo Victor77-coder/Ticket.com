@@ -83,18 +83,24 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # --- Banco de dados ---
-# No host o PostgreSQL é exposto em 5438; dentro da rede do Compose o serviço
-# `db` atende em 5432. POSTGRES_HOST/PORT são injetados pelo docker-compose.
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB"),
-        "USER": env("POSTGRES_USER"),
-        "PASSWORD": env("POSTGRES_PASSWORD"),
-        "HOST": env("POSTGRES_HOST", default="localhost"),
-        "PORT": env("POSTGRES_PORT", default=5438),
+# Compose injeta POSTGRES_*. O Render injeta DATABASE_URL. As duas formas
+# não podem ser exigidas ao mesmo tempo: o `from .base import *` do prod
+# avaliaria POSTGRES_DB antes de o prod.py ter chance de usar a URL.
+if env("DATABASE_URL", default=""):
+    DATABASES = {"default": env.db("DATABASE_URL")}
+else:
+    # No host o PostgreSQL é exposto em 5438; dentro da rede do Compose o
+    # serviço `db` atende em 5432. POSTGRES_HOST/PORT vêm do docker-compose.
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("POSTGRES_DB"),
+            "USER": env("POSTGRES_USER"),
+            "PASSWORD": env("POSTGRES_PASSWORD"),
+            "HOST": env("POSTGRES_HOST", default="localhost"),
+            "PORT": env("POSTGRES_PORT", default=5438),
+        }
     }
-}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

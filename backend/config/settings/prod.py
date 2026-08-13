@@ -13,16 +13,17 @@ from .base import *  # noqa: F403
 DEBUG = False
 
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])  # noqa: F405
-render_host = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
-if render_host and render_host not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append(render_host)
+for extra in (
+    os.environ.get("RENDER_EXTERNAL_HOSTNAME"),
+    "ticketcom-api",  # Host da rede interna (Next → http://ticketcom-api:10000)
+    ".onrender.com",
+):
+    if extra and extra not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(extra)
 
-DATABASES = {
-    "default": env.db("DATABASE_URL"),  # noqa: F405
-}
-DATABASES["default"]["CONN_MAX_AGE"] = 60
-DATABASES["default"].setdefault("OPTIONS", {})
-DATABASES["default"]["OPTIONS"].setdefault("sslmode", "require")
+DATABASES["default"]["CONN_MAX_AGE"] = 60  # noqa: F405
+DATABASES["default"].setdefault("OPTIONS", {})  # noqa: F405
+DATABASES["default"]["OPTIONS"].setdefault("sslmode", "require")  # noqa: F405
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 

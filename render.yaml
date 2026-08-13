@@ -64,8 +64,9 @@ services:
       # omitiria o TypeScript (devDependency) — o next.config.ts não carrega.
       - key: NODE_ENV
         value: production
-      # Rede interna do Render — o navegador nunca vê este endereço.
+      # URL pública: a rede interna não acorda serviço dormindo no plano free,
+      # e o Host `ticketcom-api` era recusado pelo ALLOWED_HOSTS.
       - key: API_BASE_URL
-        value: http://ticketcom-api:10000
+        value: https://ticketcom-api.onrender.com
       - key: API_TIMEOUT_MS
         value: "60000"
