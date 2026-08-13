@@ -119,18 +119,17 @@
 
 .trocar {
   font-size: var(--texto-sm);
-  font-weight: var(--peso-medio);
-  color: var(--cor-texto-suave);
-  border: 1px solid var(--cor-borda-forte);
+  font-weight: var(--peso-forte);
+  color: var(--cor-sobre-destaque);
+  background: var(--cor-destaque);
   border-radius: var(--raio-pilula);
   padding: var(--esp-2) var(--esp-4);
-  transition: color var(--transicao-rapida), background var(--transicao-rapida);
+  transition: background var(--transicao-rapida);
 }
 
 .trocar:hover,
 .trocar:focus-visible {
-  color: var(--cor-texto);
-  background: var(--cor-realce-sutil);
+  background: var(--cor-destaque-forte);
 }
 
 .entradas {
