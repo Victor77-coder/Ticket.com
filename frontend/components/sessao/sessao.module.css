@@ -1,0 +1,386 @@
+/* O cartão de sessão e as duas sobreposições.
+ *
+ * NENHUM VALOR SOLTO. Cor, espaço, raio, tipografia e duração vêm dos tokens da
+ * 006 (ritmo e escala) e da 011 (paleta magenta). `frontend/tests/tokens.test.ts`
+ * reprova respingo — inclusive vestígio de cor antiga.
+ *
+ * Os estilos de horário e sala moraram em `app/filmes/[slug]/filme.module.css`
+ * até a 014. Vieram para cá porque deixaram de ser da página: o cartão é
+ * componente, e a página só o compõe.
+ */
+
+/* --- O cartão --- */
+
+.cartao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  padding: var(--esp-4);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+}
+
+.cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+}
+
+.sala {
+  margin: 0;
+  font-size: var(--texto-md);
+  font-weight: var(--peso-forte);
+  color: var(--cor-texto);
+}
+
+.acoes {
+  display: flex;
+  gap: var(--esp-2);
+}
+
+/* A ação traz ÍCONE E TEXTO. Ícone sozinho não identifica ação — quem chega na
+   página não tem como saber que a poltrona significa "ver a lotação". */
+.acao {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+  padding: var(--esp-1) var(--esp-3);
+  border: 1px solid transparent;
+  border-radius: var(--raio-pilula);
+  background: none;
+  color: var(--cor-texto-suave);
+  font-family: inherit;
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  cursor: pointer;
+  transition: color var(--transicao-rapida), border-color var(--transicao-rapida);
+}
+
+.acao:hover {
+  color: var(--cor-texto);
+  border-color: var(--cor-borda-forte);
+}
+
+.acaoIcone {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+/* A régua entre o cabeçalho e os horários. Separa dois assuntos: onde é a
+   sessão e quando ela acontece. */
+.regua {
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background: var(--cor-borda);
+}
+
+/* --- Os horários --- */
+
+.horarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.horario {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.5rem;
+  padding: var(--esp-2) var(--esp-3);
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font-weight: var(--peso-medio);
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.horario:hover {
+  background: var(--cor-superficie-elevada);
+}
+
+/* Esgotado se distingue por FORMA e por PALAVRA, não por cor: borda tracejada
+   e o texto "Esgotada". Em escala de cinza continua legível. */
+.horarioEsgotado {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.5rem;
+  padding: var(--esp-2) var(--esp-3);
+  border: 1px dashed var(--cor-borda);
+  border-radius: var(--raio-md);
+  color: var(--cor-texto-fraco);
+  font-size: var(--texto-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.horarioHora {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+}
+
+/* --- A sobreposição --- */
+
+/* OPACA, e não `--cor-superficie-flutuante`. As superfícies translúcidas dos
+   tokens existem para flutuar sobre a ARTE DO FILME, onde uma superfície opaca
+   cortaria a imagem — o próprio comentário delas diz que não substituem
+   `--cor-superficie`. Um modal é o caso oposto: ele precisa apagar o que está
+   atrás, senão a grade de horários continua legível através do painel e as duas
+   camadas competem. */
+.sobreposicao {
+  width: min(34rem, calc(100vw - var(--esp-5)));
+  max-height: calc(100vh - var(--esp-6));
+  padding: 0;
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie-elevada);
+  box-shadow: var(--sombra-lg);
+  color: var(--cor-texto);
+}
+
+.sobreposicao::backdrop {
+  background: var(--veu-sobreposicao);
+}
+
+.sobreposicaoCabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  padding: var(--esp-4);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.sobreposicaoTitulo {
+  margin: 0;
+  font-size: var(--texto-md);
+  font-weight: var(--peso-forte);
+}
+
+.sobreposicaoSubtitulo {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.fechar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pilula);
+  background: none;
+  color: var(--cor-texto-suave);
+  font-family: inherit;
+  font-size: var(--texto-md);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fechar:hover {
+  color: var(--cor-texto);
+  border-color: var(--cor-borda-forte);
+}
+
+.sobreposicaoCorpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  padding: var(--esp-4);
+  overflow-y: auto;
+}
+
+/* --- O seletor de horário dentro dos painéis --- */
+
+.seletor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1);
+}
+
+.opcao {
+  padding: var(--esp-1) var(--esp-3);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pilula);
+  background: none;
+  color: var(--cor-texto-suave);
+  font-family: inherit;
+  font-size: var(--texto-sm);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.opcaoAtiva {
+  border-color: var(--cor-destaque);
+  color: var(--cor-texto);
+  font-weight: var(--peso-forte);
+}
+
+.horarioUnico {
+  margin: 0;
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- A tabela de preços --- */
+
+.tabelaDePrecos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  margin: 0;
+}
+
+.linhaDePreco {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  padding-bottom: var(--esp-2);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.linhaDePreco dt {
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+}
+
+.linhaDePreco dd {
+  margin: 0;
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-forte);
+  font-variant-numeric: tabular-nums;
+}
+
+.notaDePreco {
+  margin: 0;
+  color: var(--cor-texto-fraco);
+  font-size: var(--texto-xs);
+  line-height: var(--altura-linha-base);
+}
+
+/* --- A prévia da lotação --- */
+
+.tela {
+  margin: 0;
+  padding: var(--esp-1);
+  border-radius: var(--raio-sm);
+  background: var(--cor-realce-sutil);
+  color: var(--cor-texto-fraco);
+  font-size: var(--texto-xs);
+  letter-spacing: var(--espacamento-display);
+  text-align: center;
+}
+
+.salaDesenho {
+  display: flex;
+  flex-direction: column;
+  gap: var(--assento-espaco);
+  align-items: center;
+}
+
+.fileira {
+  display: flex;
+  gap: var(--assento-espaco);
+  align-items: center;
+}
+
+.fileiraLetra {
+  width: var(--assento-tamanho);
+  color: var(--cor-texto-fraco);
+  font-size: var(--texto-xs);
+  text-align: center;
+}
+
+/* Livre é VAZADO, ocupado é PREENCHIDO. A diferença é de forma antes de ser de
+   cor — em escala de cinza os dois continuam distinguíveis, que é o que o
+   Princípio V exige do mapa e vale igual para a prévia. */
+.lugarLivre {
+  width: var(--assento-tamanho);
+  height: var(--assento-tamanho);
+  flex-shrink: 0;
+  border: var(--assento-borda) solid var(--cor-assento-livre);
+  border-radius: var(--raio-sm);
+  background: none;
+}
+
+.lugarTomado {
+  border-color: var(--cor-assento-tomado);
+  background: var(--cor-assento-tomado);
+}
+
+.legenda {
+  display: flex;
+  gap: var(--esp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-xs);
+}
+
+.itemDaLegenda {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.contagem {
+  margin: 0;
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+}
+
+.contagem strong {
+  color: var(--cor-texto);
+  font-size: var(--texto-md);
+  font-variant-numeric: tabular-nums;
+}
+
+.seguir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--esp-2) var(--esp-4);
+  border-radius: var(--raio-pilula);
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+  font-weight: var(--peso-forte);
+  text-decoration: none;
+}
+
+.seguir:hover {
+  background: var(--cor-destaque-forte);
+}
+
+.aviso {
+  margin: 0;
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+}
+
+.avisoErro {
+  margin: 0;
+  padding: var(--esp-3);
+  border: 1px solid var(--cor-erro);
+  border-radius: var(--raio-md);
+  background: var(--cor-erro-fraca);
+  color: var(--cor-texto);
+  font-size: var(--texto-sm);
+}

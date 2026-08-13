@@ -105,6 +105,14 @@
   );
   --veu-painel-base: linear-gradient(to top, rgba(10, 10, 15, 0.95) 0%, transparent 55%);
 
+  /* Véu de sobreposição modal (014). DISTINTO dos véus acima, e a distinção é a
+   * razão de existir: aqueles são GRADIENTES que ficam transparentes de um
+   * lado, porque servem para deixar a arte do filme aparecer. Um modal precisa
+   * do oposto — cobertura UNIFORME, que apaga o que está atrás e deixa claro
+   * que a página não está mais recebendo cliques. Reusar `--veu-painel-base`
+   * aqui deixa metade da tela sem véu nenhum. */
+  --veu-sobreposicao: rgba(6, 6, 10, 0.78);
+
   /* Em tela estreita o texto ocupa a largura toda, então o véu precisa subir
    * em vez de vir da lateral. Vivia literal no media query do painel. */
   --veu-painel-estreito: linear-gradient(
