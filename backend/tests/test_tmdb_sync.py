@@ -8,6 +8,7 @@ import pytest
 
 from apps.catalog.models import Movie, Trailer
 from apps.catalog.services.tmdb_sync import (
+    ARTES_VITRINE,
     extract_certification_br,
     extract_videos,
     pick_primary_video,
@@ -206,6 +207,22 @@ def test_video_removido_do_tmdb_some_do_banco():
     sync_movie(_detail(videos={"results": []}))
 
     assert Trailer.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_arte_de_vitrine_substitui_backdrop_oficial_escuro():
+    """A Odisseia no carrossel usa outra still do TMDb, mais clara."""
+    tmdb_id = 1368337
+    movie = sync_movie(_detail(tmdb_id=tmdb_id, title="A Odisseia", backdrop_path="/oficial-escuro.jpg"))
+
+    assert movie.backdrop_path == ARTES_VITRINE[tmdb_id]["backdrop_path"]
+
+
+@pytest.mark.django_db
+def test_filme_sem_arte_de_vitrine_guarda_o_backdrop_oficial():
+    movie = sync_movie(_detail(tmdb_id=550, backdrop_path="/oficial.jpg"))
+
+    assert movie.backdrop_path == "/oficial.jpg"
 
 
 @pytest.mark.django_db

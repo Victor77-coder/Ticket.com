@@ -23,6 +23,13 @@ TRAILER_PREFERENCE = (
     lambda v: v["kind"] == Trailer.Kind.TEASER,
 )
 
+# O backdrop oficial do TMDb às vezes é demasiado escuro para o painel de
+# destaques: o véu de contraste sobre uma still noturna apaga o filme. Os
+# caminhos continuam sendo do TMDb — só escolhemos outra arte do mesmo filme.
+ARTES_VITRINE = {
+    1368337: {"backdrop_path": "/kGCOfQpITTI0rKzrVMRGOFteszf.jpg"},  # A Odisseia
+}
+
 
 def extract_certification_br(release_dates_payload):
     """Classificação indicativa brasileira, ou None.
@@ -107,6 +114,10 @@ def sync_movie(detail_payload, *, is_trending=False, is_upcoming=False):
     movie.synopsis = detail_payload.get("overview") or ""
     movie.backdrop_path = detail_payload.get("backdrop_path") or ""
     movie.poster_path = detail_payload.get("poster_path") or ""
+    arte = ARTES_VITRINE.get(tmdb_id)
+    if arte:
+        movie.backdrop_path = arte.get("backdrop_path") or movie.backdrop_path
+        movie.poster_path = arte.get("poster_path") or movie.poster_path
     movie.runtime_minutes = detail_payload.get("runtime") or None
     movie.release_date = _parse_date(detail_payload.get("release_date"))
     movie.certification_br = extract_certification_br(detail_payload.get("release_dates"))
