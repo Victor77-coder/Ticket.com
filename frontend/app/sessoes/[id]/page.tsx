@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import SeatSelection from "@/components/seats/SeatSelection";
 import { fetchSeatMap } from "@/lib/api";
+import { formatarPreco } from "@/lib/moeda";
 
 import estilos from "./sessao.module.css";
 
@@ -18,12 +19,6 @@ function formatarHorario(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(iso));
-}
-
-function formatarPreco(valor: string) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-    Number(valor),
-  );
 }
 
 export default async function SessaoPage({ params }: { params: Promise<{ id: string }> }) {

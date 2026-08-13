@@ -1,3 +1,4 @@
+import { formatarPreco } from "@/lib/moeda";
 import type { Reserva } from "@/lib/types";
 
 import estilos from "./payment.module.css";
@@ -29,12 +30,6 @@ function formatarHorario(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(iso));
-}
-
-function formatarPreco(valor: string) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-    Number(valor),
-  );
 }
 
 export default function ResumoDaCompra({

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import FormularioDeCartao from "@/components/payment/FormularioDeCartao";
 import ResumoDaCompra from "@/components/payment/ResumoDaCompra";
 import Ingresso from "@/components/tickets/Ingresso";
+import { formatarPreco } from "@/lib/moeda";
 import type { Ingresso as IngressoTipo, Pagamento, Reserva } from "@/lib/types";
 
 import estilos from "./pagamento.module.css";
@@ -141,10 +142,7 @@ export default function PagamentoCliente({ reserva, filme, sala, inicio }: Props
         <p className={estilos.subtitulo}>
           Apresente o código na entrada da sala. Cartão final {pago.pagamento.cartao_final}
           {" · "}
-          {new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }).format(Number(pago.pagamento.total))}
+          {formatarPreco(pago.pagamento.total)}
         </p>
 
         <ul className={estilos.listaIngressos}>

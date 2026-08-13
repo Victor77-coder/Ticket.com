@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { diaCivil, rotuloDoDia } from "@/lib/grade-sessoes";
+import { formatarPreco } from "@/lib/moeda";
 import type { SessaoDaGrade } from "@/lib/types";
 
 import estilos from "./programacao.module.css";
@@ -43,13 +44,6 @@ function horario(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(iso));
-}
-
-function moeda(valor: string): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(Number(valor));
 }
 
 function agruparPorDia(sessoes: SessaoDaGrade[]) {
@@ -135,7 +129,7 @@ export function Grade({ sessoes: iniciais }: { sessoes: SessaoDaGrade[] }) {
 
                 <span className={estilos.sala}>{sessao.sala.nome}</span>
 
-                <span className={estilos.preco}>{moeda(sessao.preco)}</span>
+                <span className={estilos.preco}>{formatarPreco(sessao.preco)}</span>
 
                 {/* Ocupação sobre lugares, e não porcentagem: "12 de 60" diz
                     quantas poltronas ainda dá para vender, que é a decisão que
