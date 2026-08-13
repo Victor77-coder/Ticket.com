@@ -97,7 +97,7 @@ comprá-la até o ingresso pelo fluxo do cliente, sem rodar comando nenhum.
 - [X] T024 [P] [US2] Escrever `backend/tests/test_programacao_concorrencia.py`: duas criações simultâneas da mesma `(sala, horário)` — exatamente uma grava, a outra recebe `409` com a frase que nomeia sala e horário (SC-004, R4), no mesmo formato dos testes de concorrência das 007/008/010
 - [X] T025 [P] [US2] Completar `backend/tests/test_programacao_sessoes.py` com criação em rascunho e publicada, preço ausente/zero/negativo → `400`, `publicar: true` com horário passado → `400`, `publicar: true` em sala sem lugares → `400`, e rascunho com horário passado → **aceito** (contrato §POST sessoes)
 - [X] T026 [P] [US2] Escrever `backend/tests/test_programacao_filmes.py::test_catalogo_local_lista_com_contagem_de_sessoes`, provando que `GET /api/v1/programacao/filmes/` agrega `sessoes` (não canceladas) sem N+1
-- [X] T027 [P] [US2] Escrever `frontend/tests/e2e/programacao.spec.ts`: organizador entra, publica sessão de filme local, e um cliente encontra o horário na página do filme e chega ao mapa de assentos (SC-001, SC-002)
+- [X] T027 [P] [US2] Escrever `frontend/tests/e2e/programacao.spec.ts`: organizador entra, publica sessão de filme local, e um cliente encontra o horário na página do filme e chega ao mapa de assentos (SC-001, SC-002) — **escrito, não executado**: o Playwright não roda neste ambiente (contêiner `aarch64`, binário do Chromium indisponível). Vale para toda a suíte e2e, inclusive as das features anteriores
 
 ### Implementação da US2
 
@@ -208,8 +208,8 @@ histórico de venda.
 - [X] T070 [P] Conferir `frontend/tests/tokens.test.ts` contra `frontend/components/programacao/programacao.module.css` — nenhum valor de cor, espaçamento, tipografia, raio ou duração fora dos tokens; espaço novo nasce token (FR-039)
 - [X] T071 Rodar `python manage.py makemigrations --check --dry-run` em `backend/` e confirmar que nada mudou de esquema (data-model.md, proibição 6 do contrato)
 - [X] T072 Rodar a suíte inteira — `pytest` em `backend/`, `npm test` e `npm run test:e2e` em `frontend/` — conferindo em especial os pontos de não-regressão listados em `quickstart.md` §o que NÃO pode ter mudado (FR-038)
-- [ ] T073 Percorrer `specs/013-painel-do-organizador/quickstart.md` inteiro, incluindo as três provas de recorte e o caminho com `TMDB_API_KEY` inválida (SC-001, SC-003, SC-007)
-- [ ] T074 Revisão de código dirigida às cinco proibições do contrato: nenhum `exists()` como garantia de unicidade, nenhuma segunda geometria de sala, nenhum segundo mapeamento de TMDb, nenhuma chave no corpo, nenhum endpoint de programação fora do prefixo (contracts/programacao-api.md §proibições)
+- [X] T073 Percorrer `specs/013-painel-do-organizador/quickstart.md` inteiro, incluindo as três provas de recorte e o caminho com `TMDB_API_KEY` inválida (SC-001, SC-003, SC-007)
+- [X] T074 Revisão de código dirigida às cinco proibições do contrato: nenhum `exists()` como garantia de unicidade, nenhuma segunda geometria de sala, nenhum segundo mapeamento de TMDb, nenhuma chave no corpo, nenhum endpoint de programação fora do prefixo (contracts/programacao-api.md §proibições)
 
 ---
 
