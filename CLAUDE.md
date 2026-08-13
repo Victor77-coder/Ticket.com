@@ -2,12 +2,12 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Plan: `specs/013-painel-do-organizador/plan.md`
-- Spec: `specs/013-painel-do-organizador/spec.md`
-- Research: `specs/013-painel-do-organizador/research.md`
-- Data model: `specs/013-painel-do-organizador/data-model.md`
-- Contracts: `specs/013-painel-do-organizador/contracts/`
-- Quickstart: `specs/013-painel-do-organizador/quickstart.md`
+- Plan: `specs/014-cartao-de-sessao-e-meia-entrada/plan.md`
+- Spec: `specs/014-cartao-de-sessao-e-meia-entrada/spec.md`
+- Research: `specs/014-cartao-de-sessao-e-meia-entrada/research.md`
+- Data model: `specs/014-cartao-de-sessao-e-meia-entrada/data-model.md`
+- Contracts: `specs/014-cartao-de-sessao-e-meia-entrada/contracts/`
+- Quickstart: `specs/014-cartao-de-sessao-e-meia-entrada/quickstart.md`
 
 Features anteriores, já implementadas:
 
@@ -35,25 +35,30 @@ Features anteriores, já implementadas:
   dia e sala **no cliente**; `GET /api/v1/filmes/<slug>/` ganha `trailers[]` aditivo. O horário
   disponível é o link com nome acessível `Escolher lugares —` (e2e da 007). `--cor-fundo-qr` branco.
 
-**A feature 013 é a etapa 6 da constitution: o painel do organizador.** Ele pousa em `/programacao`,
-busca filme no TMDb **pelo back-end**, persiste local, cria sala/sessão e publica. **Zero migração** —
-`Movie`, `Room`, `Seat`, `Screening` já bastam; coluna nova é escopo escorregando.
+- `specs/013-painel-do-organizador/` — o painel do organizador, etapa 6 da constitution. Pousa em
+  `/programacao`, busca filme no TMDb **pelo back-end**, cria sala/sessão e publica. **Zero
+  migração.** Três regras ganharam dono único: geometria da sala (`screening/services/salas.py`),
+  mapeamento do TMDb (`sync_movie`) e ocupação viva (`Reservation.OCUPANDO`, consumida, nunca
+  reescrita). O organizador **pousa** no painel mas **não** é confinado como a portaria. Conflito
+  `(sala, horário)` vem do `IntegrityError` da constraint, nunca de `exists()` prévio.
 
-**Três regras existentes não podem ganhar segunda cópia.** O mapa físico da sala sai de `seed_demo`
-para `screening/services/salas.py` e é consumido pelos dois. A importação de filme usa o
-`sync_movie` que já existe — não um mapeamento reduzido. "Ocupação viva" continua sendo
-`Reservation.OCUPANDO`, consumida, nunca reescrita.
+**A feature 014 tem duas metades de custo muito diferente.** A grade vira **cartão por sala** com as
+ações **Assentos** e **Preços**, que abrem sobreposições de leitura — apresentação pura, sem tocar em
+regra. E a **meia-entrada vira comprável**, que é a primeira mudança no que se cobra desde a 008.
 
-**Duas armadilhas.** (1) `CASA_DO_PAPEL` separa `telaUnica` em `pousa` + `telaUnica`: o organizador
-pousa no painel mas **não** é confinado — o middleware nega por padrão, e `telaUnica: true` o
-trancaria fora do catálogo público. `devolverParaCasa("organizer", …)` continua `null`. (2) O
-conflito `(sala, horário)` é recusado pelo `IntegrityError` da constraint
-`uma_sessao_por_sala_e_horario`, **nunca** por `exists()` prévio.
+**A regra do preço estava escrita três vezes** — `pagamentos.total_da_reserva`,
+`ReservationSerializer.get_total` e `SeatSelection.tsx`. A saída não é ensinar meia às três: com
+`ReservedSeat.unit_price` **gravado**, o total vira **soma de coluna** e as duas cópias do back-end
+somem. `backend/apps/screening/services/precos.py` é o dono; `frontend/lib/meia.ts` é espelho da
+prévia, e nenhum valor dele é enviado.
 
-**Toda escrita de programação vive sob `/api/v1/programacao/` e exige `IsOrganizer`.** Cliente e
-portaria recebem `403`, nunca `401`. Cancelar sessão **para de vender** e mais nada: não estorna,
-não apaga ingresso, não devolve lugar pago. `seed_demo` passa a exigir `--force` quando já existe
-grade. Congelados: home, carrossel, trilhas, busca, mapa, pagamento, ingresso, portaria.
+**Três fronteiras que a 014 não pode cruzar.** (1) A portaria continua com **exatamente quatro
+desfechos** — o tipo é exibido para o operador pedir documento, nunca é condição de entrada. (2) O
+painel de assentos é **somente leitura**: seleção continua no mapa da 007, sem segundo caminho de
+reserva. (3) `assentos: [int]` mantém o significado da 007 — o tipo entra pelo campo **aditivo**
+`meias: [int]`, e ausente significa tudo inteira.
+
+Congelados: home, carrossel, trilhas, busca, programação, portaria.
 
 Project constitution (governa todas as features): `.specify/memory/constitution.md`
 <!-- SPECKIT END -->
