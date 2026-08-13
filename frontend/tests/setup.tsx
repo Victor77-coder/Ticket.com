@@ -47,6 +47,15 @@ Object.defineProperty(window, "matchMedia", {
     }) as unknown as MediaQueryList,
 });
 
+// jsdom não faz layout, então não implementa rolagem programática. As setas da
+// trilha chamam scrollBy, e sem isto o clique estoura um erro não tratado que a
+// suíte reporta separado dos testes — verde com "Errors 1" no rodapé. O que o
+// teste afirma é a navegação por teclado e a existência das setas; a rolagem em
+// si é comportamento do navegador, coberta no e2e.
+if (!Element.prototype.scrollBy) {
+  Element.prototype.scrollBy = () => {};
+}
+
 // next/image exige o runtime do Next; nos testes basta um <img>.
 vi.mock("next/image", () => ({
   default: ({ src, alt, ...resto }: { src: string; alt: string; [k: string]: unknown }) => {
