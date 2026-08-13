@@ -28,6 +28,7 @@ from apps.screening.serializers import (
     SalaEditavelSerializer,
     SalaInputSerializer,
     SessaoDaGradeSerializer,
+    SessaoEditavelSerializer,
     SessaoInputSerializer,
     SessaoDaPortaSerializer,
     ValidacaoInputSerializer,
@@ -727,6 +728,83 @@ class SessoesView(ProgramacaoViewBase):
             return Response({"detail": recusa.mensagem}, status=409)
 
         return Response(_linha_da_grade(sessao.pk), status=201)
+
+
+class SessaoDetailView(ProgramacaoViewBase):
+    """PATCH /api/v1/programacao/sessoes/<id>/ — só rascunho (FR-023, FR-024)."""
+
+    def patch(self, request, pk):
+        sessao = Screening.objects.filter(pk=pk).select_related("room").first()
+        if sessao is None:
+            return Response(SESSAO_NAO_ENCONTRADA, status=404)
+
+        entrada = SessaoEditavelSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        dados = entrada.validated_data
+
+        try:
+            programacao.editar_rascunho(
+                sessao,
+                filme=dados["filme"],
+                sala=dados["sala"],
+                inicio=dados["inicio"],
+                preco=dados["preco"],
+            )
+        except programacao.EstadoInvalido as recusa:
+            # 409, não 400: o corpo enviado está correto — o ESTADO da sessão é
+            # que impede. É a mesma distinção que a 008 faz entre "corrija o
+            # formulário" e "esta reserva já foi paga".
+            return Response({"detail": recusa.mensagem}, status=409)
+        except programacao.ConflitoDeHorario as recusa:
+            return Response({"detail": recusa.mensagem}, status=409)
+
+        return Response(_linha_da_grade(sessao.pk))
+
+
+class AcaoDeSessaoView(ProgramacaoViewBase):
+    """A base de publicar e cancelar.
+
+    AÇÕES, e não `PATCH status=...`: cada uma carrega pré-condições próprias —
+    horário futuro e sala com lugares; estado não terminal — que um campo de
+    status esconderia dentro de validação de campo (R8).
+
+    Corpo vazio de propósito: não há nada a informar. O que a ação faz já está
+    no endereço.
+    """
+
+    acao = None
+
+    def post(self, request, pk):
+        sessao = Screening.objects.filter(pk=pk).select_related("room").first()
+        if sessao is None:
+            return Response(SESSAO_NAO_ENCONTRADA, status=404)
+
+        try:
+            self.acao(sessao)
+        except programacao.EstadoInvalido as recusa:
+            return Response({"detail": recusa.mensagem}, status=409)
+        except programacao.CondicoesDePublicacao as recusa:
+            # 400 com erro de CAMPO: a interface destaca o horário ou a sala, e
+            # a pessoa sabe qual dos dois consertar.
+            return Response(recusa.erros, status=400)
+
+        return Response(_linha_da_grade(sessao.pk))
+
+
+class PublicarSessaoView(AcaoDeSessaoView):
+    """POST /api/v1/programacao/sessoes/<id>/publicar/ — coloca à venda."""
+
+    acao = staticmethod(programacao.publicar)
+
+
+class CancelarSessaoView(AcaoDeSessaoView):
+    """POST /api/v1/programacao/sessoes/<id>/cancelar/ — para de vender.
+
+    E MAIS NADA. Não estorna, não apaga ingresso, não devolve lugar pago ao
+    estoque (FR-031) — ver o docstring de `services/programacao.cancelar`.
+    """
+
+    acao = staticmethod(programacao.cancelar)
 
 
 def _linha_da_grade(pk):

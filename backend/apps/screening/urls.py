@@ -7,9 +7,12 @@ from apps.screening.views import (
     PaymentCreateView,
     ReservationCreateView,
     ReservationDetailView,
+    CancelarSessaoView,
+    PublicarSessaoView,
     SalaDetailView,
     SalasView,
     SeatMapView,
+    SessaoDetailView,
     SessoesView,
     SharedTicketView,
     TicketDetailView,
@@ -71,4 +74,22 @@ urlpatterns = [
         name="programacao-sala-detalhe",
     ),
     path("programacao/sessoes/", SessoesView.as_view(), name="programacao-sessoes"),
+    path(
+        "programacao/sessoes/<int:pk>/",
+        SessaoDetailView.as_view(),
+        name="programacao-sessao-detalhe",
+    ),
+    # Publicar e cancelar são AÇÕES, não `PATCH status`: cada uma carrega
+    # pré-condições próprias que um campo de status esconderia dentro de
+    # validação de campo (R8).
+    path(
+        "programacao/sessoes/<int:pk>/publicar/",
+        PublicarSessaoView.as_view(),
+        name="programacao-sessao-publicar",
+    ),
+    path(
+        "programacao/sessoes/<int:pk>/cancelar/",
+        CancelarSessaoView.as_view(),
+        name="programacao-sessao-cancelar",
+    ),
 ]

@@ -293,3 +293,263 @@ def test_filme_e_sala_inexistentes_saem_com_frase_do_campo(painel, make_seats, r
     assert resposta.status_code == 400
     assert "não está no catálogo" in str(resposta.json()["filme"])
     assert "não existe" in str(resposta.json()["sala"])
+
+
+# --- Conduzir a grade (US5) -----------------------------------------------
+
+
+def _criar(painel, filme, sala, **kwargs):
+    return painel.post(
+        GRADE, data=_corpo(filme, sala, **kwargs), content_type="application/json"
+    ).json()
+
+
+@pytest.mark.django_db
+def test_editar_rascunho_grava_e_mantem_rascunho(painel, make_movie, make_seats, room):
+    """FR-023 — editar não publica. Publicar é ação, com pré-condições."""
+    make_seats(room)
+    rascunho = _criar(painel, make_movie(), room, publicar=False)
+
+    resposta = painel.patch(
+        f"{GRADE}{rascunho['id']}/",
+        data={
+            "filme": rascunho["filme"]["id"],
+            "sala": room.pk,
+            "inicio": _horario(30),
+            "preco": "45.00",
+        },
+        content_type="application/json",
+    )
+
+    assert resposta.status_code == 200
+    assert resposta.json()["estado"] == "draft"
+    assert resposta.json()["preco"] == "45.00"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("situacao", ["published", "cancelled"])
+def test_editar_publicada_ou_cancelada_e_recusado(
+    painel, make_movie, make_seats, room, situacao
+):
+    """FR-024 — a fronteira da correção é a publicação, e a frase diz a saída."""
+    make_seats(room)
+    sessao = _criar(painel, make_movie(), room, publicar=(situacao == "published"))
+    if situacao == "cancelled":
+        painel.post(f"{GRADE}{sessao['id']}/cancelar/", content_type="application/json")
+
+    resposta = painel.patch(
+        f"{GRADE}{sessao['id']}/",
+        data={
+            "filme": sessao["filme"]["id"],
+            "sala": room.pk,
+            "inicio": _horario(30),
+            "preco": "10.00",
+        },
+        content_type="application/json",
+    )
+
+    assert resposta.status_code == 409
+    assert "só é possível alterar uma sessão em rascunho" in resposta.json()["detail"].lower()
+    assert "cancele e programe outra" in resposta.json()["detail"]
+
+
+@pytest.mark.django_db
+def test_mover_rascunho_para_horario_ocupado_e_recusado(
+    painel, make_movie, make_seats, room
+):
+    """US5 cenário 4 — o mesmo conflito da criação, pelo mesmo caminho."""
+    make_seats(room)
+    filme = make_movie()
+    ocupada = _criar(painel, filme, room, horas=6)
+    rascunho = _criar(painel, filme, room, horas=12, publicar=False)
+
+    resposta = painel.patch(
+        f"{GRADE}{rascunho['id']}/",
+        data={
+            "filme": filme.pk,
+            "sala": room.pk,
+            "inicio": ocupada["inicio"],
+            "preco": "30.00",
+        },
+        content_type="application/json",
+    )
+
+    assert resposta.status_code == 409
+    assert room.name in resposta.json()["detail"]
+    # Nada gravado: o rascunho continua no horário dele.
+    from apps.screening.models import Screening
+
+    assert Screening.objects.get(pk=rascunho["id"]).starts_at.isoformat() != ocupada["inicio"]
+
+
+@pytest.mark.django_db
+def test_publicar_rascunho_coloca_a_venda(client, painel, make_movie, make_seats, room):
+    """US5 cenário 5 — e a prova é o cliente alcançando o mapa."""
+    make_seats(room)
+    rascunho = _criar(painel, make_movie(), room, publicar=False)
+
+    assert client.get(f"/api/v1/sessoes/{rascunho['id']}/mapa/").status_code == 404
+
+    resposta = painel.post(
+        f"{GRADE}{rascunho['id']}/publicar/", content_type="application/json"
+    )
+
+    assert resposta.status_code == 200
+    assert resposta.json()["estado"] == "published"
+    assert client.get(f"/api/v1/sessoes/{rascunho['id']}/mapa/").status_code == 200
+
+
+@pytest.mark.django_db
+def test_publicar_rascunho_no_passado_e_recusado(painel, make_movie, make_seats, room):
+    """FR-026 revalidado no servidor — `pode_publicar` é dica, não permissão."""
+    make_seats(room)
+    rascunho = _criar(painel, make_movie(), room, horas=-3, publicar=False)
+
+    resposta = painel.post(
+        f"{GRADE}{rascunho['id']}/publicar/", content_type="application/json"
+    )
+
+    assert resposta.status_code == 400
+    assert "horário futuro" in str(resposta.json()["inicio"])
+
+
+@pytest.mark.django_db
+def test_publicar_em_sala_sem_lugares_e_recusado_na_acao(painel, make_movie, room):
+    """FR-028 pela outra porta: a sala perdeu os lugares depois do rascunho."""
+    rascunho = _criar(painel, make_movie(), room, publicar=False)
+
+    resposta = painel.post(
+        f"{GRADE}{rascunho['id']}/publicar/", content_type="application/json"
+    )
+
+    assert resposta.status_code == 400
+    assert "ainda não tem lugares" in str(resposta.json()["sala"])
+
+
+@pytest.mark.django_db
+def test_publicar_o_que_ja_esta_publicado_e_409(painel, make_movie, make_seats, room):
+    make_seats(room)
+    sessao = _criar(painel, make_movie(), room)
+
+    resposta = painel.post(
+        f"{GRADE}{sessao['id']}/publicar/", content_type="application/json"
+    )
+
+    assert resposta.status_code == 409
+    assert resposta.json()["detail"] == "Esta sessão já está publicada."
+
+
+@pytest.mark.django_db
+def test_cancelar_publicada_para_de_vender(client, painel, make_movie, make_seats, room):
+    """US5 cenário 7 — deixa de aparecer, e nenhuma reserva nova é aceita."""
+    make_seats(room)
+    sessao = _criar(painel, make_movie(), room)
+
+    resposta = painel.post(
+        f"{GRADE}{sessao['id']}/cancelar/", content_type="application/json"
+    )
+
+    assert resposta.status_code == 200
+    assert resposta.json()["estado"] == "cancelled"
+    assert resposta.json()["a_venda"] is False
+    assert client.get(f"/api/v1/sessoes/{sessao['id']}/mapa/").status_code == 404
+
+
+@pytest.mark.django_db
+def test_cancelar_rascunho_nao_exige_ter_publicado(painel, make_movie, make_seats, room):
+    """FR-030 — sem isto, um rascunho errado ficaria na grade para sempre."""
+    make_seats(room)
+    rascunho = _criar(painel, make_movie(), room, publicar=False)
+
+    resposta = painel.post(
+        f"{GRADE}{rascunho['id']}/cancelar/", content_type="application/json"
+    )
+
+    assert resposta.status_code == 200
+    assert resposta.json()["estado"] == "cancelled"
+
+
+@pytest.mark.django_db
+def test_cancelada_e_terminal(painel, make_movie, make_seats, room):
+    """US5 cenário 10 — não há "descancelar", e não há edição."""
+    make_seats(room)
+    sessao = _criar(painel, make_movie(), room)
+    painel.post(f"{GRADE}{sessao['id']}/cancelar/", content_type="application/json")
+
+    de_novo = painel.post(
+        f"{GRADE}{sessao['id']}/cancelar/", content_type="application/json"
+    )
+    voltar = painel.post(
+        f"{GRADE}{sessao['id']}/publicar/", content_type="application/json"
+    )
+
+    assert de_novo.status_code == 409
+    assert de_novo.json()["detail"] == "Esta sessão já foi cancelada."
+    assert voltar.status_code == 409
+    assert voltar.json()["detail"] == "Esta sessão foi cancelada e não pode voltar."
+
+
+@pytest.mark.django_db
+def test_cancelar_nao_toca_no_que_ja_foi_vendido(
+    painel, client, make_movie, make_screening, make_seats, make_tickets, make_user, room
+):
+    """FR-031, SC-009 — cancelar muda UMA coluna, e é `status`.
+
+    É a fronteira mais importante da US5: a 008 e a 010 fecharam pagamento e
+    validação, e nada aqui pode reabri-los. Um cancelamento que apagasse
+    ingresso destruiria histórico de venda por efeito colateral de uma
+    operação de grade.
+    """
+    from apps.screening.models import Payment, ReservedSeat, Ticket
+
+    lugares = make_seats(room)
+    sessao = make_screening(make_movie())
+    cliente = make_user(username="compradora")
+    ingressos = make_tickets(sessao, cliente, lugares[:2])
+    antes = {
+        "ingressos": Ticket.objects.count(),
+        "pagamentos": Payment.objects.count(),
+        "ocupacoes": ReservedSeat.objects.count(),
+        "usados": [t.used_at for t in Ticket.objects.all()],
+    }
+
+    painel.post(f"{GRADE}{sessao.pk}/cancelar/", content_type="application/json")
+
+    assert Ticket.objects.count() == antes["ingressos"]
+    assert Payment.objects.count() == antes["pagamentos"]
+    assert ReservedSeat.objects.count() == antes["ocupacoes"]
+    assert [t.used_at for t in Ticket.objects.all()] == antes["usados"]
+
+    # E o cliente continua vendo o ingresso dele, com o mesmo comportamento
+    # que a 009 entrega.
+    client.force_login(cliente)
+    meus = client.get("/api/v1/meus-ingressos/").json()
+    assert len(meus["futuros"]) == len(ingressos)
+
+
+@pytest.mark.django_db
+def test_sessao_cancelada_nao_aparece_em_superficie_de_compra(
+    painel, client, make_movie, make_seats, room
+):
+    """FR-032 — e sem filtro novo: `sellable()` já exclui as duas.
+
+    A 007 registrou que rascunho, cancelada, iniciada e inexistente saem todas
+    como o mesmo `404`, justamente para não revelar a grade interna.
+    """
+    make_seats(room)
+    filme = make_movie(title="Só rascunho")
+    sessao = _criar(painel, filme, room)
+    painel.post(f"{GRADE}{sessao['id']}/cancelar/", content_type="application/json")
+
+    detalhe = client.get(f"/api/v1/filmes/{filme.slug}/").json()
+
+    assert detalhe["screenings"] == []
+    assert client.get(f"/api/v1/sessoes/{sessao['id']}/mapa/").status_code == 404
+
+
+@pytest.mark.django_db
+def test_transicao_em_sessao_inexistente_devolve_404(painel):
+    for caminho in ("publicar", "cancelar"):
+        assert painel.post(
+            f"{GRADE}99999/{caminho}/", content_type="application/json"
+        ).status_code == 404

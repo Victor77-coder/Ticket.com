@@ -73,7 +73,7 @@
 
 .linha {
   display: grid;
-  grid-template-columns: 4.5rem minmax(0, 1fr) 8rem 6rem 6rem 8rem;
+  grid-template-columns: 4.5rem minmax(0, 1fr) 7rem 5rem 5rem 7rem auto;
   align-items: center;
   gap: var(--esp-4);
   padding: var(--esp-4) var(--esp-2);
@@ -426,4 +426,48 @@ button.acaoSecundaria {
   .trocaDeCapacidade {
     justify-self: start;
   }
+}
+
+/* --- Ações na linha da grade -------------------------------------------- */
+
+.acoesDaLinha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-3);
+  justify-self: end;
+}
+
+.acaoDeLinha,
+.acaoDeLinhaPerigo {
+  background: none;
+  border: none;
+  padding: var(--esp-1) 0;
+  font-family: var(--fonte-base);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  color: var(--cor-texto-suave);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.acaoDeLinha:hover:not(:disabled) {
+  color: var(--cor-texto);
+}
+
+.acaoDeLinhaPerigo {
+  color: var(--cor-erro);
+}
+
+.acaoDeLinha:disabled {
+  color: var(--cor-texto-fraco);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.acaoDeLinha:focus-visible,
+.acaoDeLinhaPerigo:focus-visible {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 2px;
 }

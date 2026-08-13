@@ -181,18 +181,18 @@ cancelar, e confirmar que um ingresso já emitido daquela sessão continua na li
 
 ### Testes da US5
 
-- [ ] T057 [P] [US5] Acrescentar em `backend/tests/test_programacao_sessoes.py` as transições: editar rascunho mantém rascunho; editar publicada ou cancelada → `409` com a frase que manda cancelar e programar outra; mover rascunho para `(sala, horário)` ocupado → mesmo `409` da criação; publicar rascunho futuro → `200`; publicar com horário passado ou sala sem lugares → `400`; publicar sessão já publicada → `409`; cancelada é terminal (FR-023, FR-024, FR-030)
-- [ ] T058 [P] [US5] Acrescentar em `backend/tests/test_programacao_sessoes.py` a prova de FR-031/SC-009: cancelar sessão com ingresso emitido muda **uma** coluna — `status` — e não estorna `Payment`, não apaga `Ticket` nem `ReservedSeat`, não mexe em `used_at`; o ingresso continua em "Meus ingressos" e o desfecho da portaria não muda
-- [ ] T059 [P] [US5] Acrescentar em `backend/tests/test_programacao_sessoes.py` a prova de FR-032: sessão em rascunho e sessão cancelada não aparecem em nenhuma superfície de compra — `get_sellable_screening` e `sellable()` continuam as excluindo, sem filtro novo
-- [ ] T060 [P] [US5] Acrescentar em `frontend/tests/programacao.test.tsx` a distinção dos três estados por rótulo + forma, e a checagem de contraste/acromatopsia no mesmo formato de `frontend/tests/e2e/acromatopsia.mjs` (FR-029)
+- [X] T057 [P] [US5] Acrescentar em `backend/tests/test_programacao_sessoes.py` as transições: editar rascunho mantém rascunho; editar publicada ou cancelada → `409` com a frase que manda cancelar e programar outra; mover rascunho para `(sala, horário)` ocupado → mesmo `409` da criação; publicar rascunho futuro → `200`; publicar com horário passado ou sala sem lugares → `400`; publicar sessão já publicada → `409`; cancelada é terminal (FR-023, FR-024, FR-030)
+- [X] T058 [P] [US5] Acrescentar em `backend/tests/test_programacao_sessoes.py` a prova de FR-031/SC-009: cancelar sessão com ingresso emitido muda **uma** coluna — `status` — e não estorna `Payment`, não apaga `Ticket` nem `ReservedSeat`, não mexe em `used_at`; o ingresso continua em "Meus ingressos" e o desfecho da portaria não muda
+- [X] T059 [P] [US5] Acrescentar em `backend/tests/test_programacao_sessoes.py` a prova de FR-032: sessão em rascunho e sessão cancelada não aparecem em nenhuma superfície de compra — `get_sellable_screening` e `sellable()` continuam as excluindo, sem filtro novo
+- [X] T060 [P] [US5] Acrescentar em `frontend/tests/programacao.test.tsx` a distinção dos três estados por rótulo + forma, e a checagem de contraste/acromatopsia no mesmo formato de `frontend/tests/e2e/acromatopsia.mjs` (FR-029)
 
 ### Implementação da US5
 
-- [ ] T061 [US5] Implementar `editar_rascunho`, `publicar` e `cancelar` em `backend/apps/screening/services/programacao.py`, com as pré-condições da tabela de `data-model.md` §ciclo de vida e a mesma captura de `IntegrityError` na edição (R4)
-- [ ] T062 [US5] Implementar `PATCH programacao/sessoes/<id>/`, `POST programacao/sessoes/<id>/publicar/` e `POST programacao/sessoes/<id>/cancelar/` em `backend/apps/screening/views.py`, como **ações** e não `PATCH status` (R8), e registrá-las em `backend/apps/screening/urls.py`
-- [ ] T063 [US5] Criar `frontend/app/programacao/sessoes/[id]/page.tsx` para editar rascunho, reusando `FormularioDeSessao.tsx` e recusando a edição de publicada/cancelada com a frase do servidor
-- [ ] T064 [US5] Acrescentar as ações de publicar e cancelar em `frontend/components/programacao/Grade.tsx`, desabilitadas com explicação quando `pode_publicar`/`pode_cancelar` são falsos, e com confirmação antes de cancelar
-- [ ] T065 [US5] Criar `frontend/app/api/programacao/sessoes/[id]/route.ts`, `.../publicar/route.ts` e `.../cancelar/route.ts` repassando status e corpo sem alteração
+- [X] T061 [US5] Implementar `editar_rascunho`, `publicar` e `cancelar` em `backend/apps/screening/services/programacao.py`, com as pré-condições da tabela de `data-model.md` §ciclo de vida e a mesma captura de `IntegrityError` na edição (R4)
+- [X] T062 [US5] Implementar `PATCH programacao/sessoes/<id>/`, `POST programacao/sessoes/<id>/publicar/` e `POST programacao/sessoes/<id>/cancelar/` em `backend/apps/screening/views.py`, como **ações** e não `PATCH status` (R8), e registrá-las em `backend/apps/screening/urls.py`
+- [X] T063 [US5] Criar `frontend/app/programacao/sessoes/[id]/page.tsx` para editar rascunho, reusando `FormularioDeSessao.tsx` e recusando a edição de publicada/cancelada com a frase do servidor
+- [X] T064 [US5] Acrescentar as ações de publicar e cancelar em `frontend/components/programacao/Grade.tsx`, desabilitadas com explicação quando `pode_publicar`/`pode_cancelar` são falsos, e com confirmação antes de cancelar
+- [X] T065 [US5] Criar `frontend/app/api/programacao/sessoes/[id]/route.ts`, `.../publicar/route.ts` e `.../cancelar/route.ts` repassando status e corpo sem alteração
 
 **Checkpoint**: a grade tem resposta para "programei errado", e cancelar para de vender sem tocar em
 histórico de venda.

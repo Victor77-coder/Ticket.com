@@ -12,10 +12,10 @@ import pytest
 from django.core.management import call_command
 from django.utils import timezone
 
-from apps.catalog.management.commands.seed_demo import Command
 from apps.catalog.models import Movie
 from apps.catalog.selectors import get_highlighted_movies, get_sellable_movies
 from apps.screening.models import Reservation, ReservedSeat, Room, Screening, Seat
+from apps.screening.services import salas
 
 # Os títulos como o TMDb os devolve — o seed procura por fragmento.
 CATALOGO = [
@@ -277,8 +277,15 @@ def test_capacidade_que_nao_fecha_a_fileira_deixa_a_ultima_incompleta():
     administra as salas que ele mesmo cria (DEMO_ROOMS), e ambas fecham a
     grade exata. Criar uma sala de fora para o teste provaria outra coisa —
     que o seed invade salas alheias, que é justamente o que ele não faz.
+
+    A REGRA MUDOU DE ENDEREÇO NA 013, não de conteúdo: saiu de
+    `Command._posicoes_da_sala` para `screening/services/salas.py`, porque o
+    painel do organizador passou a precisar dela e uma segunda cópia divergiria
+    (FR-017). Este teste continua valendo a mesma coisa, e
+    `test_sala_paridade_seed.py` prova que os dois caminhos produzem o mesmo
+    mapa.
     """
-    posicoes = Command._posicoes_da_sala(45, por_fileira=10)
+    posicoes = salas.posicoes_da_sala(45, por_fileira=10)
 
     assert len(posicoes) == 45
     assert posicoes[0] == ("A", 1)

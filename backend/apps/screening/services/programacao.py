@@ -120,3 +120,127 @@ def erros_para_publicar(sala, inicio):
         erros["sala"] = _frase_sem_lugares(sala)
 
     return erros
+
+
+# --- Transições (US5) -----------------------------------------------------
+#
+# A FRONTEIRA DA CORREÇÃO É A PUBLICAÇÃO, e ela é deliberada. Enquanto a sessão
+# é rascunho, nenhum cliente a viu e nada pode ter sido comprado — corrigir não
+# muda nada sob ninguém. Depois de publicada, filme, sala, horário e preço
+# ficam imutáveis: mudar qualquer um reabriria "o que acontece com quem já
+# comprou", que é regra de negócio nova, e esta feature declara não reabrir
+# nenhuma. O caminho para uma sessão publicada errada é cancelar e programar
+# outra (FR-024).
+
+
+class EstadoInvalido(Exception):
+    """A transição pedida não existe a partir do estado atual.
+
+    A frase diz o estado E a saída: "não é possível" sozinho deixa a pessoa
+    sem saber se ela errou o botão ou se o sistema quebrou.
+    """
+
+    def __init__(self, mensagem):
+        self.mensagem = mensagem
+        super().__init__(mensagem)
+
+
+class CondicoesDePublicacao(Exception):
+    """As pré-condições de publicação, como erro de CAMPO.
+
+    Carrega `{campo: frase}` porque a interface destaca o campo errado — o
+    horário ou a sala —, e um `detail` solto obrigaria a pessoa a descobrir
+    qual dos dois consertar.
+    """
+
+    def __init__(self, erros):
+        self.erros = erros
+        super().__init__(str(erros))
+
+
+SO_RASCUNHO_E_EDITAVEL = (
+    "Só é possível alterar uma sessão em rascunho. "
+    "Para mudar esta, cancele e programe outra."
+)
+JA_PUBLICADA = "Esta sessão já está publicada."
+CANCELADA_NAO_VOLTA = "Esta sessão foi cancelada e não pode voltar."
+JA_CANCELADA = "Esta sessão já foi cancelada."
+
+
+def editar_rascunho(sessao, *, filme, sala, inicio, preco):
+    """Altera filme, sala, horário e preço — e a sessão CONTINUA em rascunho.
+
+    Editar não publica. Publicar é uma ação com pré-condições próprias, e
+    deixá-la acontecer por efeito colateral de uma edição esconderia essas
+    pré-condições dentro de um formulário (FR-023).
+
+    O conflito de `(sala, horário)` é recusado pelo MESMO caminho da criação: a
+    constraint do banco, capturada pelo nome. Mover um rascunho para um horário
+    ocupado é exatamente a mesma colisão, e merecia o mesmo dono.
+    """
+    if sessao.status != Screening.Status.DRAFT:
+        raise EstadoInvalido(SO_RASCUNHO_E_EDITAVEL)
+
+    sessao.movie = filme
+    sessao.room = sala
+    sessao.starts_at = inicio
+    sessao.price = preco
+
+    try:
+        with transaction.atomic():
+            sessao.save(update_fields=["movie", "room", "starts_at", "price"])
+    except IntegrityError as exc:
+        if CONSTRAINT_DE_HORARIO in str(exc):
+            raise ConflitoDeHorario(sala, inicio) from exc
+        raise
+
+    return sessao
+
+
+def publicar(sessao):
+    """Coloca o rascunho à venda, revalidando as pré-condições no servidor.
+
+    A interface já recebeu `pode_publicar` na grade e desabilitou o botão — e
+    isso é conveniência, nunca autorização. As três condições são conferidas
+    aqui de novo, com os mesmos `erros_para_publicar` que a criação usa
+    (FR-030, FR-037).
+    """
+    if sessao.status == Screening.Status.PUBLISHED:
+        raise EstadoInvalido(JA_PUBLICADA)
+    if sessao.status == Screening.Status.CANCELLED:
+        raise EstadoInvalido(CANCELADA_NAO_VOLTA)
+
+    erros = erros_para_publicar(sessao.room, sessao.starts_at)
+    if erros:
+        raise CondicoesDePublicacao(erros)
+
+    sessao.status = Screening.Status.PUBLISHED
+    sessao.save(update_fields=["status"])
+    return sessao
+
+
+def cancelar(sessao):
+    """Para de vender. E MAIS NADA.
+
+    Vale para rascunho E para publicada (FR-030): sem o cancelamento de
+    rascunho, um rascunho errado ficaria na grade para sempre, já que apagar
+    sessão está fora de escopo.
+
+    O QUE ESTA FUNÇÃO NÃO FAZ, e nenhum teste pode afrouxar (FR-031): não
+    estorna `Payment`, não apaga `Ticket`, não apaga `ReservedSeat`, não mexe
+    em `used_at`, não devolve ao estoque lugar já pago. Ela muda UMA coluna.
+
+    O ingresso de uma sessão cancelada continua no histórico do cliente (009) e
+    sai como "sessão errada" na portaria, com o aviso do cancelamento (010) —
+    os dois comportamentos já existem e não são reabertos aqui.
+
+    Cancelada é TERMINAL: não há "descancelar". Reabrir a venda de uma sessão
+    que já foi anunciada como cancelada é uma promessa nova para quem leu a
+    primeira, e ninguém pediu essa.
+    """
+    if sessao.status == Screening.Status.CANCELLED:
+        raise EstadoInvalido(JA_CANCELADA)
+
+    sessao.status = Screening.Status.CANCELLED
+    sessao.save(update_fields=["status"])
+    return sessao

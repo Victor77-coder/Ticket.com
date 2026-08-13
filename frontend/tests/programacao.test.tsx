@@ -24,11 +24,16 @@ vi.mock("next/headers", () => ({
 }));
 
 const redirecionou = vi.fn();
+const refresh = vi.fn();
+const push = vi.fn();
 vi.mock("next/navigation", () => ({
   redirect: (destino: string) => {
     redirecionou(destino);
     throw new Error(`REDIRECT:${destino}`);
   },
+  // A grade virou ilha cliente na US5: as ações de publicar e cancelar
+  // atualizam a linha e pedem ao servidor para reler a grade.
+  useRouter: () => ({ refresh, push, replace: vi.fn() }),
 }));
 
 const buscarGrade = vi.fn();
@@ -281,6 +286,122 @@ describe("a busca no TMDb", () => {
 
     expect(aoImportar).toHaveBeenCalledWith(
       expect.objectContaining({ id: 7, titulo: "Duna" }),
+    );
+  });
+});
+
+// --- Conduzir a grade (US5) -----------------------------------------------
+
+describe("as ações da grade", () => {
+  function linha(over: Partial<SessaoDaGrade> = {}) {
+    return { count: 1, results: [sessao(over)] };
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("oferece editar e publicar só para rascunho", async () => {
+    buscarGrade.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: linha({ estado: "draft", estado_rotulo: "Rascunho", pode_editar: true, pode_publicar: true }),
+    });
+
+    render(await ProgramacaoPage());
+
+    expect(screen.getByRole("link", { name: "Editar" })).toHaveAttribute(
+      "href",
+      "/programacao/sessoes/1",
+    );
+    expect(screen.getByRole("button", { name: "Publicar" })).toBeEnabled();
+  });
+
+  it("não oferece editar nem publicar para sessão publicada", async () => {
+    buscarGrade.mockResolvedValue({ ok: true, status: 200, data: linha() });
+
+    render(await ProgramacaoPage());
+
+    expect(screen.queryByRole("link", { name: "Editar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Publicar" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancelar" })).toBeInTheDocument();
+  });
+
+  it("desabilita publicar COM EXPLICAÇÃO, em vez de esconder (FR-037)", async () => {
+    buscarGrade.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: linha({
+        estado: "draft",
+        estado_rotulo: "Rascunho",
+        pode_editar: true,
+        pode_publicar: false,
+      }),
+    });
+
+    render(await ProgramacaoPage());
+
+    // O controle continua visível: um botão que some não ensina nada e faz a
+    // pessoa procurar o que sumiu.
+    expect(screen.getByRole("button", { name: "Publicar" })).toBeDisabled();
+    expect(screen.getByText("horário no passado")).toBeInTheDocument();
+  });
+
+  it("sessão cancelada não oferece ação nenhuma — é estado terminal", async () => {
+    buscarGrade.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: linha({
+        estado: "cancelled",
+        estado_rotulo: "Cancelada",
+        a_venda: false,
+        pode_editar: false,
+        pode_publicar: false,
+        pode_cancelar: false,
+      }),
+    });
+
+    render(await ProgramacaoPage());
+
+    expect(screen.queryByRole("button", { name: "Cancelar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Editar" })).not.toBeInTheDocument();
+  });
+
+  it("pede confirmação antes de cancelar, e não cancela no primeiro clique", async () => {
+    const usuario = userEvent.setup();
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    buscarGrade.mockResolvedValue({ ok: true, status: 200, data: linha() });
+
+    render(await ProgramacaoPage());
+    await usuario.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    // Cancelada é terminal, e um clique acidental não tem desfazer.
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Confirmar" })).toBeInTheDocument();
+  });
+
+  it("mostra a frase do servidor quando a ação é recusada", async () => {
+    const usuario = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 409,
+        json: async () => ({ detail: "Esta sessão já está publicada." }),
+      }),
+    );
+    buscarGrade.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: linha({ estado: "draft", estado_rotulo: "Rascunho", pode_publicar: true }),
+    });
+
+    render(await ProgramacaoPage());
+    await usuario.click(screen.getByRole("button", { name: "Publicar" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Esta sessão já está publicada.",
     );
   });
 });
