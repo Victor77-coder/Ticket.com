@@ -1,9 +1,8 @@
 # Front, API e Postgres no mesmo painel — Render.
-# O avaliador só abre o endereço do front-end. O Django não é chamado pelo
-# navegador: o Next fala com ele pela rede interna, igual ao Compose.
+# O avaliador só abre o endereço do front-end.
 #
-# Plano free: o serviço dorme após 15 min. A primeira abertura do dia pode
-# levar cerca de um minuto. Cabe no prazo do desafio (7 dias ≪ 750 h/mês).
+# Plano free: o serviço dorme após 15 min. Web service free NÃO recebe
+# tráfego da rede interna — o Next chama a API pela URL pública.
 
 databases:
   - name: ticketcom-db
@@ -64,12 +63,12 @@ services:
       # omitiria o TypeScript (devDependency) — o next.config.ts não carrega.
       - key: NODE_ENV
         value: production
-      # Rede interna — o Next NÃO pode chamar a URL pública de dentro do
-      # Render: hairpin dá ETIMEDOUT. Quem acorda o Django dormindo é o
-      # navegador, via NEXT_PUBLIC_API_WAKE_URL.
+      # URL pública. Web service free NÃO recebe tráfego da rede interna
+      # (docs Render). http://ticketcom-api:10000 sempre dá timeout, o
+      # /healthz público responde ok e a home entra em loop de refresh.
       - key: API_BASE_URL
-        value: http://ticketcom-api:10000
+        value: https://ticketcom-api.onrender.com
       - key: NEXT_PUBLIC_API_WAKE_URL
         value: https://ticketcom-api.onrender.com
       - key: API_TIMEOUT_MS
-        value: "8000"
+        value: "60000"

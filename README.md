@@ -148,9 +148,9 @@ abre o endereço do front-end.
 
 O endereço no ar: <https://ticketcom-app.onrender.com>
 
-O Vercel não entra: ele não roda Django nem PostgreSQL. O Next chama a API pela **rede interna**
-(`http://ticketcom-api:10000`). A URL pública, de dentro do Render, dá `ETIMEDOUT`. Quem acorda o
-Django no plano free é o navegador, na primeira visita.
+O Vercel não entra: ele não roda Django nem PostgreSQL. No plano free um web service **não
+recebe** tráfego da rede interna, então o Next chama a API pela URL pública. A primeira visita
+do dia acorda o Django pelo navegador (~1 min).
 
 ### 1. Publicar este repositório
 
