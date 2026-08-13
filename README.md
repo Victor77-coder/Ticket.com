@@ -484,19 +484,50 @@ para uma tela o que o comando de seed já fazia em Python, e três regras que j�
 dono único em vez de segunda cópia: a geometria da sala, o mapeamento do TMDb e a leitura de
 ocupação viva.
 
-**Preço no ponto da decisão** — a página do filme anuncia **"Ingressos a partir de"** acima das
-abas, e **cada horário da grade carrega o seu próprio preço**. Antes disso o valor só aparecia
-depois de escolher a sessão, já no mapa de assentos: tarde demais para quem está comparando dois
-horários da mesma noite.
+**Cartão de sessão e meia-entrada** (`specs/014-cartao-de-sessao-e-meia-entrada/`) — a grade de
+horários virou **cartão por sala**, com cabeçalho, régua e duas ações no topo: **Assentos** e
+**Preços**. Cada uma abre uma sobreposição de leitura.
 
-"A partir de" e não um preço único porque sessões da mesma semana têm preços diferentes — anunciar
-um deles como se fosse o do filme seria promessa que a grade desmente duas linhas abaixo. O preço
-entra também no **nome acessível** do horário, para que quem navega por leitor de tela decida pelo
-mesmo par que quem vê a etiqueta. O valor já vinha do servidor desde a 007; nenhum contrato mudou.
+**Assentos** mostra a lotação — livres e ocupados, distinguíveis sem depender de cor, com a
+contagem de quantos restam — e um caminho para o mapa real. Ele é **somente leitura**: nenhum
+assento ali é acionável, porque selecionar continua acontecendo no mapa da 007. Um segundo caminho
+de reserva duplicaria a regra que `UNIQUE(sessão, assento)` protege. E ele consome **o mesmo
+endpoint de mapa** que a seleção já usava, sem endpoint novo e sem segunda leitura de ocupação.
 
-A mesma mudança deu **dono único ao formatador de moeda** (`frontend/lib/moeda.ts`), que estava
-copiado em cinco arquivos. Copiada, essa regra diverge em silêncio: basta alguém trocar a moeda num
-lugar para a mesma quantia sair escrita de dois jeitos em duas telas do mesmo fluxo.
+**Preços** mostra inteira e meia daquela sessão, com a nota de que a meia é conferida na entrada
+mediante documento. Os dois painéis fecham por `Esc` e por botão, prendem o foco enquanto abertos e
+**devolvem o foco à ação que os abriu** — a falha invisível para quem usa mouse, e a razão de o
+componente de sobreposição existir em vez de uma biblioteca.
+
+**O preço saiu do horário e do topo da página.** As duas coisas existiram por algumas horas durante
+esta feature e foram removidas por decisão de produto: repetir em doze chips o que a ação "Preços"
+mostra transforma a grade num mural de números. O alvo do horário voltou a ser sobre **horário**.
+
+**A meia-entrada passou a ser comprável**, e é a primeira mudança no que se cobra desde a 008. Ao
+escolher lugares, cada um pode ser marcado como meia; o padrão é sempre inteira. O total é
+recalculado e cobrado pelo servidor.
+
+**A parte técnica é uma simplificação, não um acréscimo.** A regra `preço × quantidade` estava
+escrita **três vezes** — em `services/pagamentos`, no serializer da reserva e no navegador. Ensinar
+meia-entrada às três seria o caminho natural e errado. Em vez disso, `ReservedSeat` passou a
+**gravar** o tipo e o valor de cada lugar, e o total virou **soma de uma coluna**: as duas cópias do
+back-end deixaram de precisar saber que tipos existem. `services/precos.py` é o dono único da regra,
+e `frontend/lib/meia.ts` é espelho da prévia — os dois compartilham a **mesma tabela de casos** nos
+testes, então concordarem é verificado, não presumido.
+
+A meia é metade **arredondada para baixo**, e o valor arredondado é o que vai para a coluna: exibido
+e cobrado não podem divergir porque são a mesma linha.
+
+**A portaria não mudou.** Continua com **exatamente quatro desfechos**. O tipo aparece para o
+operador pedir o documento — a plataforma vende, quem confere é a pessoa na porta, como em qualquer
+cinema. Há teste que falha se um quinto desfecho aparecer.
+
+Uma migração, e ela é a única da feature. `backend/tests/test_payment_concurrency.py` foi estendido
+com **tipos mistos na mesma reserva**: sem isso, a garantia mais cara do projeto continuaria verde
+cobrindo só o caso em que todos os lugares custam igual.
+
+A feature também deu **dono único ao formatador de moeda** (`frontend/lib/moeda.ts`), que estava
+copiado em cinco arquivos.
 
 ---
 
@@ -727,6 +758,25 @@ depois — e reconciliação é exatamente onde a validação única se perde.
 e a 008 criar pagamento e emissão na mesma transação. Exibir agora um selo que nada escreve seria
 tela pela metade, que o Princípio V proíbe.
 
+**Não há cota de meia-entrada.** A lei brasileira limita a meia a 40% dos lugares; este sistema não
+implementa a cota. Implementá-la exigiria disponibilidade **por tipo** dentro da mesma sessão, com
+corrida e constraint próprias — uma feature do tamanho da 007. Está registrado como fora de escopo
+em `specs/014-cartao-de-sessao-e-meia-entrada/spec.md`, e não como esquecimento.
+
+**A meia não pergunta o motivo** (estudante, idoso, professor) e não coleta documento. Perguntar
+exigiria guardar categoria de documento, que é dado pessoal sem contrapartida nesta entrega. A
+conferência é humana e acontece na porta — é assim no cinema real, e é por isso que o tipo aparece
+no desfecho da portaria.
+
+**A prévia de assentos é um retrato, não uma transmissão.** O painel mostra o estado do instante em
+que abriu e não se atualiza sozinho. Ocupação em tempo real continua sendo item separado. A verdade
+permanece sendo a reserva: quem seguir para o mapa e tentar um lugar já vendido recebe a recusa que
+a 007 já dava.
+
+**A câmera e o `<dialog>`**: o ambiente de teste (jsdom 25) não implementa `<dialog>`, então a
+sobreposição guarda as chamadas de `showModal`/`close`. No navegador o caminho nativo é o que roda;
+o guarda só evita que o componente estoure onde a API não existe.
+
 **O ingresso emitido não pode ser cancelado nem estornado.** `paga` é estado terminal nesta etapa.
 Cancelamento com devolução ao estoque está listado na constitution como item posterior ao
 fechamento do fluxo.
@@ -813,6 +863,22 @@ que uma IA faz mal:
   já fazia, e campo novo teria sido escopo escorregando); a de o organizador **não** ser confinado
   como a portaria, embora pouse numa tela própria; e a de cancelar sessão **parar de vender e mais
   nada** — sem estorno, sem apagar ingresso, sem devolver lugar pago.
+
+**Na feature do cartão de sessão e meia-entrada (014)**:
+
+- **Com IA** — a spec, o plano e os nove pontos de pesquisa; o cartão e os dois painéis; a
+  sobreposição com devolução de foco; a migração escrita à mão com o passo de dados; o serviço de
+  preços e a substituição das três cópias da regra pelo valor gravado; os testes, incluindo a
+  extensão do teste de concorrência com tipos mistos.
+- **Sem IA** — a captura de tela que originou a feature e a escolha de qual visual adotar; a decisão
+  de que a **meia seria comprável** e não apenas informativa, tomada depois de ver o custo das duas
+  opções lado a lado; a decisão de que o painel de assentos seria **somente leitura**; e a decisão
+  de **remover o preço do chip de horário e do topo da página** depois de ver a grade montada — o
+  preço tinha sido acrescentado na mesma manhã, e foi retirado por deixar a grade parecendo um mural
+  de números.
+
+Vale registrar que a terceira decisão **desfez** trabalho feito horas antes, e isso está no histórico
+de commits em vez de escondido: ver a tela pronta é o que revelou que a informação estava repetida.
 
 A cor, em particular, **não foi uma escolha estética**: as restrições eliminaram todos os candidatos
 menos um. Isso é verificável em `specs/011-marca-sem-laranja/research.md`, R1.
