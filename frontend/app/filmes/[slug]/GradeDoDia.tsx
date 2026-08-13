@@ -1,30 +1,24 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
+import CartaoDeSessao from "@/components/sessao/CartaoDeSessao";
 import { agruparSessoesPorDia } from "@/lib/grade-sessoes";
 import type { Screening } from "@/lib/types";
 
 import styles from "./filme.module.css";
 
-function formatarHora(iso: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    timeZone: "America/Sao_Paulo",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(iso));
-}
-
-function formatarHorarioAcessivel(iso: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(iso));
-}
+/**
+ * O dia ativo e os cartões daquele dia.
+ *
+ * A 012 entregou o agrupamento em dois níveis — dia, depois sala — e a 014
+ * mantém os dois: o que mudou é que a sala deixou de ser um `<h3>` solto acima
+ * de uma lista e virou CARTÃO, com as ações de leitura no topo dele.
+ *
+ * O agrupamento continua ACONTECENDO NO CLIENTE, a partir das sessões que o
+ * detalhe do filme já entrega. Nenhuma requisição nova nasceu para desenhar a
+ * grade, e o contrato de `GET /api/v1/filmes/<slug>/` não mudou.
+ */
 
 /**
  * Data de estreia, apenas quando ela é futura.
@@ -57,7 +51,6 @@ export default function GradeDoDia({
 
   if (sessoes.length === 0) {
     const estreia = estreiaFutura(releaseDate);
-
     return (
       <div className={styles.vazio}>
         {estreia && <p className={styles.estreia}>Estreia em {estreia}</p>}
@@ -92,34 +85,7 @@ export default function GradeDoDia({
       </div>
 
       {dia.salas.map((sala) => (
-        <section key={sala.nome} className={styles.sala} aria-label={sala.nome}>
-          <h3 className={styles.salaNome}>{sala.nome}</h3>
-          <ul className={styles.horarios}>
-            {sala.horarios.map((sessao) => {
-              const hora = formatarHora(sessao.starts_at);
-              const acessivel = `Escolher lugares — ${formatarHorarioAcessivel(sessao.starts_at)}, ${sessao.room_name}`;
-
-              return (
-                <li key={sessao.id}>
-                  {sessao.has_available_seats ? (
-                    <Link
-                      href={`/sessoes/${sessao.id}`}
-                      className={styles.horario}
-                      aria-label={acessivel}
-                    >
-                      {hora}
-                    </Link>
-                  ) : (
-                    <span className={styles.horarioEsgotado}>
-                      <span className={styles.horarioHora}>{hora}</span>
-                      <span>Esgotada</span>
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+        <CartaoDeSessao key={sala.nome} sala={sala.nome} horarios={sala.horarios} />
       ))}
     </div>
   );

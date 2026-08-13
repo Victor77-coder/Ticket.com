@@ -146,66 +146,6 @@
   font-weight: var(--peso-forte);
 }
 
-.sala {
-  display: flex;
-  flex-direction: column;
-  gap: var(--esp-3);
-}
-
-.salaNome {
-  margin: 0;
-  font-size: var(--texto-sm);
-  font-weight: var(--peso-forte);
-  color: var(--cor-texto-suave);
-}
-
-.horarios {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--esp-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.horario {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 4.5rem;
-  padding: var(--esp-2) var(--esp-3);
-  border: 1px solid var(--cor-borda-forte);
-  border-radius: var(--raio-md);
-  background: var(--cor-superficie);
-  color: var(--cor-texto);
-  font-weight: var(--peso-medio);
-  font-variant-numeric: tabular-nums;
-  text-decoration: none;
-}
-
-.horario:hover {
-  background: var(--cor-superficie-elevada);
-}
-
-.horarioEsgotado {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 4.5rem;
-  padding: var(--esp-2) var(--esp-3);
-  border: 1px dashed var(--cor-borda);
-  border-radius: var(--raio-md);
-  color: var(--cor-texto-fraco);
-  font-size: var(--texto-xs);
-  font-variant-numeric: tabular-nums;
-}
-
-.horarioHora {
-  font-size: var(--texto-sm);
-  font-weight: var(--peso-medio);
-}
-
 /* --- Sobre --- */
 
 .sobre {

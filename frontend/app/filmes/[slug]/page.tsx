@@ -46,6 +46,7 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
   const duracao = formatarDuracao(filme.runtime_minutes);
   const metadados = [duracao, filme.genres.join(", ")].filter(Boolean).join(" · ");
 
+
   return (
     <main className={styles.pagina}>
       <Link href="/" className={styles.voltar}>
