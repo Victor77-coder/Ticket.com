@@ -17,13 +17,14 @@ services:
     plan: free
     region: oregon
     rootDir: backend
-    buildCommand: pip install .
-    # Plano free recusa preDeployCommand. Migrate, estáticos e seed vão no start.sh.
+    buildCommand: pip install -r requirements.txt
+    # Plano free recusa preDeployCommand. Migrate e seed vão no start.sh,
+    # com o gunicorn escutando ANTES do TMDb — senão o health check mata o deploy.
     startCommand: bash start.sh
     healthCheckPath: /healthz
     envVars:
       - key: PYTHON_VERSION
-        value: "3.12.8"
+        value: "3.12.11"
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings.prod
       - key: DJANGO_DEBUG
@@ -45,7 +46,7 @@ services:
       - key: CSRF_TRUSTED_ORIGINS
         value: https://ticketcom-app.onrender.com
       - key: WEB_CONCURRENCY
-        value: "2"
+        value: "1"
 
   - type: web
     name: ticketcom-app
