@@ -20,6 +20,7 @@ from apps.screening.models import (
     Ticket,
 )
 from apps.screening.services import ingressos as ingressos_service
+from apps.screening.services import precos
 from apps.screening.services import programacao as programacao_service
 from apps.screening.services import salas as salas_service
 
@@ -110,11 +111,37 @@ class ReservationInputSerializer(serializers.Serializer):
     sessao = serializers.IntegerField()
     assentos = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
     chave_idempotencia = serializers.UUIDField()
+    # ADITIVO (014): subconjunto de `assentos` que sai como meia. Ausente ou
+    # vazio significa tudo inteira, que é exatamente o comportamento de antes
+    # desta feature — por isso `assentos` não mudou de forma e o e2e da 007
+    # continua valendo sem edição.
+    #
+    # A checagem de que todo id consta em `assentos` NÃO mora aqui: ela precisa
+    # dos assentos já validados contra a sessão, e isso é `services/reservas`.
+    # Validar em dois lugares seria a mesma regra em duas cópias.
+    meias = serializers.ListField(
+        child=serializers.IntegerField(), allow_empty=True, required=False, default=list
+    )
 
 
 class LugarSerializer(serializers.Serializer):
     fileira = serializers.CharField(source="row")
     numero = serializers.IntegerField(source="number")
+
+
+class LugarReservadoSerializer(serializers.Serializer):
+    """O lugar DENTRO de uma reserva — com o que ele custou.
+
+    Distinto de `LugarSerializer` porque a fonte é outra: aquele recebe um
+    `Seat`, este um `ReservedSeat`. `fileira` e `numero` continuam com o mesmo
+    nome e o mesmo significado da 007; `tipo` e `valor` são ACRÉSCIMO da 014, e
+    um consumidor que só lia os dois primeiros não percebe a mudança.
+    """
+
+    fileira = serializers.CharField(source="seat.row")
+    numero = serializers.IntegerField(source="seat.number")
+    tipo = serializers.CharField(source="ticket_type")
+    valor = serializers.DecimalField(max_digits=8, decimal_places=2, source="unit_price")
 
 
 class ReservationSerializer(serializers.Serializer):
@@ -134,14 +161,18 @@ class ReservationSerializer(serializers.Serializer):
     expira_em = serializers.DateTimeField(source="expires_at")
     situacao = serializers.SerializerMethodField()
 
-    def _assentos(self, reserva):
-        return [o.seat for o in reserva.seats.all()]
-
     def get_assentos(self, reserva):
-        return LugarSerializer(self._assentos(reserva), many=True).data
+        return LugarReservadoSerializer(reserva.seats.all(), many=True).data
 
     def get_total(self, reserva):
-        return f"{reserva.screening.price * len(self._assentos(reserva)):.2f}"
+        """Consome o dono da regra — não recalcula.
+
+        Até a 014 esta linha era a SEGUNDA cópia de `preço × quantidade`, ao
+        lado da de `services/pagamentos.py`. Duas cópias da regra de preço são
+        duas chances de a tela e a cobrança discordarem, e a meia-entrada teria
+        exigido ensinar a mesma coisa às duas.
+        """
+        return f"{precos.total_da_reserva(reserva):.2f}"
 
     def to_representation(self, reserva):
         """AMPLIA a resposta da 007, nunca a altera.
@@ -252,6 +283,22 @@ class TicketSerializer(serializers.Serializer):
     sessao = serializers.SerializerMethodField()
     sala = serializers.SerializerMethodField()
     assento = serializers.SerializerMethodField()
+
+    # EMENDA DA 014 À REGRA DA 009, e a única em cinco features.
+    #
+    # O docstring de `MeuIngressoSerializer` diz que este serializer NÃO PODE
+    # GANHAR CAMPO NENHUM, porque tudo o que entra aqui aparece na página
+    # pública no mesmo commit. A regra continua valendo; o que muda é que este
+    # campo foi AUTORIZADO para lá, e não escapou para lá.
+    #
+    # O critério é o mesmo que a 009 usou para decidir o recorte: o tipo é
+    # informação do INGRESSO, não do comprador. Quem recebe o link vai entrar
+    # com ele e vai apresentar o mesmo documento na porta — esconder que a
+    # entrada é meia faria a pessoa descobrir isso na catraca.
+    #
+    # Continuam proibidos, e o teste continua provando: quem comprou, os outros
+    # ingressos da mesma compra, valor pago, dado de pagamento e o estado de uso.
+    tipo = serializers.CharField(source="reserved_seat.ticket_type")
 
     def _codigo(self, ingresso):
         # Derivado, nunca armazenado: guardá-lo numa coluna criaria a chance
@@ -399,6 +446,14 @@ class ValidacaoSerializer(serializers.Serializer):
             "sessao": sessao.starts_at,
             "sala": sessao.room.name,
             "assento": LugarSerializer(ingresso.reserved_seat.seat).data,
+            # INFORMAÇÃO DE CONFERÊNCIA, NUNCA CONDIÇÃO DE ENTRADA (FR-024).
+            #
+            # O operador lê "meia" e pede o documento — é assim no cinema real:
+            # a plataforma VENDE, quem CONFERE é a pessoa na porta. Este campo
+            # não é lido por nenhum ramo de decisão em `services/portaria.py`, e
+            # não existe desfecho "meia sem documento": a constitution exige
+            # exatamente quatro, e um quinto seria emenda a ela, não feature.
+            "tipo": ingresso.reserved_seat.ticket_type,
         }
 
         if resultado.situacao == portaria_service.JA_UTILIZADO:

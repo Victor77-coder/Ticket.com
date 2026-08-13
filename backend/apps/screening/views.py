@@ -175,6 +175,7 @@ class ReservationCreateView(ReservationViewBase):
                 sessao=sessao,
                 seat_ids=dados["assentos"],
                 chave=dados["chave_idempotencia"],
+                meias=dados["meias"],
             )
         except reservas.SessaoIndisponivel:
             # A sessão virou não vendável entre a leitura e a transação.

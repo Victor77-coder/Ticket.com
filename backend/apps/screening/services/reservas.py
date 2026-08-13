@@ -30,6 +30,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.screening.models import Reservation, ReservedSeat, Screening, Seat
+from apps.screening.services import precos
 
 
 class ReservaRecusada(Exception):
@@ -97,6 +98,37 @@ def _validar_selecao(sessao, seat_ids):
     return assentos
 
 
+def _tipos_por_assento(assentos, meias):
+    """Quem é meia, e quem é inteira — decidido ANTES de abrir a transação.
+
+    `meias` é um subconjunto de `assentos`, e o padrão é inteira. Esse padrão é
+    ESTRUTURAL, não uma validação que alguém precisa lembrar de escrever: quem
+    não mencionar `meias` compra tudo inteira porque o dicionário nasce assim.
+    É o FR-016 sem depender de vigilância.
+
+    Id fora da seleção é RECUSA, nunca descarte silencioso. Ignorar faria a tela
+    e o servidor discordarem sobre o que foi comprado — a pessoa veria meia e
+    pagaria inteira, sem nenhum aviso de que o pedido dela não coube.
+    """
+    ids = {assento.pk for assento in assentos}
+    pedidas = set(meias or ())
+
+    fora = pedidas - ids
+    if fora:
+        raise SelecaoInvalida(
+            "Não foi possível registrar esta reserva. Escolha os lugares de novo."
+        )
+
+    return {
+        assento.pk: (
+            precos.TipoDeIngresso.MEIA
+            if assento.pk in pedidas
+            else precos.TipoDeIngresso.INTEIRA
+        )
+        for assento in assentos
+    }
+
+
 def _liberar_ou_recusar(sessao, assentos):
     """Passos 2 e 3 — o bloqueio e a reciclagem.
 
@@ -158,7 +190,7 @@ def _liberar_ou_recusar(sessao, assentos):
         ReservedSeat.objects.filter(pk__in=[o.pk for o in vencidas]).delete()
 
 
-def criar_reserva(cliente, sessao, seat_ids, chave):
+def criar_reserva(cliente, sessao, seat_ids, chave, meias=None):
     """Cria a reserva, ou recusa por inteiro.
 
     Devolve `(reserva, criada)`. `criada` é False quando a chave de
@@ -189,6 +221,7 @@ def criar_reserva(cliente, sessao, seat_ids, chave):
         return existente, False
 
     assentos = _validar_selecao(sessao, seat_ids)
+    tipos = _tipos_por_assento(assentos, meias)
 
     try:
         with transaction.atomic():
@@ -206,7 +239,18 @@ def criar_reserva(cliente, sessao, seat_ids, chave):
                     # `screening` é copiado de `sessao` AQUI, no único ponto
                     # do código que cria ocupação, e nunca é editado depois.
                     # É o que mantém a denormalização honesta.
-                    ReservedSeat(reservation=reserva, screening=sessao, seat=assento)
+                    #
+                    # `unit_price` segue a mesma disciplina desde a 014: o valor
+                    # é CONGELADO aqui, dentro da transação que já existe, e
+                    # nunca reescrito. É ele que faz uma compra fechada parar de
+                    # depender do preço que a sessão tem hoje.
+                    ReservedSeat(
+                        reservation=reserva,
+                        screening=sessao,
+                        seat=assento,
+                        ticket_type=tipos[assento.pk],
+                        unit_price=precos.valor_do_lugar(sessao.price, tipos[assento.pk]),
+                    )
                     for assento in assentos
                 ]
             )

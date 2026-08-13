@@ -156,7 +156,12 @@ def test_resposta_publica_tem_exatamente_os_campos_autorizados(client, compra_de
 
     corpo = json.loads(_resposta_publica(client, token).content)
 
-    assert set(corpo) == {"codigo", "qr_svg", "filme", "sessao", "sala", "assento"}
+    # `tipo` entrou na 014 por DECISÃO, e não por descuido: é informação do
+    # ingresso, não do comprador — quem recebe o link vai apresentar o mesmo
+    # documento na porta, e esconder que a entrada é meia faria a pessoa
+    # descobrir isso na catraca. A inspeção continua sendo por INCLUSÃO: campo
+    # novo que ninguém autorizou quebra aqui.
+    assert set(corpo) == {"codigo", "qr_svg", "filme", "sessao", "sala", "assento", "tipo"}
     assert set(corpo["assento"]) == {"fileira", "numero"}
 
 

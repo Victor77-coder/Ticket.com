@@ -99,8 +99,18 @@ def test_lugares_vem_nomeados_por_fileira_e_numero(autenticado, sessao):
 
     corpo = _reservar(autenticado, sessao, assentos).json()
 
+    # `fileira` e `numero` continuam com o mesmo nome e o mesmo significado da
+    # 007. `tipo` e `valor` são ACRÉSCIMO da 014, e a igualdade exata é mantida
+    # de propósito: ela reprova campo novo que entre sem decisão, que é o mesmo
+    # papel que `test_share_link_leakage` cumpre do lado público.
     assert corpo["assentos"] == [
-        {"fileira": s.row, "numero": s.number} for s in assentos
+        {
+            "fileira": s.row,
+            "numero": s.number,
+            "tipo": "inteira",
+            "valor": f"{sessao.price:.2f}",
+        }
+        for s in assentos
     ]
 
 
