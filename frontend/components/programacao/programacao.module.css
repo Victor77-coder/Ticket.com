@@ -294,3 +294,85 @@ button.acaoSecundaria {
   font-family: var(--fonte-base);
   cursor: pointer;
 }
+
+/* --- Busca no TMDb ------------------------------------------------------ */
+
+.colunas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--esp-7);
+  align-items: start;
+}
+
+.busca {
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+  padding: var(--esp-5);
+}
+
+.buscaTitulo {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-forte);
+  margin-bottom: var(--esp-2);
+}
+
+.buscaTexto {
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+  line-height: var(--altura-linha-base);
+  margin-bottom: var(--esp-5);
+}
+
+.buscaLinha {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--esp-3);
+}
+
+.buscaLinha .campo {
+  flex: 1;
+}
+
+.buscaVazia {
+  margin-top: var(--esp-5);
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+}
+
+.resultados {
+  list-style: none;
+  margin: var(--esp-5) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.resultado {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-3) 0;
+  border-bottom: 1px solid var(--cor-borda);
+  font-size: var(--texto-sm);
+}
+
+.resultadoTitulo {
+  flex: 1;
+  min-width: 0;
+}
+
+.jaNoCatalogo {
+  padding: var(--esp-1) var(--esp-3);
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-pilula);
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-xs);
+  white-space: nowrap;
+}
+
+@media (max-width: 60rem) {
+  .colunas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

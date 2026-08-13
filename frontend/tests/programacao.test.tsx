@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SessaoDaGrade } from "@/lib/types";
 
@@ -36,7 +37,10 @@ vi.mock("@/lib/api", () => ({
   fetchGrade: (...args: unknown[]) => buscarGrade(...args),
 }));
 
+// Importados depois dos `vi.mock` acima, como a suíte da portaria já faz: os
+// dois módulos leem `@/lib/api` e `next/headers` no topo.
 const { default: ProgramacaoPage } = await import("@/app/programacao/page");
+const { BuscaDeFilme } = await import("@/components/programacao/BuscaDeFilme");
 
 function sessao(over: Partial<SessaoDaGrade> = {}): SessaoDaGrade {
   return {
@@ -167,5 +171,116 @@ describe("os três estados na grade", () => {
 
     expect(screen.getByRole("heading", { name: /14\/08/ })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /15\/08/ })).toBeInTheDocument();
+  });
+});
+
+// --- Busca no TMDb (US3) --------------------------------------------------
+
+describe("a busca no TMDb", () => {
+  function responder(resposta: { ok: boolean; status?: number; body: unknown }) {
+    const fn = vi.fn().mockResolvedValue({
+      ok: resposta.ok,
+      status: resposta.status ?? (resposta.ok ? 200 : 502),
+      json: async () => resposta.body,
+    });
+    vi.stubGlobal("fetch", fn);
+    return fn;
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("lista os resultados e marca o que já está no catálogo", async () => {
+    const usuario = userEvent.setup();
+    responder({
+      ok: true,
+      body: {
+        termo: "duna",
+        count: 1,
+        results: [
+          {
+            tmdb_id: 693134,
+            titulo: "Duna: Parte Dois",
+            ano: 2024,
+            poster_url: null,
+            ja_no_catalogo: true,
+          },
+        ],
+      },
+    });
+
+    render(<BuscaDeFilme onImportado={vi.fn()} />);
+    await usuario.type(screen.getByLabelText("Título"), "duna");
+    await usuario.click(screen.getByRole("button", { name: "Buscar" }));
+
+    expect(await screen.findByText(/Duna: Parte Dois/)).toBeInTheDocument();
+    expect(screen.getByText("Já no catálogo")).toBeInTheDocument();
+  });
+
+  it("diz que nada foi encontrado, com o termo dentro (US3 cenário 7)", async () => {
+    const usuario = userEvent.setup();
+    responder({ ok: true, body: { termo: "asdfgh", count: 0, results: [] } });
+
+    render(<BuscaDeFilme onImportado={vi.fn()} />);
+    await usuario.type(screen.getByLabelText("Título"), "asdfgh");
+    await usuario.click(screen.getByRole("button", { name: "Buscar" }));
+
+    // Não uma área em branco: o termo aparece na frase, para a pessoa saber a
+    // que busca a resposta pertence.
+    expect(await screen.findByText(/Nada encontrado para “asdfgh”/)).toBeInTheDocument();
+  });
+
+  it("mostra a frase do servidor quando o TMDb está fora (US3 cenário 6)", async () => {
+    const usuario = userEvent.setup();
+    responder({
+      ok: false,
+      status: 502,
+      body: { detail: "O TMDb não respondeu em 10s. Verifique a conexão e tente novamente." },
+    });
+
+    render(<BuscaDeFilme onImportado={vi.fn()} />);
+    await usuario.type(screen.getByLabelText("Título"), "duna");
+    await usuario.click(screen.getByRole("button", { name: "Buscar" }));
+
+    const alerta = await screen.findByRole("alert");
+    expect(alerta).toHaveTextContent("O TMDb não respondeu em 10s");
+    // FR-014: a degradação é só da busca, e a tela diz isso em vez de parecer
+    // que a área inteira quebrou.
+    expect(alerta).toHaveTextContent("continua podendo programar com os filmes do catálogo");
+  });
+
+  it("entrega o filme importado a quem o pediu, mesmo quando já existia", async () => {
+    const usuario = userEvent.setup();
+    const aoImportar = vi.fn();
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          termo: "duna",
+          count: 1,
+          results: [
+            { tmdb_id: 693134, titulo: "Duna", ano: 2024, poster_url: null, ja_no_catalogo: true },
+          ],
+        }),
+      })
+      // `200` — o filme já estava no catálogo. NÃO é erro: pediram um filme e
+      // receberam um filme (FR-012).
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 7, titulo: "Duna", tmdb_id: 693134, sessoes: 0 }),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<BuscaDeFilme onImportado={aoImportar} />);
+    await usuario.type(screen.getByLabelText("Título"), "duna");
+    await usuario.click(screen.getByRole("button", { name: "Buscar" }));
+    await usuario.click(await screen.findByRole("button", { name: "Usar este" }));
+
+    expect(aoImportar).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 7, titulo: "Duna" }),
+    );
   });
 });

@@ -17,10 +17,14 @@ from apps.catalog import selectors
 from apps.catalog.serializers import (
     FilmeDoPainelSerializer,
     HighlightSerializer,
+    ImportacaoInputSerializer,
     MovieCardSerializer,
     MovieDetailSerializer,
+    ResultadoTmdbSerializer,
     SearchResultSerializer,
 )
+from apps.catalog.services import programacao_filmes
+from apps.catalog.services.tmdb_client import TMDBClient, TMDBError
 
 HIGHLIGHTS_CACHE_SECONDS = 60
 HOME_CACHE_SECONDS = 60
@@ -138,13 +142,88 @@ class MovieDetailView(APIView):
 
 
 class CatalogoDoPainelView(ProgramacaoViewBase):
-    """GET /api/v1/programacao/filmes/ — o catálogo LOCAL, para programar.
+    """GET e POST em /api/v1/programacao/filmes/ — o catálogo local e o que o
+    faz crescer.
 
-    É o que mantém a promessa de FR-014: com o TMDb fora do ar, programar
-    continua funcionando. Esta resposta não toca a API externa em nenhuma
-    hipótese.
+    O `GET` é o que mantém a promessa de FR-014: com o TMDb fora do ar,
+    programar continua funcionando, porque esta leitura não toca a API externa
+    em hipótese nenhuma.
+
+    O `POST` é a única operação da feature que fala com o TMDb para ESCREVER —
+    e escreve local. Os dois no mesmo endereço porque são o mesmo recurso: a
+    lista de filmes que o painel enxerga, e o que a acrescenta.
     """
 
     def get(self, request):
         dados = FilmeDoPainelSerializer(selectors.catalogo_do_painel(), many=True).data
         return Response({"count": len(dados), "results": dados})
+
+    def post(self, request):
+        """Persiste o filme escolhido na busca.
+
+        `201` quando trouxe, `200` quando já existia — e o `200` não é erro
+        (FR-012). É o mesmo padrão que `POST /reservas/` fixou na 007 e que o
+        link da 009 repetiu: permite ao front dizer "trouxe agora" ou "já era
+        seu" sem interpretar texto.
+        """
+        entrada = ImportacaoInputSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+
+        try:
+            filme, criado = programacao_filmes.importar_filme(
+                entrada.validated_data["tmdb_id"]
+            )
+        except TMDBError as falha:
+            return Response({"detail": str(falha)}, status=502)
+
+        # Relido pela consulta do catálogo para responder no MESMO formato do
+        # `GET` — o front trata as duas respostas igual, e `sessoes` é
+        # anotação, que o objeto recém-salvo não tem.
+        linha = selectors.catalogo_do_painel().get(pk=filme.pk)
+        return Response(
+            FilmeDoPainelSerializer(linha).data, status=201 if criado else 200
+        )
+
+
+class BuscaTmdbView(ProgramacaoViewBase):
+    """GET /api/v1/programacao/filmes/busca/?q= — busca no TMDb, pelo Django.
+
+    A CHAVE NUNCA SAI DAQUI (FR-010, Princípio VII). O navegador fala com o
+    Next, o Next fala com o Django, e só o Django fala com o TMDb. Nenhuma
+    resposta desta view carrega a chave, a URL com a chave ou cabeçalho da
+    chamada externa.
+
+    A FRASE DO ERRO É A DO `TMDBError`, e não é reescrita: ele já distingue
+    prazo estourado, chave recusada e erro de status, todas com próxima ação e
+    em português. Traduzir de novo criaria duas redações da mesma falha, e a
+    que alguém corrigisse seria a outra.
+
+    `502`, e não `500`: o defeito não é nosso — um serviço de terceiro não
+    respondeu. É o que permite à interface dizer "a busca está fora, e você
+    continua podendo programar com o catálogo local" (FR-014).
+    """
+
+    def get(self, request):
+        termo = (request.query_params.get("q") or "").strip()
+
+        # Termo vazio NÃO é erro, e não vira requisição ao TMDb: a tela abre
+        # com o campo em branco, e um `400` de largada faria a área nascer
+        # exibindo falha.
+        if not termo:
+            return Response({"termo": "", "count": 0, "results": []})
+
+        try:
+            payload = TMDBClient().search_movies(termo)
+        except TMDBError as falha:
+            return Response({"detail": str(falha)}, status=502)
+
+        resultados = payload.get("results") or []
+        dados = ResultadoTmdbSerializer(
+            resultados,
+            many=True,
+            context={"ja_no_catalogo": programacao_filmes.ja_no_catalogo(resultados)},
+        ).data
+
+        return Response({"termo": termo, "count": len(dados), "results": dados})
+
+

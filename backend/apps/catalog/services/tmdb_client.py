@@ -79,6 +79,26 @@ class TMDBClient:
             {"page": page, "region": settings.TMDB_REGION},
         )
 
+    def search_movies(self, query, page=1):
+        """Busca por título, para o painel do organizador (013, R3).
+
+        Passa por `_get` como todos os outros, e é isso que importa: chave,
+        idioma, prazo e a tradução de erro para `TMDBError` em português já
+        estão lá. Uma chamada HTTP escrita à mão aqui teria de repetir os
+        quatro, e a que alguém corrigisse seria a outra.
+
+        UMA PÁGINA POR BUSCA, sem paginação infinita: o objetivo é achar um
+        filme para programar, não navegar o catálogo mundial. Uma página só
+        mantém legível o estado vazio de "nada encontrado para este termo".
+
+        `include_adult=False` porque não há propósito no domínio, e o
+        contrário devolveria resultado que a interface teria de filtrar depois.
+        """
+        return self._get(
+            "/search/movie",
+            {"query": query, "page": page, "include_adult": False},
+        )
+
     def movie_detail(self, tmdb_id):
         """Detalhe do filme com vídeos e datas de lançamento numa só chamada.
 

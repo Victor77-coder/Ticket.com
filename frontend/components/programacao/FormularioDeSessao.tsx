@@ -25,8 +25,13 @@ import estilos from "./programacao.module.css";
 type Props = {
   filmes: FilmeDoPainel[];
   salas: SalaDoPainel[];
-  /** Preenchido quando a US3 acabou de importar um filme do TMDb. */
-  filmeInicial?: number;
+  /**
+   * O filme escolhido é CONTROLADO de fora porque a busca no TMDb, ao lado,
+   * precisa selecioná-lo depois de importar. Estado interno faria a pessoa
+   * trazer um filme e ter de procurá-lo na lista logo em seguida.
+   */
+  filme: string;
+  onFilmeChange: (valor: string) => void;
 };
 
 type ErrosDeCampo = Partial<Record<"filme" | "sala" | "inicio" | "preco", string>>;
@@ -38,10 +43,9 @@ function frase(valor: unknown): string {
   return String(valor ?? "");
 }
 
-export function FormularioDeSessao({ filmes, salas, filmeInicial }: Props) {
+export function FormularioDeSessao({ filmes, salas, filme, onFilmeChange }: Props) {
   const router = useRouter();
 
-  const [filme, setFilme] = useState(filmeInicial ? String(filmeInicial) : "");
   const [sala, setSala] = useState(salas[0] ? String(salas[0].id) : "");
   const [inicio, setInicio] = useState("");
   const [preco, setPreco] = useState("");
@@ -110,7 +114,7 @@ export function FormularioDeSessao({ filmes, salas, filmeInicial }: Props) {
         <select
           className={estilos.entrada}
           value={filme}
-          onChange={(e) => setFilme(e.target.value)}
+          onChange={(e) => onFilmeChange(e.target.value)}
           aria-invalid={erros.filme ? true : undefined}
           aria-describedby={erros.filme ? "erro-filme" : undefined}
         >

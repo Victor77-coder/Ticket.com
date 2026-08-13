@@ -125,19 +125,19 @@ com pôster, Sobre e Trailers, e criar uma sessão para ele.
 
 ### Testes da US3
 
-- [ ] T037 [P] [US3] Completar `backend/tests/test_programacao_filmes.py` com: busca devolvendo `ja_no_catalogo` resolvido em **uma** consulta `__in`, `q` vazio → `200` com `count: 0`, TMDb fora do ar/timeout → `502` com a frase do `TMDBError`, importação de filme novo → `201`, importação de filme existente → `200` **sem duplicar** (FR-012), e `is_trending`/`is_upcoming` não rebaixados na reimportação (R2, FR-046)
-- [ ] T038 [P] [US3] Acrescentar em `backend/tests/test_programacao_filmes.py` a prova de FR-010: nenhuma resposta da busca ou da importação contém `TMDB_API_KEY`, URL com chave ou cabeçalho da chamada externa (SC-008)
-- [ ] T039 [P] [US3] Acrescentar em `backend/tests/test_filme_detalhe.py` (ou arquivo irmão) a prova de FR-011a: um filme importado pelo painel expõe gêneros, classificação e trailers idênticos aos de um filme vindo do `sync_tmdb` — Sobre e Trailers da 012 não ficam vazias
+- [X] T037 [P] [US3] Completar `backend/tests/test_programacao_filmes.py` com: busca devolvendo `ja_no_catalogo` resolvido em **uma** consulta `__in`, `q` vazio → `200` com `count: 0`, TMDb fora do ar/timeout → `502` com a frase do `TMDBError`, importação de filme novo → `201`, importação de filme existente → `200` **sem duplicar** (FR-012), e `is_trending`/`is_upcoming` não rebaixados na reimportação (R2, FR-046)
+- [X] T038 [P] [US3] Acrescentar em `backend/tests/test_programacao_filmes.py` a prova de FR-010: nenhuma resposta da busca ou da importação contém `TMDB_API_KEY`, URL com chave ou cabeçalho da chamada externa (SC-008)
+- [X] T039 [P] [US3] Acrescentar em `backend/tests/test_filme_detalhe.py` (ou arquivo irmão) a prova de FR-011a: um filme importado pelo painel expõe gêneros, classificação e trailers idênticos aos de um filme vindo do `sync_tmdb` — Sobre e Trailers da 012 não ficam vazias
 
 ### Implementação da US3
 
-- [ ] T040 [US3] Acrescentar `search_movies(query, page=1)` em `backend/apps/catalog/services/tmdb_client.py` chamando `/search/movie` com `include_adult=False` pelo `_get` existente — sem tocar em `_get`, herdando timeout, idioma e `TMDBError` em pt-BR (R3)
-- [ ] T041 [US3] Implementar `importar_filme(tmdb_id)` em `backend/apps/catalog/services/programacao_filmes.py`: `movie_detail(tmdb_id)` → `sync_movie(detalhe, is_trending=False, is_upcoming=False)`, devolvendo também se o filme já existia (para o `200` vs `201`) — nenhum mapeamento paralelo (R2, FR-011a)
-- [ ] T042 [US3] Acrescentar em `backend/apps/catalog/serializers.py` o serializer do resultado de busca (`tmdb_id`, `titulo`, `ano`, `poster_url`, `ja_no_catalogo`) e o de entrada da importação (`tmdb_id`)
-- [ ] T043 [US3] Implementar `BuscaTmdbView` (`GET programacao/filmes/busca/`) e o `POST` de `programacao/filmes/` em `backend/apps/catalog/views.py` sob `IsOrganizer`, traduzindo `TMDBError` para `502` com a frase que ele já escreve — sem redigir uma segunda versão da mensagem
-- [ ] T044 [US3] Criar `frontend/components/programacao/BuscaDeFilme.tsx` com os três estados: resultados (marcando "já no catálogo"), nada encontrado para o termo, e TMDb indisponível com a frase do servidor e o convite a seguir com o catálogo local (FR-014, US3 cenários 6 e 7)
-- [ ] T045 [US3] Ligar a busca ao formulário de sessão em `frontend/app/programacao/sessoes/nova/page.tsx` — escolher um resultado importa o filme e segue para a sessão com ele já selecionado
-- [ ] T046 [US3] Criar `frontend/app/api/programacao/filmes/busca/route.ts` repassando status e corpo sem alteração, inclusive o `502`
+- [X] T040 [US3] Acrescentar `search_movies(query, page=1)` em `backend/apps/catalog/services/tmdb_client.py` chamando `/search/movie` com `include_adult=False` pelo `_get` existente — sem tocar em `_get`, herdando timeout, idioma e `TMDBError` em pt-BR (R3)
+- [X] T041 [US3] Implementar `importar_filme(tmdb_id)` em `backend/apps/catalog/services/programacao_filmes.py`: `movie_detail(tmdb_id)` → `sync_movie(detalhe, is_trending=False, is_upcoming=False)`, devolvendo também se o filme já existia (para o `200` vs `201`) — nenhum mapeamento paralelo (R2, FR-011a)
+- [X] T042 [US3] Acrescentar em `backend/apps/catalog/serializers.py` o serializer do resultado de busca (`tmdb_id`, `titulo`, `ano`, `poster_url`, `ja_no_catalogo`) e o de entrada da importação (`tmdb_id`)
+- [X] T043 [US3] Implementar `BuscaTmdbView` (`GET programacao/filmes/busca/`) e o `POST` de `programacao/filmes/` em `backend/apps/catalog/views.py` sob `IsOrganizer`, traduzindo `TMDBError` para `502` com a frase que ele já escreve — sem redigir uma segunda versão da mensagem
+- [X] T044 [US3] Criar `frontend/components/programacao/BuscaDeFilme.tsx` com os três estados: resultados (marcando "já no catálogo"), nada encontrado para o termo, e TMDb indisponível com a frase do servidor e o convite a seguir com o catálogo local (FR-014, US3 cenários 6 e 7)
+- [X] T045 [US3] Ligar a busca ao formulário de sessão em `frontend/app/programacao/sessoes/nova/page.tsx` — escolher um resultado importa o filme e segue para a sessão com ele já selecionado
+- [X] T046 [US3] Criar `frontend/app/api/programacao/filmes/busca/route.ts` repassando status e corpo sem alteração, inclusive o `502`
 
 **Checkpoint**: o catálogo deixa de depender de rodar `sync_tmdb` na mão, e o TMDb fora do ar degrada
 só a busca.

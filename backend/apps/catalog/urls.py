@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.catalog.views import (
+    BuscaTmdbView,
     CatalogoDoPainelView,
     HighlightsView,
     HomeRowsView,
@@ -18,6 +19,14 @@ urlpatterns = [
     # organizador — o prefixo é o que torna a regra legível de fora, e um
     # endpoint de programação colocado fora dele é falha de FR-034 ainda que
     # declare a permissão certa.
+    # A busca vem ANTES do catálogo: `programacao/filmes/busca/` é mais
+    # específico, e a ordem torna a resolução independente de detalhe do
+    # `path()`.
+    path(
+        "programacao/filmes/busca/",
+        BuscaTmdbView.as_view(),
+        name="programacao-busca-tmdb",
+    ),
     path(
         "programacao/filmes/",
         CatalogoDoPainelView.as_view(),

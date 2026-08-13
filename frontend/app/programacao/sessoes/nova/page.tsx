@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { EstadoVazio } from "@/components/programacao/EstadoVazio";
-import { FormularioDeSessao } from "@/components/programacao/FormularioDeSessao";
+import { ProgramarSessao } from "@/components/programacao/ProgramarSessao";
 import { fetchFilmesDoPainel, fetchSalas } from "@/lib/api";
 
 import {
@@ -75,7 +75,7 @@ export default async function NovaSessaoPage() {
           acao={{ href: "/programacao/salas", rotulo: "Criar uma sala" }}
         />
       ) : (
-        <FormularioDeSessao filmes={listaDeFilmes} salas={listaDeSalas} />
+        <ProgramarSessao filmes={listaDeFilmes} salas={listaDeSalas} />
       )}
     </main>
   );
