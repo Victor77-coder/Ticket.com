@@ -141,6 +141,55 @@ está montando o ambiente agora.
 
 ---
 
+## Deploy
+
+Front, API e Postgres sobem **no mesmo painel**, o [Render](https://render.com). O avaliador só
+abre o endereço do front-end. O Django continua invisível para o navegador — o Next fala com ele
+pela rede interna, o mesmo desenho do Compose.
+
+O Vercel não entra: ele não roda Django nem PostgreSQL. Dividir em duas plataformas faria a
+primeira requisição do dia falhar — o front acordaria e a API ainda estaria dormindo, além do
+prazo de 8s.
+
+### 1. Publicar este repositório
+
+O Blueprint lê o `render.yaml` no GitHub. Commit e push da `main` (se ainda não foram).
+
+### 2. Criar o Blueprint
+
+1. Entre em <https://dashboard.render.com> com a conta GitHub.
+2. **New** → **Blueprint**.
+3. Selecione este repositório.
+4. Quando pedir `TMDB_API_KEY`, cole a mesma chave do `.env` local.
+5. Apply.
+
+O Render cria o Postgres, a API (`ticketcom-api`) e o site (`ticketcom-app`). No primeiro deploy a
+API importa o catálogo, semeia as quatro contas e sobe a grade. Os deploys seguintes só migram —
+não apagam o que o organizador programou.
+
+### 3. Abrir
+
+<https://ticketcom-app.onrender.com>
+
+Se o Render acrescentar um sufixo no nome (URL diferente dessa), copie o endereço **público do
+front** e atualize na API as variáveis `SITE_URL`, `CORS_ALLOWED_ORIGINS` e `CSRF_TRUSTED_ORIGINS`.
+Sem isso o link de compartilhamento do ingresso aponta para o host errado.
+
+Credenciais: as mesmas da tabela **abaixo** (`desafio2026`).
+
+**A primeira abertura do dia pode levar cerca de um minuto.** No plano free o serviço dorme após
+15 minutos parado; o Render acorda os dois processos no primeiro pedido. Depois disso responde
+normal. A câmera da portaria funciona — o endereço é HTTPS.
+
+### 4. Conferir
+
+- Home com carrossel e trilhas
+- Entrar como `cliente1` → comprar → QR
+- Entrar como `portaria` → cai em `/portaria`
+- Entrar como `organizador` → cai em `/programacao`
+
+---
+
 ## Credenciais de seed
 
 Todas com a senha **`desafio2026`**:
