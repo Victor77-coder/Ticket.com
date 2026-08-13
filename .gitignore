@@ -42,3 +42,6 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+
+# --- Ferramentas locais ---
+.codex/
