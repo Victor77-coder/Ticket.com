@@ -24,13 +24,14 @@ tasks.md: remover cada uma das duas garantias e conferir que ele FALHA.
 import threading
 import uuid
 from datetime import timedelta
+from decimal import Decimal
 
 import pytest
 from django.db import connection
 from django.utils import timezone
 
 from apps.screening.models import Payment, Reservation, ReservedSeat, Ticket
-from apps.screening.services import pagamentos
+from apps.screening.services import pagamentos, precos
 
 CARTAO_APROVADO = {
     "numero": "4242424242424242",
@@ -108,11 +109,38 @@ def cenario(db, make_movie, make_screening, make_seats, room, make_user):
         customer=cliente,
         expires_at=timezone.now() + timedelta(minutes=10),
     )
+    # TIPOS MISTOS DESDE A 014, e não por capricho: com meia-entrada o total
+    # deixou de ser `preço × quantidade` e virou soma de valores gravados. Uma
+    # corrida provada só sobre lugares de mesmo valor deixaria de cobrir
+    # justamente o caso novo — e é sob concorrência que uma soma parcial ou
+    # duplicada apareceria.
+    #
+    # Um dos três é meia: 30,00 + 30,00 + 15,00 = 75,00.
+    tipos = [
+        precos.TipoDeIngresso.INTEIRA,
+        precos.TipoDeIngresso.INTEIRA,
+        precos.TipoDeIngresso.MEIA,
+    ]
     ReservedSeat.objects.bulk_create(
-        [ReservedSeat(reservation=reserva, screening=sessao, seat=s) for s in lugares]
+        [
+            ReservedSeat(
+                reservation=reserva,
+                screening=sessao,
+                seat=s,
+                ticket_type=tipo,
+                unit_price=precos.valor_do_lugar(sessao.price, tipo),
+            )
+            for s, tipo in zip(lugares, tipos)
+        ]
     )
 
-    return {"sessao": sessao, "cliente": cliente, "reserva": reserva, "lugares": lugares}
+    return {
+        "sessao": sessao,
+        "cliente": cliente,
+        "reserva": reserva,
+        "lugares": lugares,
+        "total_esperado": Decimal("75.00"),
+    }
 
 
 # --- A corrida (SC-004, SC-005) --------------------------------------------
@@ -210,7 +238,9 @@ def test_reservas_diferentes_nao_se_atrapalham(cenario, make_user):
     )
     ReservedSeat.objects.bulk_create(
         [
-            ReservedSeat(reservation=segunda, screening=sessao, seat=s)
+            ReservedSeat(
+                reservation=segunda, screening=sessao, seat=s, unit_price=sessao.price
+            )
             for s in outros_lugares
         ]
     )
@@ -329,3 +359,56 @@ def test_dois_ingressos_no_mesmo_assento_sao_recusados_pelo_banco(cenario):
         Ticket.objects.create(
             reserved_seat=ocupacao, payment=pagamento, public_id=uuid.uuid4()
         )
+
+
+@pytest.mark.django_db(transaction=True)
+def test_corrida_com_tipos_mistos_cobra_a_soma_exata(cenario):
+    """T-CONC — a garantia da 008 sob a regra de preço da 014.
+
+    O teste irmão prova que a corrida emite UM conjunto de ingressos. Este
+    prova que o valor cobrado nesse conjunto é a SOMA DOS VALORES GRAVADOS, e
+    não preço vezes quantidade — a conta que a meia-entrada invalidou.
+
+    Sem isto, a garantia mais cara do projeto continuaria verde cobrindo apenas
+    o caso em que todos os lugares custam igual, que é o caso que deixou de ser
+    o único.
+    """
+    reserva = cenario["reserva"]
+    resultados = []
+    barreira = threading.Barrier(2)
+
+    def pagar():
+        barreira.wait()
+        try:
+            resultados.append(
+                pagamentos.pagar(
+                    cliente=cenario["cliente"],
+                    reserva=reserva,
+                    cartao=pagamentos.Cartao(**CARTAO_APROVADO),
+                )
+            )
+        except pagamentos.PagamentoRecusado as recusa:
+            resultados.append(recusa)
+        finally:
+            connection.close()
+
+    fios = [threading.Thread(target=pagar) for _ in range(2)]
+    for fio in fios:
+        fio.start()
+    for fio in fios:
+        fio.join()
+
+    aprovados = [r for r in resultados if isinstance(r, pagamentos.Resultado)]
+    assert len(aprovados) == 1
+
+    # Um pagamento aprovado, e o valor dele é a soma dos três lugares.
+    cobranca = Payment.objects.get(
+        reservation=reserva, status=Payment.Status.APPROVED
+    )
+    assert cobranca.amount == cenario["total_esperado"]
+
+    # Três ingressos, e os tipos são os que foram gravados na reserva.
+    tipos = sorted(
+        t.reserved_seat.ticket_type for t in Ticket.objects.filter(payment=cobranca)
+    )
+    assert tipos == ["inteira", "inteira", "meia"]
