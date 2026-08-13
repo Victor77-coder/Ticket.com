@@ -32,11 +32,10 @@ afterEach(() => {
 });
 
 describe("navegação", () => {
-  it("mostra o primeiro filme e o contador correto", () => {
+  it("mostra o primeiro filme", () => {
     render(<HighlightsCarousel highlights={criarHighlights(5)} />);
 
     expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme A");
-    expect(screen.getByText("1 / 5")).toBeInTheDocument();
   });
 
   it("avança para o próximo filme", async () => {
@@ -46,7 +45,6 @@ describe("navegação", () => {
     await usuario.click(screen.getByRole("button", { name: "Próximo filme" }));
 
     expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme B");
-    expect(screen.getByText("2 / 5")).toBeInTheDocument();
   });
 
   it("do último volta ao primeiro — navegação circular (FR-008)", async () => {
@@ -56,11 +54,10 @@ describe("navegação", () => {
     const proximo = screen.getByRole("button", { name: "Próximo filme" });
     await usuario.click(proximo);
     await usuario.click(proximo);
-    expect(screen.getByText("3 / 3")).toBeInTheDocument();
+    expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme C");
 
     await usuario.click(proximo);
     expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme A");
-    expect(screen.getByText("1 / 3")).toBeInTheDocument();
   });
 
   it("do primeiro retrocede ao último — navegação circular (FR-008)", async () => {
@@ -70,7 +67,6 @@ describe("navegação", () => {
     await usuario.click(screen.getByRole("button", { name: "Filme anterior" }));
 
     expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme C");
-    expect(screen.getByText("3 / 3")).toBeInTheDocument();
   });
 
   it("salta direto para um filme pelo indicador (FR-007)", async () => {
@@ -80,7 +76,6 @@ describe("navegação", () => {
     await usuario.click(screen.getByRole("button", { name: "Ir para Filme D" }));
 
     expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme D");
-    expect(screen.getByText("4 / 5")).toBeInTheDocument();
   });
 
   it("marca o indicador ativo com aria-current", async () => {
@@ -109,10 +104,10 @@ describe("navegação", () => {
 
     await usuario.click(screen.getByRole("button", { name: "Próximo filme" }));
     await usuario.keyboard("{ArrowRight}");
-    expect(screen.getByText("3 / 3")).toBeInTheDocument();
+    expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme C");
 
     await usuario.keyboard("{ArrowLeft}");
-    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+    expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme B");
   });
 
   it("esconde os controles quando há um único filme", () => {
@@ -134,9 +129,9 @@ describe("rotação automática", () => {
     vi.useFakeTimers();
     render(<HighlightsCarousel highlights={criarHighlights(3)} />);
 
-    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+    expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme A");
     avancarTempo(INTERVALO_ROTACAO_MS);
-    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+    expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme B");
   });
 
   it("pausa com o ponteiro sobre o carrossel e retoma ao sair (FR-010)", () => {
@@ -148,11 +143,11 @@ describe("rotação automática", () => {
 
     fireEvent.mouseEnter(regiao);
     avancarTempo(INTERVALO_ROTACAO_MS * 2);
-    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+    expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme A");
 
     fireEvent.mouseLeave(regiao);
     avancarTempo(INTERVALO_ROTACAO_MS);
-    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+    expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme B");
   });
 
   it("pausa quando um controle interno recebe foco de teclado (FR-010)", () => {
@@ -164,7 +159,7 @@ describe("rotação automática", () => {
     });
     avancarTempo(INTERVALO_ROTACAO_MS * 2);
 
-    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+    expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme A");
   });
 
   it("não anuncia a troca automática ao leitor de tela (R9)", () => {
@@ -196,7 +191,7 @@ describe("movimento reduzido (FR-011)", () => {
 
     avancarTempo(INTERVALO_ROTACAO_MS * 3);
 
-    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+    expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme A");
   });
 
   it("mantém a navegação manual funcionando", async () => {
@@ -206,7 +201,7 @@ describe("movimento reduzido (FR-011)", () => {
 
     await usuario.click(screen.getByRole("button", { name: "Próximo filme" }));
 
-    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+    expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme B");
   });
 
   it("passa a rotacionar se a preferência mudar durante a sessão", () => {
@@ -215,13 +210,13 @@ describe("movimento reduzido (FR-011)", () => {
     render(<HighlightsCarousel highlights={criarHighlights(3)} />);
 
     avancarTempo(INTERVALO_ROTACAO_MS);
-    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+    expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme A");
 
     act(() => {
       definirMediaQuery(MOVIMENTO_REDUZIDO, false);
     });
     avancarTempo(INTERVALO_ROTACAO_MS);
-    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+    expect(within(painelAtivo()).getByRole("heading")).toHaveTextContent("Filme B");
   });
 });
 

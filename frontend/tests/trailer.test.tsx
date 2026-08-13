@@ -112,7 +112,10 @@ describe("um trailer por vez (FR-014, FR-016)", () => {
     await usuario.click(screen.getAllByRole("button", { name: "Trailer" })[0]);
 
     // Com o trailer aberto o painel não pode trocar sozinho por baixo do vídeo.
-    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ir para Filme A" })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
     expect(screen.getByRole("button", { name: "Fechar trailer" })).toBeInTheDocument();
   });
 });

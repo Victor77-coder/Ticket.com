@@ -192,18 +192,13 @@
 
 /* --- Controles --- */
 
+/* Cobre o painel só para posicionar setas e indicadores; `pointer-events:
+ * none` deixa o clique passar para o conteúdo (trailer, ingressos). */
 .controles {
   position: absolute;
+  inset: 0;
   z-index: 2;
-  bottom: var(--esp-5);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: var(--esp-4);
-  width: 100%;
-  max-width: var(--largura-conteudo);
-  padding: 0 var(--esp-5);
+  pointer-events: none;
 }
 
 /* Sem moldura circular — a mesma decisão da R7, que a implementação aplicou
@@ -212,6 +207,9 @@
  *
  * A área de toque continua 2.75rem; o alvo perde a moldura, não o tamanho. */
 .seta {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -222,9 +220,19 @@
   background: transparent;
   color: var(--cor-texto-suave);
   cursor: pointer;
+  pointer-events: auto;
   transition:
     background-color var(--transicao-rapida),
-    color var(--transicao-rapida);
+    color var(--transicao-rapida),
+    opacity var(--transicao-rapida);
+}
+
+.setaAnterior {
+  left: var(--esp-5);
+}
+
+.setaProximo {
+  right: var(--esp-5);
 }
 
 .seta:hover {
@@ -232,10 +240,31 @@
   color: var(--cor-texto);
 }
 
+/* Com mouse, as setas só aparecem sobre o painel. Sem hover (toque) ficam
+ * visíveis — em tela estreita o media query de 560px as esconde de qualquer
+ * forma, porque o deslize já resolve. */
+@media (hover: hover) {
+  .seta {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .regiao:hover .seta,
+  .seta:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 .indicadores {
+  position: absolute;
+  bottom: var(--esp-5);
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: var(--esp-2);
+  pointer-events: auto;
 }
 
 /* Indicadores são botões reais, com área de toque adequada; a barra estreita
@@ -273,13 +302,6 @@
 .indicadorAtivo::before {
   transform: scaleX(1);
   background: var(--cor-destaque);
-}
-
-.contador {
-  margin-left: auto;
-  font-size: var(--texto-sm);
-  font-variant-numeric: tabular-nums;
-  color: var(--cor-texto-suave);
 }
 
 /* --- Estados --- */
@@ -416,9 +438,12 @@
     max-width: 100%;
   }
 
-  .controles {
-    padding: 0 var(--esp-4);
-    gap: var(--esp-3);
+  .setaAnterior {
+    left: var(--esp-4);
+  }
+
+  .setaProximo {
+    right: var(--esp-4);
   }
 }
 

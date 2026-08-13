@@ -163,7 +163,6 @@ export function HighlightsCarousel({ highlights }: Props) {
       {total > 1 && (
         <CarouselControls
           indice={indice}
-          total={total}
           titulos={highlights.map((h) => h.title)}
           onAnterior={anterior}
           onProximo={() => proximo()}

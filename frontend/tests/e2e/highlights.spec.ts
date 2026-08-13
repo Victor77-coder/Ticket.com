@@ -41,25 +41,28 @@ test("descobre um filme, assiste ao trailer e chega às sessões", async ({ page
 test("navega pelo carrossel e fecha o ciclo", async ({ page }) => {
   await page.goto("/");
 
-  const contador = page.locator("text=/^\\d+ \\/ \\d+$/");
-  await expect(contador).toBeVisible();
+  const carrossel = page.getByRole("region", { name: "Filmes em cartaz" });
+  await carrossel.hover();
 
-  const total = Number((await contador.textContent())!.split("/")[1].trim());
+  const indicadores = page.getByRole("button", { name: /^Ir para / });
+  const total = await indicadores.count();
   const proximo = page.getByRole("button", { name: "Próximo filme" });
 
   for (let i = 0; i < total; i += 1) {
     await proximo.click();
   }
 
-  await expect(contador).toHaveText(`1 / ${total}`);
+  await expect(indicadores.first()).toHaveAttribute("aria-current", "true");
 });
 
 test("percorre o carrossel apenas pelo teclado", async ({ page }) => {
   await page.goto("/");
 
-  const contador = page.locator("text=/^\\d+ \\/ \\d+$/");
   await page.getByRole("button", { name: "Próximo filme" }).focus();
   await page.keyboard.press("ArrowRight");
 
-  await expect(contador).toHaveText(/^2 \//);
+  await expect(page.getByRole("button", { name: /^Ir para / }).nth(1)).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
 });

@@ -4,7 +4,6 @@ import styles from "./highlights.module.css";
 
 type Props = {
   indice: number;
-  total: number;
   titulos: string[];
   onAnterior: () => void;
   onProximo: () => void;
@@ -13,7 +12,6 @@ type Props = {
 
 export function CarouselControls({
   indice,
-  total,
   titulos,
   onAnterior,
   onProximo,
@@ -23,7 +21,7 @@ export function CarouselControls({
     <div className={styles.controles}>
       <button
         type="button"
-        className={styles.seta}
+        className={`${styles.seta} ${styles.setaAnterior}`}
         onClick={onAnterior}
         aria-label="Filme anterior"
       >
@@ -38,7 +36,12 @@ export function CarouselControls({
         </svg>
       </button>
 
-      <button type="button" className={styles.seta} onClick={onProximo} aria-label="Próximo filme">
+      <button
+        type="button"
+        className={`${styles.seta} ${styles.setaProximo}`}
+        onClick={onProximo}
+        aria-label="Próximo filme"
+      >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="M9 5l7 7-7 7"
@@ -63,10 +66,6 @@ export function CarouselControls({
           />
         ))}
       </div>
-
-      <span className={styles.contador} aria-hidden="true">
-        {indice + 1} / {total}
-      </span>
     </div>
   );
 }
